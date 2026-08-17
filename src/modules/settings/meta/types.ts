@@ -14,6 +14,14 @@ export type MetaConnection =
       fechaCreacion: string;
     };
 
+export type MetaConnectionConfigured = Extract<MetaConnection, { appConfigurada: true }>;
+
+export function isMetaConnectionConfigured(
+  connection: MetaConnection | undefined,
+): connection is MetaConnectionConfigured {
+  return connection !== undefined && connection.appConfigurada;
+}
+
 export interface MetaOption {
   id: string;
   nombre: string;

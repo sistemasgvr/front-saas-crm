@@ -13,6 +13,7 @@ import Select from "@/src/components/form/Select";
 import Label from "@/src/components/form/Label";
 import { getMetaAdAccounts, getMetaConnection, getMetaPages } from "./queries";
 import { connectMetaAction, disconnectMetaAction, selectMetaAdAccountAction, selectMetaPageAction } from "./actions";
+import { isMetaConnectionConfigured } from "./types";
 import MetaAppCredentialsForm from "./MetaAppCredentialsForm";
 
 export default function MetaConnectionCard({ metaCallback }: { metaCallback?: string }) {
@@ -35,22 +36,34 @@ export default function MetaConnectionCard({ metaCallback }: { metaCallback?: st
     queryFn: () => getMetaConnection(),
   });
   const connection = connectionQuery.data;
-  const needsPage = connection?.conectado && !connection.pageId;
-  const needsAccount = connection?.conectado && !connection.adAccountId;
+  const connectedMeta =
+    isMetaConnectionConfigured(connection) && connection.conectado ? connection : null;
+  const isConnected = connectedMeta !== null;
 
   const [selectedPage, setSelectedPage] = useState("");
   const [selectedAccount, setSelectedAccount] = useState("");
 
+  useEffect(() => {
+    if (connectedMeta?.pageId) setSelectedPage(connectedMeta.pageId);
+  }, [connectedMeta?.pageId]);
+
+  useEffect(() => {
+    if (connectedMeta?.adAccountId) setSelectedAccount(connectedMeta.adAccountId);
+  }, [connectedMeta?.adAccountId]);
+
   const pagesQuery = useQuery({
     queryKey: queryKeys.metaPages,
     queryFn: () => getMetaPages(),
-    enabled: !!needsPage,
+    enabled: isConnected,
   });
   const accountsQuery = useQuery({
     queryKey: queryKeys.metaAdAccounts,
     queryFn: () => getMetaAdAccounts(),
-    enabled: !!needsAccount,
+    enabled: isConnected,
   });
+
+  const pageChanged = Boolean(selectedPage && selectedPage !== connectedMeta?.pageId);
+  const accountChanged = Boolean(selectedAccount && selectedAccount !== connectedMeta?.adAccountId);
 
   const selectPage = useAppMutation({
     mutationFn: () => {
@@ -58,7 +71,7 @@ export default function MetaConnectionCard({ metaCallback }: { metaCallback?: st
       if (!pagina) throw new Error("Selecciona una página");
       return selectMetaPageAction(pagina.id, pagina.nombre);
     },
-    successMessage: "Página guardada",
+    successMessage: "Página actualizada",
     invalidateKeys: [queryKeys.metaConnection],
   });
 
@@ -68,13 +81,16 @@ export default function MetaConnectionCard({ metaCallback }: { metaCallback?: st
       if (!cuenta) throw new Error("Selecciona una cuenta publicitaria");
       return selectMetaAdAccountAction(cuenta.id, cuenta.nombre);
     },
-    successMessage: "Cuenta publicitaria guardada",
+    successMessage: "Cuenta publicitaria actualizada",
     invalidateKeys: [queryKeys.metaConnection],
   });
 
   if (connectionQuery.isLoading) return <PageLoader label="Cargando conexión Meta…" />;
   if (connectionQuery.isError) return <QueryError error={connectionQuery.error} />;
   if (!connection) return null;
+
+  const pageOptions = (pagesQuery.data ?? []).map((p) => ({ value: p.id, label: p.nombre }));
+  const accountOptions = (accountsQuery.data ?? []).map((a) => ({ value: a.id, label: a.nombre }));
 
   return (
     <div className="border-t border-gray-200 pt-6 dark:border-gray-800">
@@ -102,74 +118,71 @@ export default function MetaConnectionCard({ metaCallback }: { metaCallback?: st
         </div>
       )}
 
-      {connection.appConfigurada && connection.conectado && (
+      {connection.appConfigurada && connection.conectado && connectedMeta && (
         <div className="space-y-5">
           <p className="text-theme-sm text-gray-700 dark:text-gray-300">
-            Conectado como <span className="font-medium">{connection.metaUserNombre}</span>
+            Conectado como <span className="font-medium">{connectedMeta.metaUserNombre}</span>
           </p>
 
-          {needsPage ? (
-            <div>
-              <Label>Página de Facebook</Label>
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <Select
-                    options={(pagesQuery.data ?? []).map((p) => ({ value: p.id, label: p.nombre }))}
-                    value={selectedPage}
-                    onChange={setSelectedPage}
-                    placeholder={pagesQuery.isLoading ? "Cargando páginas…" : "Selecciona una página"}
-                    disabled={pagesQuery.isLoading}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={!selectedPage}
-                  loading={selectPage.isPending}
-                  onClick={() => selectPage.mutate()}
-                >
-                  Guardar
-                </Button>
-              </div>
-              {pagesQuery.isError && <QueryError error={pagesQuery.error} />}
-            </div>
-          ) : (
-            <p className="text-theme-sm text-gray-500 dark:text-gray-400">
-              Página: <span className="text-gray-800 dark:text-white/90">{connection.pageNombre}</span>
+          <div>
+            <Label>Página de Facebook</Label>
+            <p className="mb-2 text-theme-xs text-gray-500 dark:text-gray-400">
+              {connectedMeta.pageNombre
+                ? `Actual: ${connectedMeta.pageNombre}. El webhook de leads se enruta por esta página.`
+                : "Selecciona la página desde la que recibirás leads."}
             </p>
-          )}
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <Select
+                  options={pageOptions}
+                  value={selectedPage}
+                  onChange={setSelectedPage}
+                  placeholder={pagesQuery.isLoading ? "Cargando páginas…" : "Selecciona una página"}
+                  disabled={pagesQuery.isLoading}
+                />
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                disabled={!pageChanged}
+                loading={selectPage.isPending}
+                onClick={() => selectPage.mutate()}
+              >
+                {connectedMeta.pageId ? "Actualizar" : "Guardar"}
+              </Button>
+            </div>
+            {pagesQuery.isError && <QueryError error={pagesQuery.error} />}
+          </div>
 
-          {needsAccount ? (
-            <div>
-              <Label>Cuenta publicitaria</Label>
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <Select
-                    options={(accountsQuery.data ?? []).map((a) => ({ value: a.id, label: a.nombre }))}
-                    value={selectedAccount}
-                    onChange={setSelectedAccount}
-                    placeholder={accountsQuery.isLoading ? "Cargando cuentas…" : "Selecciona una cuenta"}
-                    disabled={accountsQuery.isLoading}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={!selectedAccount}
-                  loading={selectAccount.isPending}
-                  onClick={() => selectAccount.mutate()}
-                >
-                  Guardar
-                </Button>
-              </div>
-              {accountsQuery.isError && <QueryError error={accountsQuery.error} />}
-            </div>
-          ) : (
-            <p className="text-theme-sm text-gray-500 dark:text-gray-400">
-              Cuenta publicitaria:{" "}
-              <span className="text-gray-800 dark:text-white/90">{connection.adAccountNombre}</span>
+          <div>
+            <Label>Cuenta publicitaria</Label>
+            <p className="mb-2 text-theme-xs text-gray-500 dark:text-gray-400">
+              {connectedMeta.adAccountNombre
+                ? `Actual: ${connectedMeta.adAccountNombre}.`
+                : "Selecciona la cuenta publicitaria asociada a tus campañas."}
             </p>
-          )}
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <Select
+                  options={accountOptions}
+                  value={selectedAccount}
+                  onChange={setSelectedAccount}
+                  placeholder={accountsQuery.isLoading ? "Cargando cuentas…" : "Selecciona una cuenta"}
+                  disabled={accountsQuery.isLoading}
+                />
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                disabled={!accountChanged}
+                loading={selectAccount.isPending}
+                onClick={() => selectAccount.mutate()}
+              >
+                {connectedMeta.adAccountId ? "Actualizar" : "Guardar"}
+              </Button>
+            </div>
+            {accountsQuery.isError && <QueryError error={accountsQuery.error} />}
+          </div>
 
           <ActionButton
             action={disconnectMetaAction}
