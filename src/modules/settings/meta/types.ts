@@ -1,7 +1,9 @@
 export type MetaConnection =
-  | { conectado: false }
+  | { appConfigurada: false; conectado: false }
   | {
-      conectado: true;
+      appConfigurada: true;
+      appId: string | null;
+      conectado: boolean;
       id: string;
       metaUserNombre: string | null;
       pageId: string | null;

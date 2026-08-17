@@ -6,6 +6,8 @@ import Header from "@/src/components/layout/Header";
 import Backdrop from "@/src/components/layout/Backdrop";
 import AppShell from "@/src/components/layout/AppShell";
 
+import { canManageOrganization } from "@/src/lib/roles";
+
 const CLIENT_NAV: NavItem[] = [
   { name: "Dashboard", icon: "mdi:view-dashboard-outline", path: "/dashboard", requiereModulo: "DASHBOARD" },
   { name: "Leads", icon: "mdi:account-multiple-outline", path: "/leads", requiereModulo: "META_LEADS" },
@@ -25,7 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const habilitados = new Set(me.modulos.filter((m) => m.habilitado).map((m) => m.codigo));
   const items = CLIENT_NAV.filter((item) => {
     if (item.requiereModulo && !habilitados.has(item.requiereModulo)) return false;
-    if (item.path === "/settings" && me.rol === "USUARIO") return false;
+    if (item.path === "/settings" && !canManageOrganization(me.rol)) return false;
     return true;
   });
 
@@ -41,7 +43,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               email={me.usuario.email}
               organizacionNombre={me.organizacion?.nombre}
               profileHref="/profile"
-              settingsHref={me.rol === "USUARIO" ? undefined : "/settings"}
+              settingsHref={canManageOrganization(me.rol) ? "/settings" : undefined}
             />
           }
         >

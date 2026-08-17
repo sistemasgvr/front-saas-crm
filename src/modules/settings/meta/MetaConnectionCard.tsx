@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
@@ -13,25 +13,22 @@ import Select from "@/src/components/form/Select";
 import Label from "@/src/components/form/Label";
 import { getMetaAdAccounts, getMetaConnection, getMetaPages } from "./queries";
 import { connectMetaAction, disconnectMetaAction, selectMetaAdAccountAction, selectMetaPageAction } from "./actions";
+import MetaAppCredentialsForm from "./MetaAppCredentialsForm";
 
-export default function MetaConnectionCard() {
+export default function MetaConnectionCard({ metaCallback }: { metaCallback?: string }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const meta = searchParams.get("meta");
-    if (!meta) return;
-    if (meta === "connected") {
+    if (!metaCallback) return;
+    if (metaCallback === "connected") {
       toast.success("Meta conectado correctamente");
-    } else if (meta === "error") {
+    } else if (metaCallback === "error") {
       toast.error("No se pudo conectar con Meta. Intenta de nuevo.");
     }
     void queryClient.invalidateQueries({ queryKey: queryKeys.metaConnection });
     router.replace("/settings");
-    // Solo debe correr cuando cambia el query param, no en cada render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [metaCallback, queryClient, router]);
 
   const connectionQuery = useQuery({
     queryKey: queryKeys.metaConnection,
@@ -80,21 +77,32 @@ export default function MetaConnectionCard() {
   if (!connection) return null;
 
   return (
-    <div className="mt-6 border-t border-gray-200 pt-6 dark:border-gray-800">
+    <div className="border-t border-gray-200 pt-6 dark:border-gray-800">
       <h2 className="mb-4 text-theme-sm font-semibold text-gray-800 dark:text-white/90">Conexión Meta</h2>
 
-      {!connection.conectado && (
-        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-theme-sm text-gray-500 dark:text-gray-400">
-            Conecta tu cuenta de Meta para recibir leads de Facebook/Instagram Lead Ads.
-          </p>
-          <form action={connectMetaAction}>
-            <Button type="submit">Conectar Meta</Button>
-          </form>
+      {!connection.appConfigurada && <MetaAppCredentialsForm />}
+
+      {connection.appConfigurada && !connection.conectado && (
+        <div className="space-y-4">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-theme-sm text-gray-500 dark:text-gray-400">
+              Meta App registrada (App ID: <span className="text-gray-800 dark:text-white/90">{connection.appId}</span>
+              ). Conecta tu cuenta de Meta para recibir leads de Facebook/Instagram Lead Ads.
+            </p>
+            <form action={connectMetaAction}>
+              <Button type="submit">Conectar Meta</Button>
+            </form>
+          </div>
+          <details className="text-theme-xs text-gray-500 dark:text-gray-400">
+            <summary className="cursor-pointer">¿Necesitas cambiar el App ID o App Secret?</summary>
+            <div className="mt-3">
+              <MetaAppCredentialsForm appIdActual={connection.appId} />
+            </div>
+          </details>
         </div>
       )}
 
-      {connection.conectado && (
+      {connection.appConfigurada && connection.conectado && (
         <div className="space-y-5">
           <p className="text-theme-sm text-gray-700 dark:text-gray-300">
             Conectado como <span className="font-medium">{connection.metaUserNombre}</span>

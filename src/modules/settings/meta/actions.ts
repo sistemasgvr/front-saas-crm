@@ -8,6 +8,17 @@ function fail(error: unknown, fallback: string): never {
   throw new Error(error instanceof ApiError ? error.message : fallback);
 }
 
+export async function saveMetaAppCredentialsAction(appId: string, appSecret: string): Promise<MetaConnection> {
+  try {
+    return await apiFetch<MetaConnection>("/meta/connections/app-credentials", {
+      method: "POST",
+      body: JSON.stringify({ appId, appSecret }),
+    });
+  } catch (error) {
+    fail(error, "No se pudieron guardar las credenciales de la Meta App");
+  }
+}
+
 export async function connectMetaAction() {
   let url: string;
   try {
