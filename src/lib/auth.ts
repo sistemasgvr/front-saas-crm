@@ -11,6 +11,7 @@ export interface MeResponse {
     email: string;
     nombre: string;
     apellido: string | null;
+    telefono: string | null;
     esAdminPlataforma: boolean;
   };
   organizacion: { id: string; nombre: string; slug: string } | null;

@@ -12,9 +12,19 @@ interface HeaderProps {
   nombre: string;
   email: string;
   organizacionNombre?: string;
+  profileHref: string;
+  settingsHref?: string;
+  homeHref?: string;
 }
 
-export default function Header({ nombre, email, organizacionNombre }: HeaderProps) {
+export default function Header({
+  nombre,
+  email,
+  organizacionNombre,
+  profileHref,
+  settingsHref,
+  homeHref = "/dashboard",
+}: HeaderProps) {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,7 +61,7 @@ export default function Header({ nombre, email, organizacionNombre }: HeaderProp
             <Icon name={isMobileOpen ? "mdi:close" : "mdi:menu"} size={isMobileOpen ? 24 : 20} />
           </button>
 
-          <Link href="/dashboard" className="lg:hidden">
+          <Link href={homeHref} className="lg:hidden">
             <Image
               width={154}
               height={32}
@@ -114,7 +124,7 @@ export default function Header({ nombre, email, organizacionNombre }: HeaderProp
             )}
             <ThemeToggleButton />
           </div>
-          <UserMenu nombre={nombre} email={email} />
+          <UserMenu nombre={nombre} email={email} profileHref={profileHref} settingsHref={settingsHref} />
         </div>
       </div>
     </header>

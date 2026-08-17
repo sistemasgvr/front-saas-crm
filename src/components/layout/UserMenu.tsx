@@ -9,9 +9,11 @@ import { useState } from "react";
 interface UserMenuProps {
   nombre: string;
   email: string;
+  profileHref: string;
+  settingsHref?: string;
 }
 
-export default function UserMenu({ nombre, email }: UserMenuProps) {
+export default function UserMenu({ nombre, email, profileHref, settingsHref }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const initials = nombre.charAt(0).toUpperCase();
 
@@ -32,9 +34,7 @@ export default function UserMenu({ nombre, email }: UserMenuProps) {
         <Icon
           name="mdi:chevron-down"
           size={18}
-          className={`stroke-gray-500 text-gray-500 transition-transform duration-200 dark:text-gray-400 ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          className={`text-gray-500 transition-transform duration-200 dark:text-gray-400 ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -53,21 +53,34 @@ export default function UserMenu({ nombre, email }: UserMenuProps) {
             <DropdownItem
               onItemClick={() => setIsOpen(false)}
               tag="a"
-              href="/settings"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+              href={profileHref}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 group text-theme-sm hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
             >
-              <Icon name="mdi:cog-outline" size={22} className="text-gray-500 group-hover:text-gray-700 dark:text-gray-400" />
-              Configuración
+              <Icon name="mdi:account-outline" size={22} className="text-gray-500 dark:text-gray-400" />
+              Perfil
             </DropdownItem>
           </li>
+          {settingsHref && (
+            <li>
+              <DropdownItem
+                onItemClick={() => setIsOpen(false)}
+                tag="a"
+                href={settingsHref}
+                className="flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 group text-theme-sm hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+              >
+                <Icon name="mdi:cog-outline" size={22} className="text-gray-500 dark:text-gray-400" />
+                Configuración
+              </DropdownItem>
+            </li>
+          )}
         </ul>
 
         <form action={logoutAction}>
           <button
             type="submit"
-            className="mt-3 flex w-full items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+            className="mt-3 flex w-full items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 group text-theme-sm hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
           >
-            <Icon name="mdi:logout" size={22} className="text-gray-500 group-hover:text-gray-700 dark:text-gray-400" />
+            <Icon name="mdi:logout" size={22} className="text-gray-500 dark:text-gray-400" />
             Cerrar sesión
           </button>
         </form>

@@ -1,0 +1,62 @@
+"use client";
+
+import { useActionState } from "react";
+import Label from "@/src/components/form/Label";
+import Input from "@/src/components/form/input/InputField";
+import Button from "@/src/components/ui/button/Button";
+import { updateOrganizationAction, type FormState } from "./actions";
+import type { OrganizacionActual } from "./types";
+
+const empty: FormState = {};
+
+export default function OrganizationSettingsForm({ org }: { org: OrganizacionActual }) {
+  const [state, formAction, pending] = useActionState(updateOrganizationAction, empty);
+
+  return (
+    <form action={formAction} className="space-y-5">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="nombre">Nombre comercial</Label>
+          <Input id="nombre" name="nombre" defaultValue={org.nombre} required />
+        </div>
+        <div>
+          <Label>Slug</Label>
+          <Input defaultValue={org.slug} disabled />
+        </div>
+        <div>
+          <Label htmlFor="razonSocial">Razón social</Label>
+          <Input id="razonSocial" name="razonSocial" defaultValue={org.razonSocial ?? ""} />
+        </div>
+        <div>
+          <Label htmlFor="documentoFiscal">Documento fiscal</Label>
+          <Input id="documentoFiscal" name="documentoFiscal" defaultValue={org.documentoFiscal ?? ""} />
+        </div>
+        <div>
+          <Label htmlFor="emailContacto">Email de contacto</Label>
+          <Input id="emailContacto" name="emailContacto" type="email" defaultValue={org.emailContacto ?? ""} />
+        </div>
+        <div>
+          <Label htmlFor="telefonoContacto">Teléfono</Label>
+          <Input id="telefonoContacto" name="telefonoContacto" defaultValue={org.telefonoContacto ?? ""} />
+        </div>
+        <div>
+          <Label htmlFor="pais">País (ISO)</Label>
+          <Input id="pais" name="pais" defaultValue={org.pais ?? "PE"} />
+        </div>
+        <div>
+          <Label htmlFor="zonaHoraria">Zona horaria</Label>
+          <Input id="zonaHoraria" name="zonaHoraria" defaultValue={org.zonaHoraria} />
+        </div>
+        <div className="sm:col-span-2">
+          <Label htmlFor="logoUrl">Logo URL</Label>
+          <Input id="logoUrl" name="logoUrl" defaultValue={org.logoUrl ?? ""} />
+        </div>
+      </div>
+      {state.error && <p className="text-sm text-error-500">{state.error}</p>}
+      {state.success && <p className="text-sm text-success-500">{state.success}</p>}
+      <Button type="submit" size="sm" disabled={pending}>
+        {pending ? "Guardando…" : "Guardar organización"}
+      </Button>
+    </form>
+  );
+}

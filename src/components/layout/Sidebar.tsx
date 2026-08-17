@@ -6,33 +6,25 @@ import { usePathname } from "next/navigation";
 import { Icon } from "@/src/components/ui/Icon";
 import { useSidebar } from "./SidebarContext";
 
-type NavItem = {
+export type NavItem = {
   name: string;
   icon: string;
   path: string;
   requiereModulo?: string;
 };
 
-const NAV_ITEMS: NavItem[] = [
-  { name: "Dashboard", icon: "mdi:view-dashboard-outline", path: "/dashboard", requiereModulo: "DASHBOARD" },
-  { name: "Leads", icon: "mdi:account-multiple-outline", path: "/leads", requiereModulo: "META_LEADS" },
-  { name: "Configuración", icon: "mdi:cog-outline", path: "/settings" },
-];
-
 interface SidebarProps {
-  modulosHabilitados: Set<string>;
+  items: NavItem[];
+  homeHref: string;
+  sectionTitle?: string;
 }
 
-export default function Sidebar({ modulosHabilitados }: SidebarProps) {
+export default function Sidebar({ items, homeHref, sectionTitle = "Menú" }: SidebarProps) {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
   const expanded = isExpanded || isHovered || isMobileOpen;
 
-  const items = NAV_ITEMS.filter(
-    (item) => !item.requiereModulo || modulosHabilitados.has(item.requiereModulo),
-  );
-
-  const isActive = (path: string) => pathname === path;
+  const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
   return (
     <aside
@@ -44,23 +36,11 @@ export default function Sidebar({ modulosHabilitados }: SidebarProps) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className={`flex py-8 ${!expanded ? "lg:justify-center" : "justify-start"}`}>
-        <Link href="/dashboard">
+        <Link href={homeHref}>
           {expanded ? (
             <>
-              <Image
-                className="dark:hidden"
-                src="/images/logo/logo.svg"
-                alt="GVR CRM"
-                width={150}
-                height={40}
-              />
-              <Image
-                className="hidden dark:block"
-                src="/images/logo/logo-dark.svg"
-                alt="GVR CRM"
-                width={150}
-                height={40}
-              />
+              <Image className="dark:hidden" src="/images/logo/logo.svg" alt="GVR CRM" width={150} height={40} />
+              <Image className="hidden dark:block" src="/images/logo/logo-dark.svg" alt="GVR CRM" width={150} height={40} />
             </>
           ) : (
             <Image src="/images/logo/logo-icon.svg" alt="GVR CRM" width={32} height={32} />
@@ -77,7 +57,7 @@ export default function Sidebar({ modulosHabilitados }: SidebarProps) {
                   !expanded ? "lg:justify-center" : "justify-start"
                 }`}
               >
-                {expanded ? "Menú" : <Icon name="mdi:dots-horizontal" size={20} />}
+                {expanded ? sectionTitle : <Icon name="mdi:dots-horizontal" size={20} />}
               </h2>
               <ul className="flex flex-col gap-4">
                 {items.map((item) => {

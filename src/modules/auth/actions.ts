@@ -36,7 +36,22 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
   }
 
   await setSessionCookies(accessToken, refreshToken);
-  redirect('/dashboard');
+
+  let isAdmin = false;
+  try {
+    const meRes = await fetch(`${process.env.API_URL ?? 'http://localhost:4000/api'}/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: 'no-store',
+    });
+    if (meRes.ok) {
+      const me = (await meRes.json()) as { usuario?: { esAdminPlataforma?: boolean } };
+      isAdmin = Boolean(me.usuario?.esAdminPlataforma);
+    }
+  } catch {
+    isAdmin = false;
+  }
+
+  redirect(isAdmin ? '/admin/organizations' : '/dashboard');
 }
 
 export async function logoutAction() {

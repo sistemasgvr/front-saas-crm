@@ -1,7 +1,10 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { redirect } from "next/navigation";
+import { getMe } from "@/src/lib/auth";
 
 export default async function RootPage() {
-  const store = await cookies();
-  redirect(store.get('access_token')?.value ? '/dashboard' : '/login');
+  const me = await getMe();
+  if (!me) {
+    redirect("/login");
+  }
+  redirect(me.usuario.esAdminPlataforma ? "/admin/organizations" : "/dashboard");
 }
