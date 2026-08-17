@@ -10,4 +10,8 @@ export const queryKeys = {
   metaConnection: ["meta", "connection"] as const,
   metaPages: ["meta", "pages"] as const,
   metaAdAccounts: ["meta", "ad-accounts"] as const,
+  metaCampaigns: ["meta", "campaigns"] as const,
+  metaAds: ["meta", "ads"] as const,
+  leads: (filtro: Record<string, string | number | undefined>) => ["leads", filtro] as const,
+  lead: (id: string) => ["leads", id] as const,
 };
