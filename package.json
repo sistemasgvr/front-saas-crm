@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@iconify/react": "^6.0.2",
     "apexcharts": "^4.7.0",
     "axios": "^1.7.9",
     "flatpickr": "^4.6.13",
