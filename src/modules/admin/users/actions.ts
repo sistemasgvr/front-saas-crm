@@ -1,19 +1,16 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { apiFetch, ApiError } from "@/src/lib/api";
-
-export interface FormState {
-  error?: string;
-  success?: string;
-}
 
 function emptyToUndefined(value: string) {
   return value.trim() === "" ? undefined : value.trim();
 }
 
-export async function createUserAction(_prev: FormState, formData: FormData): Promise<FormState> {
+function fail(error: unknown, fallback: string): never {
+  throw new Error(error instanceof ApiError ? error.message : fallback);
+}
+
+export async function createUserAction(formData: FormData) {
   const organizacionId = String(formData.get("organizacionId") ?? "").trim();
   const rol = String(formData.get("rol") ?? "").trim();
   try {
@@ -26,28 +23,26 @@ export async function createUserAction(_prev: FormState, formData: FormData): Pr
         apellido: emptyToUndefined(String(formData.get("apellido") ?? "")),
         telefono: emptyToUndefined(String(formData.get("telefono") ?? "")),
         esAdminPlataforma: formData.get("esAdminPlataforma") === "on",
-        asignacion:
-          organizacionId && rol
-            ? { organizacionId, rol }
-            : undefined,
+        asignacion: organizacionId && rol ? { organizacionId, rol } : undefined,
       }),
     });
   } catch (error) {
-    return { error: error instanceof ApiError ? error.message : "No se pudo crear el usuario" };
+    fail(error, "No se pudo crear el usuario");
   }
-  redirect("/admin/users");
 }
 
 export async function toggleUserStatusAction(id: string, estado: 0 | 1) {
-  await apiFetch(`/admin/users/${id}/estado`, {
-    method: "PATCH",
-    body: JSON.stringify({ estado }),
-  });
-  revalidatePath("/admin/users");
-  revalidatePath(`/admin/users/${id}`);
+  try {
+    await apiFetch(`/admin/users/${id}/estado`, {
+      method: "PATCH",
+      body: JSON.stringify({ estado }),
+    });
+  } catch (error) {
+    fail(error, "No se pudo actualizar el estado");
+  }
 }
 
-export async function assignUserOrgAction(userId: string, _prev: FormState, formData: FormData): Promise<FormState> {
+export async function assignUserOrgAction(userId: string, formData: FormData) {
   try {
     await apiFetch(`/admin/users/${userId}/organizaciones`, {
       method: "POST",
@@ -56,9 +51,7 @@ export async function assignUserOrgAction(userId: string, _prev: FormState, form
         rol: String(formData.get("rol") ?? ""),
       }),
     });
-    revalidatePath(`/admin/users/${userId}`);
-    return { success: "Usuario asignado a la empresa" };
   } catch (error) {
-    return { error: error instanceof ApiError ? error.message : "No se pudo asignar" };
+    fail(error, "No se pudo asignar");
   }
 }

@@ -1,19 +1,16 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { apiFetch, ApiError } from "@/src/lib/api";
-
-export interface FormState {
-  error?: string;
-  success?: string;
-}
 
 function emptyToUndefined(value: string) {
   return value.trim() === "" ? undefined : value.trim();
 }
 
-export async function createOrganizationAction(_prev: FormState, formData: FormData): Promise<FormState> {
+function fail(error: unknown, fallback: string): never {
+  throw new Error(error instanceof ApiError ? error.message : fallback);
+}
+
+export async function createOrganizationAction(formData: FormData) {
   try {
     const primerNombre = String(formData.get("primerNombre") ?? "").trim();
     const primerEmail = String(formData.get("primerEmail") ?? "").trim();
@@ -42,16 +39,11 @@ export async function createOrganizationAction(_prev: FormState, formData: FormD
       }),
     });
   } catch (error) {
-    return { error: error instanceof ApiError ? error.message : "No se pudo crear la empresa" };
+    fail(error, "No se pudo crear la empresa");
   }
-  redirect("/admin/organizations");
 }
 
-export async function updateOrganizationAdminAction(
-  id: string,
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
+export async function updateOrganizationAdminAction(id: string, formData: FormData) {
   try {
     await apiFetch(`/admin/organizations/${id}`, {
       method: "PATCH",
@@ -67,24 +59,26 @@ export async function updateOrganizationAdminAction(
         notas: emptyToUndefined(String(formData.get("notas") ?? "")),
       }),
     });
-    revalidatePath(`/admin/organizations/${id}`);
-    revalidatePath("/admin/organizations");
-    return { success: "Empresa actualizada" };
   } catch (error) {
-    return { error: error instanceof ApiError ? error.message : "No se pudo guardar" };
+    fail(error, "No se pudo guardar");
   }
 }
 
-export async function deactivateOrganizationAction(id: string): Promise<void> {
-  await apiFetch(`/admin/organizations/${id}/desactivar`, { method: "PATCH" });
-  revalidatePath("/admin/organizations");
-  revalidatePath(`/admin/organizations/${id}`);
+export async function deactivateOrganizationAction(id: string) {
+  try {
+    await apiFetch(`/admin/organizations/${id}/desactivar`, { method: "PATCH" });
+  } catch (error) {
+    fail(error, "No se pudo desactivar la empresa");
+  }
 }
 
 export async function toggleOrganizationModuleAction(organizacionId: string, moduloId: string, habilitado: boolean) {
-  await apiFetch(`/admin/organizations/${organizacionId}/modules/${moduloId}`, {
-    method: "PATCH",
-    body: JSON.stringify({ habilitado }),
-  });
-  revalidatePath(`/admin/organizations/${organizacionId}`);
+  try {
+    await apiFetch(`/admin/organizations/${organizacionId}/modules/${moduloId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ habilitado }),
+    });
+  } catch (error) {
+    fail(error, "No se pudo actualizar el módulo");
+  }
 }

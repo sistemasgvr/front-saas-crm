@@ -1,15 +1,17 @@
-import React, { FC } from 'react';
+import React, { forwardRef } from "react";
 
 interface InputProps {
-  type?: 'text' | 'number' | 'email' | 'password' | 'date' | 'time' | string;
+  type?: "text" | "number" | "email" | "password" | "date" | "time" | string;
   id?: string;
   name?: string;
   placeholder?: string;
   defaultValue?: string | number;
+  value?: string | number;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   className?: string;
-  min?: string;
-  max?: string;
+  min?: string | number;
+  max?: string | number;
   step?: number;
   disabled?: boolean;
   required?: boolean;
@@ -19,24 +21,29 @@ interface InputProps {
   hint?: string;
 }
 
-const Input: FC<InputProps> = ({
-  type = 'text',
-  id,
-  name,
-  placeholder,
-  defaultValue,
-  onChange,
-  className = '',
-  min,
-  max,
-  step,
-  disabled = false,
-  required = false,
-  autoComplete,
-  success = false,
-  error = false,
-  hint,
-}) => {
+const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  {
+    type = "text",
+    id,
+    name,
+    placeholder,
+    defaultValue,
+    value,
+    onChange,
+    onBlur,
+    className = "",
+    min,
+    max,
+    step,
+    disabled = false,
+    required = false,
+    autoComplete,
+    success = false,
+    error = false,
+    hint,
+  },
+  ref,
+) {
   let inputClasses = `h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 ${className}`;
 
   if (disabled) {
@@ -50,14 +57,17 @@ const Input: FC<InputProps> = ({
   }
 
   return (
-    <div className="relative">
+    <div>
       <input
+        ref={ref}
         type={type}
         id={id}
         name={name}
         placeholder={placeholder}
         defaultValue={defaultValue}
+        value={value}
         onChange={onChange}
+        onBlur={onBlur}
         min={min}
         max={max}
         step={step}
@@ -67,13 +77,13 @@ const Input: FC<InputProps> = ({
         className={inputClasses}
       />
 
-      {hint && (
-        <p className={`mt-1.5 text-xs ${error ? 'text-error-500' : success ? 'text-success-500' : 'text-gray-500'}`}>
+      {hint ? (
+        <p className={`mt-1.5 text-xs ${error ? "text-error-500" : success ? "text-success-500" : "text-gray-500"}`}>
           {hint}
         </p>
-      )}
+      ) : null}
     </div>
   );
-};
+});
 
 export default Input;

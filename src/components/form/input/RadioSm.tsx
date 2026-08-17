@@ -1,0 +1,38 @@
+interface RadioProps {
+  id: string;
+  name: string;
+  value: string;
+  checked: boolean;
+  label: string;
+  onChange: (value: string) => void;
+  className?: string;
+}
+
+export default function RadioSm({ id, name, value, checked, label, onChange, className = "" }: RadioProps) {
+  return (
+    <label
+      htmlFor={id}
+      className={`flex cursor-pointer select-none items-center text-sm text-gray-500 dark:text-gray-400 ${className}`}
+    >
+      <span className="relative">
+        <input
+          type="radio"
+          id={id}
+          name={name}
+          value={value}
+          checked={checked}
+          onChange={() => onChange(value)}
+          className="sr-only"
+        />
+        <span
+          className={`mr-2 flex h-4 w-4 items-center justify-center rounded-full border ${
+            checked ? "border-brand-500 bg-brand-500" : "border-gray-300 bg-transparent dark:border-gray-700"
+          }`}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${checked ? "bg-white" : "bg-white dark:bg-[#1e2636]"}`} />
+        </span>
+      </span>
+      {label}
+    </label>
+  );
+}

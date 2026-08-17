@@ -1,19 +1,53 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Checkbox from "@/src/components/form/input/Checkbox";
 import Input from "@/src/components/form/input/InputField";
+import PasswordInput from "@/src/components/form/input/PasswordInput";
 import Label from "@/src/components/form/Label";
 import Button from "@/src/components/ui/button/Button";
-import { Icon } from "@/src/components/ui/Icon";
-import { loginAction, type LoginState } from "./actions";
-
-const initialState: LoginState = {};
+import { toFormData } from "@/src/lib/form-data";
+import { useAppMutation } from "@/src/lib/query/use-app-mutation";
+import { useAuthUiStore } from "@/src/stores/auth-ui.store";
+import { loginAction } from "./actions";
+import { loginSchema, type LoginValues } from "./schema";
 
 export default function LoginForm() {
-  const [state, formAction, isPending] = useActionState(loginAction, initialState);
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const router = useRouter();
+  const remember = useAuthUiStore((state) => state.remember);
+  const forget = useAuthUiStore((state) => state.forget);
+  const rememberedEmail = useAuthUiStore((state) => state.rememberedEmail);
+  const remembered = useAuthUiStore((state) => state.rememberMe);
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    formState: { errors },
+  } = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "", rememberMe: false },
+  });
+
+  useEffect(() => {
+    if (!remembered || !rememberedEmail) return;
+    setValue("email", rememberedEmail);
+    setValue("rememberMe", true);
+  }, [remembered, rememberedEmail, setValue]);
+
+  const login = useAppMutation({
+    mutationFn: async (values: LoginValues) => {
+      const result = await loginAction(
+        toFormData({ email: values.email, password: values.password, rememberMe: values.rememberMe }),
+      );
+      if (values.rememberMe) remember(values.email);
+      else forget();
+      router.push(result.isAdmin ? "/admin/organizations" : "/dashboard");
+    },
+  });
 
   return (
     <div className="flex flex-col flex-1 w-full lg:w-1/2">
@@ -28,19 +62,20 @@ export default function LoginForm() {
             </p>
           </div>
 
-          <form action={formAction}>
-            <div className="space-y-6">
+          <form onSubmit={handleSubmit((values) => login.mutate(values))} noValidate>
+            <fieldset disabled={login.isPending} className="space-y-6">
               <div>
                 <Label htmlFor="email">
                   Email <span className="text-error-500">*</span>
                 </Label>
                 <Input
                   id="email"
-                  name="email"
                   type="email"
                   placeholder="sistemas@proyectosgvr.com"
-                  required
-                  autoComplete="email"
+                  autoComplete="username"
+                  error={Boolean(errors.email)}
+                  hint={errors.email?.message}
+                  {...register("email")}
                 />
               </div>
 
@@ -48,53 +83,32 @@ export default function LoginForm() {
                 <Label htmlFor="password">
                   Contraseña <span className="text-error-500">*</span>
                 </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Ingresa tu contraseña"
-                    required
-                    autoComplete="current-password"
-                  />
-                  <span
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2 text-gray-500 dark:text-gray-400"
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        setShowPassword((prev) => !prev);
-                      }
-                    }}
-                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                  >
-                    <Icon name={showPassword ? "mdi:eye" : "mdi:eye-off"} size={20} />
-                  </span>
-                </div>
+                <PasswordInput
+                  id="password"
+                  placeholder="Ingresa tu contraseña"
+                  autoComplete="current-password"
+                  error={Boolean(errors.password)}
+                  hint={errors.password?.message}
+                  {...register("password")}
+                />
               </div>
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Checkbox checked={rememberMe} onChange={setRememberMe} />
-                  <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
-                    Mantener sesión
-                  </span>
-                </div>
+                <Controller
+                  name="rememberMe"
+                  control={control}
+                  render={({ field }) => (
+                    <Checkbox checked={field.value} onChange={field.onChange} label="Recordar contraseña" />
+                  )}
+                />
               </div>
-
-              {state.error && (
-                <p className="text-sm text-error-500" role="alert">
-                  {state.error}
-                </p>
-              )}
 
               <div>
-                <Button type="submit" className="w-full" size="sm" disabled={isPending}>
-                  {isPending ? "Ingresando…" : "Ingresar"}
+                <Button type="submit" className="w-full" size="sm" loading={login.isPending}>
+                  {login.isPending ? "Ingresando…" : "Ingresar"}
                 </Button>
               </div>
-            </div>
+            </fieldset>
           </form>
         </div>
       </div>

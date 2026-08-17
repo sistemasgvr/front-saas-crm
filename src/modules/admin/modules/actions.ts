@@ -1,19 +1,16 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { apiFetch, ApiError } from "@/src/lib/api";
-
-export interface FormState {
-  error?: string;
-  success?: string;
-}
 
 function emptyToUndefined(value: string) {
   return value.trim() === "" ? undefined : value.trim();
 }
 
-export async function createModuleAction(_prev: FormState, formData: FormData): Promise<FormState> {
+function fail(error: unknown, fallback: string): never {
+  throw new Error(error instanceof ApiError ? error.message : fallback);
+}
+
+export async function createModuleAction(formData: FormData) {
   try {
     await apiFetch("/admin/modules", {
       method: "POST",
@@ -26,12 +23,11 @@ export async function createModuleAction(_prev: FormState, formData: FormData): 
       }),
     });
   } catch (error) {
-    return { error: error instanceof ApiError ? error.message : "No se pudo crear el módulo" };
+    fail(error, "No se pudo crear el módulo");
   }
-  redirect("/admin/modules");
 }
 
-export async function updateModuleAction(id: string, _prev: FormState, formData: FormData): Promise<FormState> {
+export async function updateModuleAction(id: string, formData: FormData) {
   try {
     await apiFetch(`/admin/modules/${id}`, {
       method: "PATCH",
@@ -42,17 +38,18 @@ export async function updateModuleAction(id: string, _prev: FormState, formData:
         orden: Number(formData.get("orden") ?? 0),
       }),
     });
-    revalidatePath("/admin/modules");
-    return { success: "Módulo actualizado" };
   } catch (error) {
-    return { error: error instanceof ApiError ? error.message : "No se pudo guardar" };
+    fail(error, "No se pudo guardar");
   }
 }
 
 export async function toggleModuleStatusAction(id: string, estado: 0 | 1) {
-  await apiFetch(`/admin/modules/${id}/estado`, {
-    method: "PATCH",
-    body: JSON.stringify({ estado }),
-  });
-  revalidatePath("/admin/modules");
+  try {
+    await apiFetch(`/admin/modules/${id}/estado`, {
+      method: "PATCH",
+      body: JSON.stringify({ estado }),
+    });
+  } catch (error) {
+    fail(error, "No se pudo actualizar el módulo");
+  }
 }

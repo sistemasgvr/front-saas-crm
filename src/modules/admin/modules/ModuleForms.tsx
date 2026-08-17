@@ -1,82 +1,176 @@
 "use client";
 
-import { useActionState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Label from "@/src/components/form/Label";
 import Input from "@/src/components/form/input/InputField";
+import TextArea from "@/src/components/form/input/TextArea";
 import Button from "@/src/components/ui/button/Button";
-import { createModuleAction, updateModuleAction, type FormState } from "./actions";
+import { toFormData } from "@/src/lib/form-data";
+import { queryKeys } from "@/src/lib/query/keys";
+import { useAppMutation } from "@/src/lib/query/use-app-mutation";
+import { createModuleAction, updateModuleAction } from "./actions";
+import { createModuleSchema, updateModuleSchema, type CreateModuleValues, type UpdateModuleValues } from "./schema";
 import type { ModuloAdmin } from "../types";
 
-const empty: FormState = {};
-
 export function CreateModuleForm() {
-  const [state, formAction, pending] = useActionState(createModuleAction, empty);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CreateModuleValues>({
+    resolver: zodResolver(createModuleSchema),
+    defaultValues: { codigo: "", nombre: "", icono: "", orden: 0, descripcion: "" },
+  });
+
+  const mutation = useAppMutation({
+    mutationFn: async (values: CreateModuleValues) => {
+      await createModuleAction(toFormData(values));
+      reset({ codigo: "", nombre: "", icono: "", orden: 0, descripcion: "" });
+    },
+    successMessage: "Módulo creado",
+    invalidateKeys: [queryKeys.adminModules],
+  });
 
   return (
-    <form action={formAction} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <div>
-        <Label htmlFor="codigo">Código *</Label>
-        <Input id="codigo" name="codigo" placeholder="CRM" required />
-      </div>
-      <div>
-        <Label htmlFor="nombre">Nombre *</Label>
-        <Input id="nombre" name="nombre" required />
-      </div>
-      <div>
-        <Label htmlFor="icono">Icono Iconify</Label>
-        <Input id="icono" name="icono" placeholder="mdi:view-dashboard" />
-      </div>
-      <div>
-        <Label htmlFor="orden">Orden</Label>
-        <Input id="orden" name="orden" type="number" defaultValue="0" />
-      </div>
-      <div className="sm:col-span-2">
-        <Label htmlFor="descripcion">Descripción</Label>
-        <Input id="descripcion" name="descripcion" />
-      </div>
-      {state.error && <p className="text-sm text-error-500 sm:col-span-2">{state.error}</p>}
-      <div>
-        <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "Creando…" : "Crear módulo"}
-        </Button>
-      </div>
+    <form
+      onSubmit={handleSubmit((values) => mutation.mutate(values))}
+      className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+      noValidate
+    >
+      <fieldset disabled={mutation.isPending} className="contents">
+        <div>
+          <Label htmlFor="codigo">Código *</Label>
+          <Input
+            id="codigo"
+            placeholder="CRM"
+            error={Boolean(errors.codigo)}
+            hint={errors.codigo?.message}
+            {...register("codigo")}
+          />
+        </div>
+        <div>
+          <Label htmlFor="nombre">Nombre *</Label>
+          <Input id="nombre" error={Boolean(errors.nombre)} hint={errors.nombre?.message} {...register("nombre")} />
+        </div>
+        <div>
+          <Label htmlFor="icono">Icono Iconify</Label>
+          <Input
+            id="icono"
+            placeholder="mdi:view-dashboard"
+            error={Boolean(errors.icono)}
+            hint={errors.icono?.message}
+            {...register("icono")}
+          />
+        </div>
+        <div>
+          <Label htmlFor="orden">Orden</Label>
+          <Input
+            id="orden"
+            type="number"
+            error={Boolean(errors.orden)}
+            hint={errors.orden?.message}
+            {...register("orden", { valueAsNumber: true })}
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <Label htmlFor="descripcion">Descripción</Label>
+          <TextArea
+            id="descripcion"
+            rows={3}
+            placeholder="Descripción del módulo"
+            error={Boolean(errors.descripcion)}
+            hint={errors.descripcion?.message}
+            {...register("descripcion")}
+          />
+        </div>
+        <div>
+          <Button type="submit" size="sm" loading={mutation.isPending}>
+            {mutation.isPending ? "Creando…" : "Crear módulo"}
+          </Button>
+        </div>
+      </fieldset>
     </form>
   );
 }
 
 export function EditModuleForm({ modulo }: { modulo: ModuloAdmin }) {
-  const action = updateModuleAction.bind(null, modulo.id);
-  const [state, formAction, pending] = useActionState(action, empty);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<UpdateModuleValues>({
+    resolver: zodResolver(updateModuleSchema),
+    defaultValues: {
+      nombre: modulo.nombre,
+      icono: modulo.icono ?? "",
+      orden: modulo.orden,
+      descripcion: modulo.descripcion ?? "",
+    },
+  });
+
+  const mutation = useAppMutation({
+    mutationFn: (values: UpdateModuleValues) => updateModuleAction(modulo.id, toFormData(values)),
+    successMessage: "Módulo actualizado",
+    invalidateKeys: [queryKeys.adminModules],
+  });
 
   return (
-    <form action={formAction} className="grid grid-cols-1 gap-3 sm:grid-cols-4 sm:items-end">
-      <div className="sm:col-span-1">
-        <Label>Código</Label>
-        <Input defaultValue={modulo.codigo} disabled />
-      </div>
-      <div>
-        <Label htmlFor={`nombre-${modulo.id}`}>Nombre</Label>
-        <Input id={`nombre-${modulo.id}`} name="nombre" defaultValue={modulo.nombre} required />
-      </div>
-      <div>
-        <Label htmlFor={`icono-${modulo.id}`}>Icono</Label>
-        <Input id={`icono-${modulo.id}`} name="icono" defaultValue={modulo.icono ?? ""} />
-      </div>
-      <div>
-        <Label htmlFor={`orden-${modulo.id}`}>Orden</Label>
-        <Input id={`orden-${modulo.id}`} name="orden" type="number" defaultValue={String(modulo.orden)} />
-      </div>
-      <div className="sm:col-span-3">
-        <Label htmlFor={`descripcion-${modulo.id}`}>Descripción</Label>
-        <Input id={`descripcion-${modulo.id}`} name="descripcion" defaultValue={modulo.descripcion ?? ""} />
-      </div>
-      <div>
-        <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "…" : "Guardar"}
-        </Button>
-      </div>
-      {state.error && <p className="text-sm text-error-500 sm:col-span-4">{state.error}</p>}
-      {state.success && <p className="text-sm text-success-500 sm:col-span-4">{state.success}</p>}
+    <form
+      onSubmit={handleSubmit((values) => mutation.mutate(values))}
+      className="grid grid-cols-1 gap-3 sm:grid-cols-4 sm:items-end"
+      noValidate
+    >
+      <fieldset disabled={mutation.isPending} className="contents">
+        <div className="sm:col-span-1">
+          <Label>Código</Label>
+          <Input defaultValue={modulo.codigo} disabled />
+        </div>
+        <div>
+          <Label htmlFor={`nombre-${modulo.id}`}>Nombre</Label>
+          <Input
+            id={`nombre-${modulo.id}`}
+            error={Boolean(errors.nombre)}
+            hint={errors.nombre?.message}
+            {...register("nombre")}
+          />
+        </div>
+        <div>
+          <Label htmlFor={`icono-${modulo.id}`}>Icono</Label>
+          <Input
+            id={`icono-${modulo.id}`}
+            error={Boolean(errors.icono)}
+            hint={errors.icono?.message}
+            {...register("icono")}
+          />
+        </div>
+        <div>
+          <Label htmlFor={`orden-${modulo.id}`}>Orden</Label>
+          <Input
+            id={`orden-${modulo.id}`}
+            type="number"
+            error={Boolean(errors.orden)}
+            hint={errors.orden?.message}
+            {...register("orden", { valueAsNumber: true })}
+          />
+        </div>
+        <div className="sm:col-span-3">
+          <Label htmlFor={`descripcion-${modulo.id}`}>Descripción</Label>
+          <TextArea
+            id={`descripcion-${modulo.id}`}
+            rows={2}
+            error={Boolean(errors.descripcion)}
+            hint={errors.descripcion?.message}
+            {...register("descripcion")}
+          />
+        </div>
+        <div>
+          <Button type="submit" size="sm" loading={mutation.isPending}>
+            {mutation.isPending ? "Guardando…" : "Guardar"}
+          </Button>
+        </div>
+      </fieldset>
     </form>
   );
 }

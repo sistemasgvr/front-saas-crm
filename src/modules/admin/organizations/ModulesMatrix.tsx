@@ -1,9 +1,14 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { queryKeys } from "@/src/lib/query/keys";
+import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { toggleOrganizationModuleAction } from "./actions";
 import type { ModuloMatriz } from "../types";
 import { Icon } from "@/src/components/ui/Icon";
+import Switch from "@/src/components/form/switch/Switch";
+import { Spinner } from "@/src/components/ui/Spinner";
 
 export default function ModulesMatrix({
   organizacionId,
@@ -12,35 +17,52 @@ export default function ModulesMatrix({
   organizacionId: string;
   modulos: ModuloMatriz[];
 }) {
-  const [pending, startTransition] = useTransition();
+  const [optimistic, setOptimistic] = useState<Record<string, boolean>>({});
+  const mutation = useAppMutation({
+    mutationFn: (payload: { moduloId: string; habilitado: boolean; nombre: string }) =>
+      toggleOrganizationModuleAction(organizacionId, payload.moduloId, payload.habilitado),
+    invalidateKeys: [queryKeys.adminOrganizationModules(organizacionId)],
+  });
 
   return (
     <ul className="divide-y divide-gray-200 dark:divide-gray-800">
-      {modulos.map((modulo) => (
-        <li key={modulo.id} className="flex items-center justify-between py-3">
-          <div className="flex items-center gap-3">
-            {modulo.icono && <Icon name={modulo.icono} size={20} />}
-            <div>
-              <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">{modulo.nombre}</p>
-              <p className="text-theme-xs text-gray-500">{modulo.codigo}</p>
+      {modulos.map((modulo) => {
+        const isLoading = mutation.isPending && mutation.variables?.moduloId === modulo.id;
+        const habilitado = optimistic[modulo.id] ?? modulo.habilitado;
+        return (
+          <li key={modulo.id} className="flex items-center justify-between py-3">
+            <div className="flex items-center gap-3">
+              {modulo.icono && <Icon name={modulo.icono} size={20} />}
+              <div>
+                <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">{modulo.nombre}</p>
+                <p className="text-theme-xs text-gray-500">{modulo.codigo}</p>
+              </div>
             </div>
-          </div>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() =>
-              startTransition(() => toggleOrganizationModuleAction(organizacionId, modulo.id, !modulo.habilitado))
-            }
-            className={`rounded-full px-3 py-1 text-theme-xs font-medium ${
-              modulo.habilitado
-                ? "bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-400"
-                : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400"
-            }`}
-          >
-            {modulo.habilitado ? "Activo" : "Inactivo"}
-          </button>
-        </li>
-      ))}
+            <div className="flex items-center gap-2">
+              {isLoading ? <Spinner size={14} /> : null}
+              <Switch
+                label={habilitado ? "Activo" : "Inactivo"}
+                checked={habilitado}
+                disabled={mutation.isPending}
+                onChange={(next) => {
+                  setOptimistic((prev) => ({ ...prev, [modulo.id]: next }));
+                  mutation.mutate(
+                    { moduloId: modulo.id, habilitado: next, nombre: modulo.nombre },
+                    {
+                      onSuccess: () => {
+                        toast.success(next ? `${modulo.nombre} activado` : `${modulo.nombre} desactivado`);
+                      },
+                      onError: () => {
+                        setOptimistic((prev) => ({ ...prev, [modulo.id]: !next }));
+                      },
+                    },
+                  );
+                }}
+              />
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }

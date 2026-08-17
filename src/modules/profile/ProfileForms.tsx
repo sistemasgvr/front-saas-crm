@@ -1,10 +1,21 @@
 "use client";
 
-import { useActionState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Label from "@/src/components/form/Label";
 import Input from "@/src/components/form/input/InputField";
+import PasswordInput from "@/src/components/form/input/PasswordInput";
 import Button from "@/src/components/ui/button/Button";
-import { changePasswordAction, updateProfileAction, type FormState } from "./actions";
+import { toFormData } from "@/src/lib/form-data";
+import { queryKeys } from "@/src/lib/query/keys";
+import { useAppMutation } from "@/src/lib/query/use-app-mutation";
+import { changePasswordAction, updateProfileAction } from "./actions";
+import {
+  changePasswordSchema,
+  updateProfileSchema,
+  type ChangePasswordValues,
+  type UpdateProfileValues,
+} from "./schema";
 
 interface ProfileFormsProps {
   email: string;
@@ -13,57 +24,102 @@ interface ProfileFormsProps {
   telefono: string | null;
 }
 
-const empty: FormState = {};
-
 export default function ProfileForms({ email, nombre, apellido, telefono }: ProfileFormsProps) {
-  const [profileState, profileAction, profilePending] = useActionState(updateProfileAction, empty);
-  const [passwordState, passwordAction, passwordPending] = useActionState(changePasswordAction, empty);
+  const profileForm = useForm<UpdateProfileValues>({
+    resolver: zodResolver(updateProfileSchema),
+    defaultValues: { nombre, apellido: apellido ?? "", telefono: telefono ?? "" },
+  });
+  const passwordForm = useForm<ChangePasswordValues>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: { passwordActual: "", passwordNueva: "" },
+  });
+
+  const profile = useAppMutation({
+    mutationFn: (values: UpdateProfileValues) => updateProfileAction(toFormData(values)),
+    successMessage: "Perfil actualizado",
+    invalidateKeys: [queryKeys.me],
+    refresh: true,
+  });
+  const password = useAppMutation({
+    mutationFn: async (values: ChangePasswordValues) => {
+      await changePasswordAction(toFormData(values));
+      passwordForm.reset({ passwordActual: "", passwordNueva: "" });
+    },
+    successMessage: "Contraseña actualizada",
+  });
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
         <h2 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90">Datos personales</h2>
-        <form action={profileAction} className="space-y-5">
-          <div>
-            <Label>Email</Label>
-            <Input defaultValue={email} disabled />
-          </div>
-          <div>
-            <Label htmlFor="nombre">Nombre</Label>
-            <Input id="nombre" name="nombre" defaultValue={nombre} required />
-          </div>
-          <div>
-            <Label htmlFor="apellido">Apellido</Label>
-            <Input id="apellido" name="apellido" defaultValue={apellido ?? ""} />
-          </div>
-          <div>
-            <Label htmlFor="telefono">Teléfono</Label>
-            <Input id="telefono" name="telefono" defaultValue={telefono ?? ""} />
-          </div>
-          {profileState.error && <p className="text-sm text-error-500">{profileState.error}</p>}
-          {profileState.success && <p className="text-sm text-success-500">{profileState.success}</p>}
-          <Button type="submit" size="sm" disabled={profilePending}>
-            {profilePending ? "Guardando…" : "Guardar"}
-          </Button>
+        <form onSubmit={profileForm.handleSubmit((values) => profile.mutate(values))} className="space-y-5" noValidate>
+          <fieldset disabled={profile.isPending} className="space-y-5">
+            <div>
+              <Label>Email</Label>
+              <Input defaultValue={email} disabled />
+            </div>
+            <div>
+              <Label htmlFor="nombre">Nombre</Label>
+              <Input
+                id="nombre"
+                error={Boolean(profileForm.formState.errors.nombre)}
+                hint={profileForm.formState.errors.nombre?.message}
+                {...profileForm.register("nombre")}
+              />
+            </div>
+            <div>
+              <Label htmlFor="apellido">Apellido</Label>
+              <Input
+                id="apellido"
+                error={Boolean(profileForm.formState.errors.apellido)}
+                hint={profileForm.formState.errors.apellido?.message}
+                {...profileForm.register("apellido")}
+              />
+            </div>
+            <div>
+              <Label htmlFor="telefono">Teléfono</Label>
+              <Input
+                id="telefono"
+                error={Boolean(profileForm.formState.errors.telefono)}
+                hint={profileForm.formState.errors.telefono?.message}
+                {...profileForm.register("telefono")}
+              />
+            </div>
+            <Button type="submit" size="sm" loading={profile.isPending}>
+              {profile.isPending ? "Guardando…" : "Guardar"}
+            </Button>
+          </fieldset>
         </form>
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
         <h2 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90">Cambiar contraseña</h2>
-        <form action={passwordAction} className="space-y-5">
-          <div>
-            <Label htmlFor="passwordActual">Contraseña actual</Label>
-            <Input id="passwordActual" name="passwordActual" type="password" required autoComplete="current-password" />
-          </div>
-          <div>
-            <Label htmlFor="passwordNueva">Contraseña nueva</Label>
-            <Input id="passwordNueva" name="passwordNueva" type="password" required autoComplete="new-password" />
-          </div>
-          {passwordState.error && <p className="text-sm text-error-500">{passwordState.error}</p>}
-          {passwordState.success && <p className="text-sm text-success-500">{passwordState.success}</p>}
-          <Button type="submit" size="sm" disabled={passwordPending}>
-            {passwordPending ? "Actualizando…" : "Actualizar contraseña"}
-          </Button>
+        <form onSubmit={passwordForm.handleSubmit((values) => password.mutate(values))} className="space-y-5" noValidate>
+          <fieldset disabled={password.isPending} className="space-y-5">
+            <div>
+              <Label htmlFor="passwordActual">Contraseña actual</Label>
+              <PasswordInput
+                id="passwordActual"
+                autoComplete="current-password"
+                error={Boolean(passwordForm.formState.errors.passwordActual)}
+                hint={passwordForm.formState.errors.passwordActual?.message}
+                {...passwordForm.register("passwordActual")}
+              />
+            </div>
+            <div>
+              <Label htmlFor="passwordNueva">Contraseña nueva</Label>
+              <PasswordInput
+                id="passwordNueva"
+                autoComplete="new-password"
+                error={Boolean(passwordForm.formState.errors.passwordNueva)}
+                hint={passwordForm.formState.errors.passwordNueva?.message}
+                {...passwordForm.register("passwordNueva")}
+              />
+            </div>
+            <Button type="submit" size="sm" loading={password.isPending}>
+              {password.isPending ? "Actualizando…" : "Actualizar contraseña"}
+            </Button>
+          </fieldset>
         </form>
       </div>
     </div>

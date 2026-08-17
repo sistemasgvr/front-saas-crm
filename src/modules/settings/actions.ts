@@ -1,18 +1,16 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { apiFetch, ApiError } from "@/src/lib/api";
-
-export interface FormState {
-  error?: string;
-  success?: string;
-}
 
 function emptyToUndefined(value: string) {
   return value.trim() === "" ? undefined : value.trim();
 }
 
-export async function updateOrganizationAction(_prev: FormState, formData: FormData): Promise<FormState> {
+function fail(error: unknown, fallback: string): never {
+  throw new Error(error instanceof ApiError ? error.message : fallback);
+}
+
+export async function updateOrganizationAction(formData: FormData) {
   try {
     await apiFetch("/organizations/current", {
       method: "PATCH",
@@ -27,9 +25,7 @@ export async function updateOrganizationAction(_prev: FormState, formData: FormD
         zonaHoraria: emptyToUndefined(String(formData.get("zonaHoraria") ?? "")),
       }),
     });
-    revalidatePath("/settings");
-    return { success: "Organización actualizada" };
   } catch (error) {
-    return { error: error instanceof ApiError ? error.message : "No se pudo guardar" };
+    fail(error, "No se pudo guardar");
   }
 }

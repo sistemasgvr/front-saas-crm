@@ -9,7 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.9.1",
     "@iconify/react": "^6.0.2",
+    "@tanstack/react-query": "^5.101.4",
     "apexcharts": "^4.7.0",
     "axios": "^1.7.9",
     "flatpickr": "^4.6.13",
@@ -17,7 +19,11 @@
     "react": "19.2.8",
     "react-apexcharts": "^1.8.0",
     "react-dom": "19.2.8",
-    "tailwind-merge": "^2.6.0"
+    "react-hook-form": "^7.85.0",
+    "sonner": "^2.0.8",
+    "tailwind-merge": "^2.6.0",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.10",

@@ -4,6 +4,9 @@ import { Icon } from "@/src/components/ui/Icon";
 import { Dropdown } from "@/src/components/ui/dropdown/Dropdown";
 import { DropdownItem } from "@/src/components/ui/dropdown/DropdownItem";
 import { logoutAction } from "@/src/modules/auth/actions";
+import { Spinner } from "@/src/components/ui/Spinner";
+import { useAppMutation } from "@/src/lib/query/use-app-mutation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 interface UserMenuProps {
@@ -15,6 +18,13 @@ interface UserMenuProps {
 
 export default function UserMenu({ nombre, email, profileHref, settingsHref }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
+  const logout = useAppMutation({
+    mutationFn: async () => {
+      await logoutAction();
+      router.push("/login");
+    },
+  });
   const initials = nombre.charAt(0).toUpperCase();
 
   return (
@@ -75,15 +85,19 @@ export default function UserMenu({ nombre, email, profileHref, settingsHref }: U
           )}
         </ul>
 
-        <form action={logoutAction}>
-          <button
-            type="submit"
-            className="mt-3 flex w-full items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 group text-theme-sm hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-          >
+        <button
+          type="button"
+          disabled={logout.isPending}
+          onClick={() => logout.mutate()}
+          className="mt-3 flex w-full items-center gap-3 rounded-lg px-3 py-2 font-medium text-gray-700 group text-theme-sm hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+        >
+          {logout.isPending ? (
+            <Spinner size={22} className="text-gray-500 dark:text-gray-400" />
+          ) : (
             <Icon name="mdi:logout" size={22} className="text-gray-500 dark:text-gray-400" />
-            Cerrar sesión
-          </button>
-        </form>
+          )}
+          {logout.isPending ? "Cerrando sesión…" : "Cerrar sesión"}
+        </button>
       </Dropdown>
     </div>
   );
