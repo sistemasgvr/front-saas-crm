@@ -11,6 +11,7 @@ export async function getLeads(filtro: FiltroLeads) {
   if (filtro.q) params.set("q", filtro.q);
   if (filtro.campanaId) params.set("campanaId", filtro.campanaId);
   if (filtro.anuncioId) params.set("anuncioId", filtro.anuncioId);
+  if (filtro.formularioId) params.set("formularioId", filtro.formularioId);
   if (filtro.fechaDesde) params.set("fechaDesde", filtro.fechaDesde);
   if (filtro.fechaHasta) params.set("fechaHasta", filtro.fechaHasta);
   params.set("page", String(filtro.page));

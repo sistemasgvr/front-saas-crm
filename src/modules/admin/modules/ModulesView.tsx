@@ -27,6 +27,11 @@ export default function ModulesView() {
       </div>
 
       <div className="space-y-4">
+        {(modulos ?? []).length === 0 && (
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-theme-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03]">
+            No hay módulos en el catálogo.
+          </div>
+        )}
         {(modulos ?? []).map((modulo) => (
           <div
             key={modulo.id}

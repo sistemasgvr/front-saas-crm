@@ -45,6 +45,13 @@ export default function OrganizationsView() {
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+              {(orgs ?? []).length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-5 py-8 text-center text-theme-sm text-gray-500">
+                    No hay empresas registradas.
+                  </td>
+                </tr>
+              )}
               {(orgs ?? []).map((org) => (
                 <TableRow key={org.id}>
                   <TableCell className="px-5 py-4 text-theme-sm text-gray-800 dark:text-white/90">{org.nombre}</TableCell>

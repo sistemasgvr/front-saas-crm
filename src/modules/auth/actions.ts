@@ -1,9 +1,11 @@
 "use server";
 
 import { publicFetch } from "@/src/lib/api";
+import type { MeResponse } from "@/src/lib/auth";
+import { getDefaultClientRoute } from "@/src/lib/modules";
 import { clearSessionCookies, getRefreshToken, setSessionCookies } from "@/src/lib/session";
 
-export async function loginAction(formData: FormData): Promise<{ isAdmin: boolean }> {
+export async function loginAction(formData: FormData): Promise<{ redirectTo: string }> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const rememberMe = formData.get("rememberMe") === "on";
@@ -36,21 +38,21 @@ export async function loginAction(formData: FormData): Promise<{ isAdmin: boolea
 
   await setSessionCookies(accessToken, refreshToken, rememberMe);
 
-  let isAdmin = false;
+  let redirectTo = "/profile";
   try {
     const meRes = await fetch(`${process.env.API_URL ?? "http://localhost:4000/api"}/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       cache: "no-store",
     });
     if (meRes.ok) {
-      const me = (await meRes.json()) as { usuario?: { esAdminPlataforma?: boolean } };
-      isAdmin = Boolean(me.usuario?.esAdminPlataforma);
+      const me = (await meRes.json()) as MeResponse;
+      redirectTo = me.usuario.esAdminPlataforma ? "/admin/organizations" : getDefaultClientRoute(me);
     }
   } catch {
-    isAdmin = false;
+    redirectTo = "/profile";
   }
 
-  return { isAdmin };
+  return { redirectTo };
 }
 
 export async function logoutAction() {

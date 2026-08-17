@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/src/lib/auth";
+import { getDefaultClientRoute } from "@/src/lib/modules";
 import { SidebarProvider } from "@/src/components/layout/SidebarContext";
 import Sidebar, { type NavItem } from "@/src/components/layout/Sidebar";
 import Header from "@/src/components/layout/Header";
@@ -31,10 +32,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     return true;
   });
 
+  const homeHref = getDefaultClientRoute(me);
+
   return (
     <SidebarProvider>
       <div className="min-h-screen xl:flex">
-        <Sidebar items={items} homeHref="/dashboard" />
+        <Sidebar items={items} homeHref={homeHref} />
         <Backdrop />
         <AppShell
           header={
@@ -44,6 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               organizacionNombre={me.organizacion?.nombre}
               profileHref="/profile"
               settingsHref={canManageOrganization(me.rol) ? "/settings" : undefined}
+              homeHref={homeHref}
             />
           }
         >

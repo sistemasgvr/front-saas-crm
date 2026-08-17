@@ -25,7 +25,26 @@ export default function LeadDetailView({ id }: { id: string }) {
   const leadQuery = useQuery({ queryKey: queryKeys.lead(id), queryFn: () => getLead(id) });
 
   if (leadQuery.isLoading) return <PageLoader />;
-  if (leadQuery.isError) return <QueryError error={leadQuery.error} />;
+  if (leadQuery.isError) {
+    const message = leadQuery.error instanceof Error ? leadQuery.error.message : "";
+    if (message.toLowerCase().includes("no encontrado")) {
+      return (
+        <div className="space-y-4">
+          <Link href="/leads" className="inline-flex items-center gap-1 text-theme-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">
+            <Icon name="mdi:chevron-left" size={18} />
+            Volver a Leads
+          </Link>
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+            <h1 className="text-title-sm font-semibold text-gray-800 dark:text-white/90">Lead no encontrado</h1>
+            <p className="mt-2 text-theme-sm text-gray-500 dark:text-gray-400">
+              El lead que buscas no existe o ya no está disponible en tu organización.
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return <QueryError error={leadQuery.error} />;
+  }
   if (!leadQuery.data) return null;
 
   const lead = leadQuery.data;

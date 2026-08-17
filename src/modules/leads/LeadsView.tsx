@@ -22,13 +22,14 @@ export default function LeadsView() {
   const [q, setQ] = useState("");
   const [campanaId, setCampanaId] = useState("");
   const [anuncioId, setAnuncioId] = useState("");
+  const [formularioId, setFormularioId] = useState("");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const [page, setPage] = useState(1);
 
   const deferredQ = useDeferredValue(q);
 
-  const filtro = { q: deferredQ || undefined, campanaId: campanaId || undefined, anuncioId: anuncioId || undefined, fechaDesde: fechaDesde || undefined, fechaHasta: fechaHasta || undefined, page };
+  const filtro = { q: deferredQ || undefined, campanaId: campanaId || undefined, anuncioId: anuncioId || undefined, formularioId: formularioId || undefined, fechaDesde: fechaDesde || undefined, fechaHasta: fechaHasta || undefined, page };
 
   const campanasQuery = useQuery({ queryKey: queryKeys.metaCampaigns, queryFn: () => getCampanasFiltro() });
   const anunciosQuery = useQuery({ queryKey: queryKeys.metaAds, queryFn: () => getAnunciosFiltro() });
@@ -43,7 +44,7 @@ export default function LeadsView() {
     <div>
       <h1 className="mb-6 text-title-sm font-semibold text-gray-800 dark:text-white/90">Leads</h1>
 
-      <div className="mb-4 grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mb-4 grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <div>
           <Label htmlFor="q">Buscar</Label>
           <Input
@@ -72,6 +73,15 @@ export default function LeadsView() {
           />
         </div>
         <div>
+          <Label htmlFor="formularioId">Formulario</Label>
+          <Input
+            id="formularioId"
+            placeholder="ID Meta del formulario"
+            defaultValue={formularioId}
+            onChange={(e) => cambiarFiltro(setFormularioId)(e.target.value)}
+          />
+        </div>
+        <div>
           <Label htmlFor="fechaDesde">Desde</Label>
           <Input id="fechaDesde" type="date" defaultValue={fechaDesde} onChange={(e) => cambiarFiltro(setFechaDesde)(e.target.value)} />
         </div>
@@ -80,6 +90,13 @@ export default function LeadsView() {
           <Input id="fechaHasta" type="date" defaultValue={fechaHasta} onChange={(e) => cambiarFiltro(setFechaHasta)(e.target.value)} />
         </div>
       </div>
+
+      {(campanasQuery.isError || anunciosQuery.isError) && (
+        <div className="mb-4 space-y-2">
+          {campanasQuery.isError && <QueryError error={campanasQuery.error} />}
+          {anunciosQuery.isError && <QueryError error={anunciosQuery.error} />}
+        </div>
+      )}
 
       {leadsQuery.isLoading ? (
         <PageLoader />

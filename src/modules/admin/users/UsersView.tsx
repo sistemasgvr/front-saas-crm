@@ -48,6 +48,13 @@ export default function UsersView() {
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+              {(users ?? []).length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-5 py-8 text-center text-theme-sm text-gray-500">
+                    No hay usuarios registrados.
+                  </td>
+                </tr>
+              )}
               {(users ?? []).map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="px-5 py-4 text-theme-sm text-gray-800 dark:text-white/90">

@@ -8,6 +8,7 @@ import Input from "@/src/components/form/input/InputField";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import LineChart from "@/src/components/charts/LineChart";
 import BarChart from "@/src/components/charts/BarChart";
+import { queryKeys } from "@/src/lib/query/keys";
 import { getCampanasFiltro, getAnunciosFiltro } from "@/src/modules/leads/queries";
 import KpiCard from "./KpiCard";
 import { getConjuntosAnunciosFiltro, getDashboardKpis, getDashboardSeries } from "./queries";
@@ -34,9 +35,9 @@ export default function DashboardView() {
     fechaHasta: fechaHasta || undefined,
   };
 
-  const campanasQuery = useQuery({ queryKey: ["meta", "campaigns"], queryFn: () => getCampanasFiltro() });
-  const conjuntosQuery = useQuery({ queryKey: ["meta", "adsets"], queryFn: () => getConjuntosAnunciosFiltro() });
-  const anunciosQuery = useQuery({ queryKey: ["meta", "ads"], queryFn: () => getAnunciosFiltro() });
+  const campanasQuery = useQuery({ queryKey: queryKeys.metaCampaigns, queryFn: () => getCampanasFiltro() });
+  const conjuntosQuery = useQuery({ queryKey: queryKeys.metaAdsets, queryFn: () => getConjuntosAnunciosFiltro() });
+  const anunciosQuery = useQuery({ queryKey: queryKeys.metaAds, queryFn: () => getAnunciosFiltro() });
 
   const kpisQuery = useQuery({ queryKey: ["dashboard", "kpis", filtro], queryFn: () => getDashboardKpis(filtro) });
   const seriesQuery = useQuery({ queryKey: ["dashboard", "series", filtro], queryFn: () => getDashboardSeries(filtro) });

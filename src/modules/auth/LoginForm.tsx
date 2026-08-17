@@ -45,7 +45,7 @@ export default function LoginForm() {
       );
       if (values.rememberMe) remember(values.email);
       else forget();
-      router.push(result.isAdmin ? "/admin/organizations" : "/dashboard");
+      router.push(result.redirectTo);
     },
   });
 
@@ -98,7 +98,7 @@ export default function LoginForm() {
                   name="rememberMe"
                   control={control}
                   render={({ field }) => (
-                    <Checkbox checked={field.value} onChange={field.onChange} label="Recordar contraseña" />
+                    <Checkbox checked={field.value} onChange={field.onChange} label="Recordar email" />
                   )}
                 />
               </div>
