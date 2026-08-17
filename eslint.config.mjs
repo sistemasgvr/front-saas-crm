@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Plantilla de referencia — no se ejecuta ni se despliega (PLAN.md §2/§6.2).
+    "free-nextjs-admin-dashboard-main/**",
   ]),
 ]);
 
