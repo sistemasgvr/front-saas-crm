@@ -5,6 +5,7 @@ import { queryKeys } from "@/src/lib/query/keys";
 import { getMeQuery } from "@/src/modules/auth/queries";
 import { getCurrentOrganization } from "./queries";
 import OrganizationSettingsForm from "./OrganizationSettingsForm";
+import MetaConnectionCard from "./meta/MetaConnectionCard";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 
 export default function SettingsView() {
@@ -30,5 +31,12 @@ export default function SettingsView() {
   if (orgQuery.isError) return <QueryError error={orgQuery.error} />;
   if (!orgQuery.data) return null;
 
-  return <OrganizationSettingsForm org={orgQuery.data} />;
+  const metaLeadsHabilitado = meQuery.data?.modulos.some((m) => m.codigo === "META_LEADS" && m.habilitado);
+
+  return (
+    <div>
+      <OrganizationSettingsForm org={orgQuery.data} />
+      {metaLeadsHabilitado && <MetaConnectionCard />}
+    </div>
+  );
 }

@@ -12,9 +12,15 @@ function makeQueryClient() {
         staleTime: 30_000,
         refetchOnWindowFocus: false,
         retry: 1,
+        // Las queries llaman Server Actions mismo-origen (RPC vía RSC), no
+        // requests de red externas — el online-detection del navegador no
+        // aplica y puede dejar queries "paused" indefinidamente si se
+        // dispara un evento offline espurio (visto en HMR/dev tools).
+        networkMode: 'always',
       },
       mutations: {
         retry: 0,
+        networkMode: 'always',
       },
     },
     mutationCache: new MutationCache({

@@ -7,4 +7,7 @@ export const queryKeys = {
   adminUsers: ["admin", "users"] as const,
   adminUser: (id: string) => ["admin", "users", id] as const,
   adminModules: ["admin", "modules"] as const,
+  metaConnection: ["meta", "connection"] as const,
+  metaPages: ["meta", "pages"] as const,
+  metaAdAccounts: ["meta", "ad-accounts"] as const,
 };
