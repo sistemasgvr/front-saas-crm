@@ -1,6 +1,5 @@
 import { getAccessToken } from './session';
-
-const API_URL = process.env.API_URL ?? 'http://localhost:4000/api';
+import { getApiUrl } from './api-url';
 
 export class ApiError extends Error {
   constructor(
@@ -19,7 +18,7 @@ async function parseError(res: Response): Promise<string> {
 
 /** fetch público, sin token — usado por login. */
 export async function publicFetch(path: string, init?: RequestInit): Promise<Response> {
-  return fetch(`${API_URL}${path}`, {
+  return fetch(`${getApiUrl()}${path}`, {
     ...init,
     headers: { 'Content-Type': 'application/json', ...init?.headers },
     cache: 'no-store',
@@ -38,7 +37,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     throw new ApiError(401, 'Sin sesión activa');
   }
 
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${getApiUrl()}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',

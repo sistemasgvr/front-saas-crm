@@ -1,6 +1,7 @@
 "use server";
 
 import { publicFetch } from "@/src/lib/api";
+import { getApiUrl } from "@/src/lib/api-url";
 import type { MeResponse } from "@/src/lib/auth";
 import { getDefaultClientRoute } from "@/src/lib/modules";
 import { clearSessionCookies, getRefreshToken, setSessionCookies } from "@/src/lib/session";
@@ -30,8 +31,11 @@ export async function loginAction(formData: FormData): Promise<{ redirectTo: str
     accessToken = data.accessToken;
     refreshToken = data.refreshToken;
   } catch (error) {
-    if (error instanceof Error && error.message !== "Email o contraseña incorrectos") {
-      throw new Error("No se pudo conectar con el servidor");
+    if (error instanceof Error) {
+      if (error.message.includes("API_URL no está configurada")) throw error;
+      if (error.message !== "Email o contraseña incorrectos") {
+        throw new Error("No se pudo conectar con el servidor. Verifica que el backend esté activo.");
+      }
     }
     throw error;
   }
@@ -40,7 +44,7 @@ export async function loginAction(formData: FormData): Promise<{ redirectTo: str
 
   let redirectTo = "/profile";
   try {
-    const meRes = await fetch(`${process.env.API_URL ?? "http://localhost:4000/api"}/me`, {
+    const meRes = await fetch(`${getApiUrl()}/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       cache: "no-store",
     });

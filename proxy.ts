@@ -6,8 +6,7 @@ import {
   REMEMBER_COOKIE,
   sessionCookies,
 } from "@/src/lib/session-cookies";
-
-const API_URL = process.env.API_URL ?? "http://localhost:4000/api";
+import { getApiUrl } from "@/src/lib/api-url";
 
 function withUpdatedCookies(
   request: NextRequest,
@@ -50,7 +49,7 @@ export async function proxy(request: NextRequest) {
   }
 
   try {
-    const res = await fetch(`${API_URL}/auth/refresh`, {
+    const res = await fetch(`${getApiUrl()}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
