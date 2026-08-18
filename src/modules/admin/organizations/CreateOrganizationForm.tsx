@@ -39,7 +39,7 @@ export default function CreateOrganizationForm() {
   const mutation = useAppMutation({
     mutationFn: (values: CreateOrganizationValues) => createOrganizationAction(toFormData(values)),
     successMessage: "Empresa creada",
-    invalidateKeys: [queryKeys.adminOrganizations],
+    invalidateKeys: [queryKeys.adminOrganizationsAll],
     redirectTo: "/admin/organizations",
   });
 

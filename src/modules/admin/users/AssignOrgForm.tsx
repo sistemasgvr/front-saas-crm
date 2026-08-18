@@ -38,7 +38,7 @@ export default function AssignOrgForm({
   const mutation = useAppMutation({
     mutationFn: (values: AssignOrgValues) => assignUserOrgAction(userId, toFormData(values)),
     successMessage: "Usuario asignado a la empresa",
-    invalidateKeys: [queryKeys.adminUser(userId), queryKeys.adminUsers],
+    invalidateKeys: [queryKeys.adminUser(userId), queryKeys.adminUsersAll],
   });
 
   if (options.length === 0) {

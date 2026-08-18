@@ -1,18 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/src/components/tables";
 import Button from "@/src/components/ui/button/Button";
+import Pagination from "@/src/components/ui/Pagination";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getAdminOrganizations } from "./queries";
 
+const PAGE_SIZE = 20;
+
 export default function OrganizationsView() {
-  const { data: orgs, isLoading, isError, error } = useQuery({
-    queryKey: queryKeys.adminOrganizations,
-    queryFn: () => getAdminOrganizations(),
+  const [page, setPage] = useState(1);
+
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: queryKeys.adminOrganizations({ page, pageSize: PAGE_SIZE }),
+    queryFn: () => getAdminOrganizations({ page, pageSize: PAGE_SIZE }),
   });
+  const orgs = data?.data ?? [];
 
   if (isLoading) return <PageLoader />;
   if (isError) return <QueryError error={error} />;
@@ -45,14 +52,14 @@ export default function OrganizationsView() {
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {(orgs ?? []).length === 0 && (
+              {orgs.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-5 py-8 text-center text-theme-sm text-gray-500">
                     No hay empresas registradas.
                   </td>
                 </tr>
               )}
-              {(orgs ?? []).map((org) => (
+              {orgs.map((org) => (
                 <TableRow key={org.id}>
                   <TableCell className="px-5 py-4 text-theme-sm text-gray-800 dark:text-white/90">{org.nombre}</TableCell>
                   <TableCell className="px-5 py-4 text-theme-sm text-gray-500">{org.slug}</TableCell>
@@ -69,6 +76,18 @@ export default function OrganizationsView() {
             </TableBody>
           </Table>
         </div>
+        {data && (
+          <div className="px-5 py-4">
+            <Pagination
+              page={data.page}
+              pageSize={data.pageSize}
+              total={data.total}
+              totalPages={data.totalPages}
+              onPageChange={setPage}
+              itemLabel="empresas"
+            />
+          </div>
+        )}
       </div>
     </div>
   );

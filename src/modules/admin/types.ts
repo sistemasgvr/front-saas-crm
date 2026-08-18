@@ -53,3 +53,19 @@ export interface ModuloMatriz {
   orden: number;
   habilitado: boolean;
 }
+
+export interface ListaOrganizacionesResultado {
+  data: OrganizacionAdmin[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface ListaUsuariosResultado {
+  data: UsuarioAdmin[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}

@@ -7,8 +7,7 @@ import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/src/compon
 import Select from "@/src/components/form/Select";
 import Label from "@/src/components/form/Label";
 import Input from "@/src/components/form/input/InputField";
-import Button from "@/src/components/ui/button/Button";
-import { Icon } from "@/src/components/ui/Icon";
+import Pagination from "@/src/components/ui/Pagination";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getAnunciosFiltro, getCampanasFiltro, getLeads } from "./queries";
@@ -144,31 +143,16 @@ export default function LeadsView() {
             </div>
           </div>
 
-          {leadsQuery.data && leadsQuery.data.total > 0 && (
-            <div className="mt-4 flex items-center justify-between text-theme-sm text-gray-500 dark:text-gray-400">
-              <span>
-                Página {leadsQuery.data.page} de {leadsQuery.data.totalPages} — {leadsQuery.data.total} leads
-              </span>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  startIcon={<Icon name="mdi:chevron-left" size={18} />}
-                >
-                  Anterior
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page >= leadsQuery.data.totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  endIcon={<Icon name="mdi:chevron-right" size={18} />}
-                >
-                  Siguiente
-                </Button>
-              </div>
+          {leadsQuery.data && (
+            <div className="mt-4">
+              <Pagination
+                page={leadsQuery.data.page}
+                pageSize={leadsQuery.data.pageSize}
+                total={leadsQuery.data.total}
+                totalPages={leadsQuery.data.totalPages}
+                onPageChange={setPage}
+                itemLabel="leads"
+              />
             </div>
           )}
         </>

@@ -14,9 +14,10 @@ export default function UserDetailView({ id }: { id: string }) {
     queryKey: queryKeys.adminUser(id),
     queryFn: () => getAdminUser(id),
   });
+  // pageSize alto a propósito: este selector necesita TODAS las empresas, no una página.
   const orgsQuery = useQuery({
-    queryKey: queryKeys.adminOrganizations,
-    queryFn: () => getAdminOrganizations(),
+    queryKey: queryKeys.adminOrganizations({ page: 1, pageSize: 100 }),
+    queryFn: () => getAdminOrganizations({ page: 1, pageSize: 100 }),
   });
 
   if (userQuery.isLoading) return <PageLoader />;
@@ -40,7 +41,7 @@ export default function UserDetailView({ id }: { id: string }) {
           action={() => toggleUserStatusAction(user.id, nextEstado)}
           successMessage={isActive ? "Usuario desactivado" : "Usuario activado"}
           loadingText={isActive ? "Desactivando…" : "Activando…"}
-          invalidateKeys={[queryKeys.adminUsers, queryKeys.adminUser(user.id)]}
+          invalidateKeys={[queryKeys.adminUsersAll, queryKeys.adminUser(user.id)]}
         >
           {isActive ? "Desactivar" : "Activar"}
         </ActionButton>
@@ -63,7 +64,7 @@ export default function UserDetailView({ id }: { id: string }) {
         <AssignOrgForm
           key={user.organizaciones.map((m) => `${m.organizacionId}:${m.rol}`).join("|")}
           userId={user.id}
-          organizaciones={Array.isArray(orgsQuery.data) ? orgsQuery.data : []}
+          organizaciones={orgsQuery.data?.data ?? []}
           membresias={user.organizaciones}
           cargandoEmpresas={orgsQuery.isLoading}
         />

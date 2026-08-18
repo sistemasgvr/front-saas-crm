@@ -37,7 +37,7 @@ export default function EditOrganizationForm({ org }: { org: OrganizacionAdmin }
     mutationFn: (values: UpdateOrganizationAdminValues) =>
       updateOrganizationAdminAction(org.id, toFormData(values)),
     successMessage: "Empresa actualizada",
-    invalidateKeys: [queryKeys.adminOrganizations, queryKeys.adminOrganization(org.id)],
+    invalidateKeys: [queryKeys.adminOrganizationsAll, queryKeys.adminOrganization(org.id)],
   });
 
   return (

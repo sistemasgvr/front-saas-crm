@@ -7,9 +7,10 @@ import CreateUserForm from "./CreateUserForm";
 import { getAdminOrganizations } from "../organizations/queries";
 
 export default function NewUserView() {
-  const { data: organizaciones, isLoading, isError, error } = useQuery({
-    queryKey: queryKeys.adminOrganizations,
-    queryFn: () => getAdminOrganizations(),
+  // pageSize alto a propósito: este selector necesita TODAS las empresas, no una página.
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: queryKeys.adminOrganizations({ page: 1, pageSize: 100 }),
+    queryFn: () => getAdminOrganizations({ page: 1, pageSize: 100 }),
   });
 
   if (isLoading) return <PageLoader />;
@@ -18,7 +19,7 @@ export default function NewUserView() {
   return (
     <div>
       <h1 className="mb-6 text-title-sm font-semibold text-gray-800 dark:text-white/90">Nuevo usuario</h1>
-      <CreateUserForm organizaciones={organizaciones ?? []} />
+      <CreateUserForm organizaciones={data?.data ?? []} />
     </div>
   );
 }

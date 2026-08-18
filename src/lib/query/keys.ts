@@ -1,10 +1,15 @@
 export const queryKeys = {
   me: ["me"] as const,
   organizationCurrent: ["organizations", "current"] as const,
-  adminOrganizations: ["admin", "organizations"] as const,
+  adminOrganizations: (params?: { page?: number; pageSize?: number }) =>
+    ["admin", "organizations", params ?? {}] as const,
+  /** Prefijo para invalidar todas las páginas/tamaños a la vez (no usar para fetch). */
+  adminOrganizationsAll: ["admin", "organizations"] as const,
   adminOrganization: (id: string) => ["admin", "organizations", id] as const,
   adminOrganizationModules: (id: string) => ["admin", "organizations", id, "modules"] as const,
-  adminUsers: ["admin", "users"] as const,
+  adminUsers: (params?: { page?: number; pageSize?: number }) => ["admin", "users", params ?? {}] as const,
+  /** Prefijo para invalidar todas las páginas/tamaños a la vez (no usar para fetch). */
+  adminUsersAll: ["admin", "users"] as const,
   adminUser: (id: string) => ["admin", "users", id] as const,
   adminModules: ["admin", "modules"] as const,
   metaConnection: ["meta", "connection"] as const,

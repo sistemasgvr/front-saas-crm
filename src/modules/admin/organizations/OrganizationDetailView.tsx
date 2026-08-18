@@ -35,7 +35,7 @@ export default function OrganizationDetailView({ id }: { id: string }) {
             action={() => deactivateOrganizationAction(org.id)}
             successMessage="Empresa desactivada"
             loadingText="Desactivando…"
-            invalidateKeys={[queryKeys.adminOrganizations, queryKeys.adminOrganization(org.id)]}
+            invalidateKeys={[queryKeys.adminOrganizationsAll, queryKeys.adminOrganization(org.id)]}
           >
             Desactivar
           </ActionButton>

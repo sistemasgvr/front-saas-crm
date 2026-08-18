@@ -41,7 +41,7 @@ export default function CreateUserForm({ organizaciones }: { organizaciones: Org
   const mutation = useAppMutation({
     mutationFn: (values: CreateUserValues) => createUserAction(toFormData(values)),
     successMessage: "Usuario creado",
-    invalidateKeys: [queryKeys.adminUsers],
+    invalidateKeys: [queryKeys.adminUsersAll],
     redirectTo: "/admin/users",
   });
   const orgOptions = organizationSelectOptions(organizaciones);
