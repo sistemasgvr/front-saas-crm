@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node -e \"require('fs').mkdirSync('.next',{recursive:true})\"",
-    "build": "next build",
+    "prebuild": "node scripts/prepare-next-build.cjs",
+    "build": "node scripts/next-build.cjs",
     "start": "next start",
     "lint": "eslint"
   },
