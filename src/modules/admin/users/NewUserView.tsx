@@ -1,13 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
 import CreateUserForm from "./CreateUserForm";
 import { getAdminOrganizations } from "../organizations/queries";
 
 export default function NewUserView() {
-  // pageSize alto a propósito: este selector necesita TODAS las empresas, no una página.
   const { data, isLoading, isError, error } = useQuery({
     queryKey: queryKeys.adminOrganizations({ page: 1, pageSize: 100 }),
     queryFn: () => getAdminOrganizations({ page: 1, pageSize: 100 }),
@@ -18,7 +18,12 @@ export default function NewUserView() {
 
   return (
     <div>
-      <h1 className="mb-6 text-title-sm font-semibold text-gray-800 dark:text-white/90">Nuevo usuario</h1>
+      <PageHeader
+        title="Nuevo usuario"
+        description="Crea una cuenta y asígnala a una empresa."
+        backHref="/admin/users"
+        backLabel="Volver a usuarios"
+      />
       <CreateUserForm organizaciones={data?.data ?? []} />
     </div>
   );

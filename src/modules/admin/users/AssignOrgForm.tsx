@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Label from "@/src/components/form/Label";
 import Select from "@/src/components/form/Select";
 import Button from "@/src/components/ui/button/Button";
+import { Icon } from "@/src/components/ui/Icon";
 import { toFormData } from "@/src/lib/form-data";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
@@ -93,7 +94,7 @@ export default function AssignOrgForm({
             />
           </div>
         </div>
-        <Button type="submit" size="sm" loading={mutation.isPending}>
+        <Button type="submit" size="sm" loading={mutation.isPending} startIcon={<Icon name="mdi:account-arrow-right" size={18} />}>
           {mutation.isPending ? "Asignando…" : "Asignar"}
         </Button>
       </fieldset>

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Select from "@/src/components/form/Select";
 import Label from "@/src/components/form/Label";
 import Input from "@/src/components/form/input/InputField";
+import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import LineChart from "@/src/components/charts/LineChart";
 import BarChart from "@/src/components/charts/BarChart";
@@ -44,7 +45,7 @@ export default function DashboardView() {
 
   return (
     <div>
-      <h1 className="mb-6 text-title-sm font-semibold text-gray-800 dark:text-white/90">Dashboard</h1>
+      <PageHeader title="Dashboard" description="Resumen de leads por periodo y campaña." />
 
       <div className="mb-6 grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] sm:grid-cols-2 lg:grid-cols-5">
         <div>

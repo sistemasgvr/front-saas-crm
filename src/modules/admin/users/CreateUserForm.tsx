@@ -9,6 +9,7 @@ import PasswordInput from "@/src/components/form/input/PasswordInput";
 import Checkbox from "@/src/components/form/input/Checkbox";
 import Select from "@/src/components/form/Select";
 import Button from "@/src/components/ui/button/Button";
+import { Icon } from "@/src/components/ui/Icon";
 import { toFormData } from "@/src/lib/form-data";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
@@ -154,7 +155,7 @@ export default function CreateUserForm({ organizaciones }: { organizaciones: Org
         </div>
 
         <div className="flex gap-3">
-          <Button type="submit" size="sm" loading={mutation.isPending}>
+          <Button type="submit" size="sm" loading={mutation.isPending} startIcon={<Icon name="mdi:account-plus" size={18} />}>
             {mutation.isPending ? "Creando…" : "Crear usuario"}
           </Button>
           <Link href="/admin/users" className="inline-flex items-center text-theme-sm text-gray-500">

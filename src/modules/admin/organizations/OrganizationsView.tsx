@@ -1,12 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/src/components/tables";
-import Button from "@/src/components/ui/button/Button";
+import EntityCell from "@/src/components/ui/avatar/EntityCell";
+import { StatusBadge } from "@/src/components/ui/badge/Badge";
+import EmptyState from "@/src/components/ui/EmptyState";
+import PageHeader from "@/src/components/ui/PageHeader";
 import Pagination from "@/src/components/ui/Pagination";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import TableAction from "@/src/components/ui/TableAction";
+import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getAdminOrganizations } from "./queries";
 
@@ -26,58 +30,14 @@ export default function OrganizationsView() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-title-sm font-semibold text-gray-800 dark:text-white/90">Empresas</h1>
-        <Link href="/admin/organizations/new">
-          <Button size="sm">Nueva empresa</Button>
-        </Link>
-      </div>
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-        <div className="max-w-full overflow-x-auto">
-          <Table>
-            <TableHeader className="border-b border-gray-100 dark:border-gray-800">
-              <TableRow>
-                <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500">
-                  Nombre
-                </TableCell>
-                <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500">
-                  Slug
-                </TableCell>
-                <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500">
-                  Estado
-                </TableCell>
-                <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500">
-                  Acción
-                </TableCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {orgs.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-5 py-8 text-center text-theme-sm text-gray-500">
-                    No hay empresas registradas.
-                  </td>
-                </tr>
-              )}
-              {orgs.map((org) => (
-                <TableRow key={org.id}>
-                  <TableCell className="px-5 py-4 text-theme-sm text-gray-800 dark:text-white/90">{org.nombre}</TableCell>
-                  <TableCell className="px-5 py-4 text-theme-sm text-gray-500">{org.slug}</TableCell>
-                  <TableCell className="px-5 py-4 text-theme-sm">
-                    {org.estado === 1 ? "Activa" : "Desactivada"}
-                  </TableCell>
-                  <TableCell className="px-5 py-4">
-                    <Link href={`/admin/organizations/${org.id}`} className="text-theme-sm text-brand-500">
-                      Ver
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        {data && (
-          <div className="px-5 py-4">
+      <PageHeader
+        title="Empresas"
+        description="Organizaciones cliente de la plataforma."
+        action={{ href: "/admin/organizations/new", label: "Nueva empresa", icon: "mdi:domain-plus" }}
+      />
+      <TableCard
+        footer={
+          data ? (
             <Pagination
               page={data.page}
               pageSize={data.pageSize}
@@ -86,9 +46,55 @@ export default function OrganizationsView() {
               onPageChange={setPage}
               itemLabel="empresas"
             />
-          </div>
-        )}
-      </div>
+          ) : null
+        }
+      >
+        <Table>
+          <TableHeader className="border-b border-gray-100 dark:border-gray-800">
+            <TableRow>
+              <TableCell isHeader className={thClass}>
+                Empresa
+              </TableCell>
+              <TableCell isHeader className={thClass}>
+                Estado
+              </TableCell>
+              <TableCell isHeader className={thClassEnd}>
+                Acción
+              </TableCell>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+            {orgs.length === 0 && (
+              <EmptyState colSpan={3} icon="mdi:office-building-outline" title="No hay empresas registradas." />
+            )}
+            {orgs.map((org) => (
+              <TableRow key={org.id}>
+                <TableCell className={tdPrimaryClass}>
+                  <EntityCell
+                    name={org.nombre}
+                    subtitle={org.slug}
+                    src={org.logoUrl}
+                    shape="rounded"
+                    icon="mdi:office-building-outline"
+                  />
+                </TableCell>
+                <TableCell className={tdClass}>
+                  <StatusBadge active={org.estado === 1} activeLabel="Activa" inactiveLabel="Desactivada" />
+                </TableCell>
+                <TableCell className="px-5 py-4">
+                  <div className="flex justify-end">
+                    <TableAction
+                      href={`/admin/organizations/${org.id}`}
+                      icon="mdi:eye-outline"
+                      label={`Ver ${org.nombre}`}
+                    />
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableCard>
     </div>
   );
 }

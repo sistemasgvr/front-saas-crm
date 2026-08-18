@@ -7,6 +7,7 @@ import Label from "@/src/components/form/Label";
 import Input from "@/src/components/form/input/InputField";
 import PasswordInput from "@/src/components/form/input/PasswordInput";
 import Button from "@/src/components/ui/button/Button";
+import { Icon } from "@/src/components/ui/Icon";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { saveMetaAppCredentialsAction } from "./actions";
@@ -61,7 +62,7 @@ export default function MetaAppCredentialsForm({ appIdActual }: MetaAppCredentia
             />
           </div>
         </fieldset>
-        <Button type="submit" size="sm" loading={mutation.isPending}>
+        <Button type="submit" size="sm" loading={mutation.isPending} startIcon={<Icon name="mdi:content-save-outline" size={18} />}>
           {appIdActual ? "Actualizar credenciales" : "Guardar credenciales"}
         </Button>
       </form>

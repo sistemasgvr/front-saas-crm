@@ -1,5 +1,6 @@
 "use client";
 
+import Avatar from "@/src/components/ui/avatar/Avatar";
 import { Icon } from "@/src/components/ui/Icon";
 import { Dropdown } from "@/src/components/ui/dropdown/Dropdown";
 import { DropdownItem } from "@/src/components/ui/dropdown/DropdownItem";
@@ -25,8 +26,6 @@ export default function UserMenu({ nombre, email, profileHref, settingsHref }: U
       router.push("/login");
     },
   });
-  const initials = nombre.charAt(0).toUpperCase();
-
   return (
     <div className="relative">
       <button
@@ -37,8 +36,8 @@ export default function UserMenu({ nombre, email, profileHref, settingsHref }: U
         }}
         className="dropdown-toggle flex items-center text-gray-700 dark:text-gray-400"
       >
-        <span className="mr-3 flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-brand-50 font-medium text-brand-500 dark:bg-brand-500/[0.12]">
-          {initials}
+        <span className="mr-3">
+          <Avatar name={nombre} size="md" />
         </span>
         <span className="mr-1 hidden font-medium text-theme-sm sm:block">{nombre}</span>
         <Icon
@@ -53,9 +52,12 @@ export default function UserMenu({ nombre, email, profileHref, settingsHref }: U
         onClose={() => setIsOpen(false)}
         className="mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
       >
-        <div>
-          <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">{nombre}</span>
-          <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">{email}</span>
+        <div className="flex items-center gap-3 px-1 pb-1">
+          <Avatar name={nombre} size="md" />
+          <div className="min-w-0">
+            <span className="block truncate font-medium text-gray-700 text-theme-sm dark:text-gray-400">{nombre}</span>
+            <span className="mt-0.5 block truncate text-theme-xs text-gray-500 dark:text-gray-400">{email}</span>
+          </div>
         </div>
 
         <ul className="flex flex-col gap-1 border-b border-gray-200 pt-4 pb-3 dark:border-gray-800">

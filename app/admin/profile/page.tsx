@@ -1,4 +1,5 @@
 import { getMe } from "@/src/lib/auth";
+import PageHeader from "@/src/components/ui/PageHeader";
 import ProfileForms from "@/src/modules/profile/ProfileForms";
 
 export default async function AdminProfilePage() {
@@ -6,7 +7,7 @@ export default async function AdminProfilePage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-title-sm font-semibold text-gray-800 dark:text-white/90">Perfil</h1>
+      <PageHeader title="Perfil" description="Tus datos personales y contraseña." />
       <ProfileForms
         email={me?.usuario.email ?? ""}
         nombre={me?.usuario.nombre ?? ""}

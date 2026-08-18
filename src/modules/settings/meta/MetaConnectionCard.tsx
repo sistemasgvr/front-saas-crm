@@ -8,6 +8,7 @@ import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import Button from "@/src/components/ui/button/Button";
+import { Icon } from "@/src/components/ui/Icon";
 import ActionButton from "@/src/components/ui/ActionButton";
 import Select from "@/src/components/form/Select";
 import Label from "@/src/components/form/Label";
@@ -93,8 +94,8 @@ export default function MetaConnectionCard({ metaCallback }: { metaCallback?: st
   const accountOptions = (accountsQuery.data ?? []).map((a) => ({ value: a.id, label: a.nombre }));
 
   return (
-    <div className="border-t border-gray-200 pt-6 dark:border-gray-800">
-      <h2 className="mb-4 text-theme-sm font-semibold text-gray-800 dark:text-white/90">Conexión Meta</h2>
+    <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+      <h2 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Conexión Meta</h2>
 
       {!connection.appConfigurada && <MetaAppCredentialsForm />}
 
@@ -106,7 +107,9 @@ export default function MetaConnectionCard({ metaCallback }: { metaCallback?: st
               ). Conecta tu cuenta de Meta para recibir leads de Facebook/Instagram Lead Ads.
             </p>
             <form action={connectMetaAction}>
-              <Button type="submit">Conectar Meta</Button>
+              <Button type="submit" startIcon={<Icon name="mdi:facebook" size={18} />}>
+                Conectar Meta
+              </Button>
             </form>
           </div>
           <details className="text-theme-xs text-gray-500 dark:text-gray-400">

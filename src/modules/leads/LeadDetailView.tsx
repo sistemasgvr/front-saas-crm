@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Icon } from "@/src/components/ui/Icon";
+import Avatar from "@/src/components/ui/avatar/Avatar";
+import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getLead } from "./queries";
@@ -29,17 +29,13 @@ export default function LeadDetailView({ id }: { id: string }) {
     const message = leadQuery.error instanceof Error ? leadQuery.error.message : "";
     if (message.toLowerCase().includes("no encontrado")) {
       return (
-        <div className="space-y-4">
-          <Link href="/leads" className="inline-flex items-center gap-1 text-theme-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">
-            <Icon name="mdi:chevron-left" size={18} />
-            Volver a Leads
-          </Link>
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-            <h1 className="text-title-sm font-semibold text-gray-800 dark:text-white/90">Lead no encontrado</h1>
-            <p className="mt-2 text-theme-sm text-gray-500 dark:text-gray-400">
-              El lead que buscas no existe o ya no está disponible en tu organización.
-            </p>
-          </div>
+        <div>
+          <PageHeader
+            title="Lead no encontrado"
+            description="El lead no existe o ya no está disponible en tu organización."
+            backHref="/leads"
+            backLabel="Volver a Leads"
+          />
         </div>
       );
     }
@@ -48,15 +44,20 @@ export default function LeadDetailView({ id }: { id: string }) {
   if (!leadQuery.data) return null;
 
   const lead = leadQuery.data;
+  const nombre = lead.nombre ?? "Sin nombre";
 
   return (
     <div className="space-y-6">
-      <Link href="/leads" className="inline-flex items-center gap-1 text-theme-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">
-        <Icon name="mdi:chevron-left" size={18} />
-        Volver a Leads
-      </Link>
+      <PageHeader title={nombre} description={lead.email ?? undefined} backHref="/leads" backLabel="Volver a Leads" />
 
-      <h1 className="text-title-sm font-semibold text-gray-800 dark:text-white/90">{lead.nombre ?? "(sin nombre)"}</h1>
+      <div className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+        <Avatar name={nombre} size="xl" />
+        <div className="min-w-0">
+          <p className="truncate text-lg font-semibold text-gray-800 dark:text-white/90">{nombre}</p>
+          <p className="truncate text-theme-sm text-gray-500">{lead.email ?? "Sin email"}</p>
+          {lead.telefono && <p className="text-theme-sm text-gray-500">{lead.telefono}</p>}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 gap-6 rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03] sm:grid-cols-2 lg:grid-cols-3">
         <Campo label="Email" value={lead.email ?? "—"} />

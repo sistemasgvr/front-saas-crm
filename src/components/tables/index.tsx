@@ -35,7 +35,11 @@ const TableHeader: React.FC<TableHeaderProps> = ({ children, className }) => {
 };
 
 const TableBody: React.FC<TableBodyProps> = ({ children, className }) => {
-  return <tbody className={className}>{children}</tbody>;
+  return (
+    <tbody className={`[&>tr]:transition-colors [&>tr]:hover:bg-gray-50 dark:[&>tr]:hover:bg-white/[0.02] ${className ?? ""}`}>
+      {children}
+    </tbody>
+  );
 };
 
 const TableRow: React.FC<TableRowProps> = ({ children, className }) => {

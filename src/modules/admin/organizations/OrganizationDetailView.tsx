@@ -2,6 +2,10 @@
 
 import { useQuery } from "@tanstack/react-query";
 import ActionButton from "@/src/components/ui/ActionButton";
+import Avatar from "@/src/components/ui/avatar/Avatar";
+import { StatusBadge } from "@/src/components/ui/badge/Badge";
+import { Icon } from "@/src/components/ui/Icon";
+import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
 import EditOrganizationForm from "./EditOrganizationForm";
@@ -28,18 +32,29 @@ export default function OrganizationDetailView({ id }: { id: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-title-sm font-semibold text-gray-800 dark:text-white/90">{org.nombre}</h1>
+      <PageHeader title={org.nombre} description={org.slug} backHref="/admin/organizations" backLabel="Volver a empresas">
         {org.estado === 1 && (
           <ActionButton
             action={() => deactivateOrganizationAction(org.id)}
             successMessage="Empresa desactivada"
             loadingText="Desactivando…"
+            startIcon={<Icon name="mdi:domain-off" size={18} />}
             invalidateKeys={[queryKeys.adminOrganizationsAll, queryKeys.adminOrganization(org.id)]}
           >
             Desactivar
           </ActionButton>
         )}
+      </PageHeader>
+
+      <div className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+        <Avatar name={org.nombre} src={org.logoUrl} shape="rounded" size="xl" icon="mdi:office-building-outline" />
+        <div className="min-w-0">
+          <p className="truncate text-lg font-semibold text-gray-800 dark:text-white/90">{org.nombre}</p>
+          <p className="truncate text-theme-sm text-gray-500">{org.slug}</p>
+          <div className="mt-2">
+            <StatusBadge active={org.estado === 1} activeLabel="Activa" inactiveLabel="Desactivada" />
+          </div>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">

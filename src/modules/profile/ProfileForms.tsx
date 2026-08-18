@@ -6,6 +6,8 @@ import Label from "@/src/components/form/Label";
 import Input from "@/src/components/form/input/InputField";
 import PasswordInput from "@/src/components/form/input/PasswordInput";
 import Button from "@/src/components/ui/button/Button";
+import Avatar from "@/src/components/ui/avatar/Avatar";
+import { Icon } from "@/src/components/ui/Icon";
 import { toFormData } from "@/src/lib/form-data";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
@@ -49,7 +51,18 @@ export default function ProfileForms({ email, nombre, apellido, telefono }: Prof
   });
 
   return (
-    <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <div className="space-y-6">
+      <div className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+        <Avatar name={`${nombre} ${apellido ?? ""}`.trim()} size="xl" />
+        <div className="min-w-0">
+          <p className="truncate text-lg font-semibold text-gray-800 dark:text-white/90">
+            {nombre} {apellido ?? ""}
+          </p>
+          <p className="truncate text-theme-sm text-gray-500">{email}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
         <h2 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90">Datos personales</h2>
         <form onSubmit={profileForm.handleSubmit((values) => profile.mutate(values))} className="space-y-5" noValidate>
@@ -85,7 +98,7 @@ export default function ProfileForms({ email, nombre, apellido, telefono }: Prof
                 {...profileForm.register("telefono")}
               />
             </div>
-            <Button type="submit" size="sm" loading={profile.isPending}>
+            <Button type="submit" size="sm" loading={profile.isPending} startIcon={<Icon name="mdi:content-save-outline" size={18} />}>
               {profile.isPending ? "Guardando…" : "Guardar"}
             </Button>
           </fieldset>
@@ -116,11 +129,12 @@ export default function ProfileForms({ email, nombre, apellido, telefono }: Prof
                 {...passwordForm.register("passwordNueva")}
               />
             </div>
-            <Button type="submit" size="sm" loading={password.isPending}>
+            <Button type="submit" size="sm" loading={password.isPending} startIcon={<Icon name="mdi:lock-reset" size={18} />}>
               {password.isPending ? "Actualizando…" : "Actualizar contraseña"}
             </Button>
           </fieldset>
         </form>
+      </div>
       </div>
     </div>
   );

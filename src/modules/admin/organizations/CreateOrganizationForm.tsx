@@ -7,6 +7,7 @@ import Label from "@/src/components/form/Label";
 import Input from "@/src/components/form/input/InputField";
 import PasswordInput from "@/src/components/form/input/PasswordInput";
 import Button from "@/src/components/ui/button/Button";
+import { Icon } from "@/src/components/ui/Icon";
 import { toFormData } from "@/src/lib/form-data";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
@@ -162,7 +163,7 @@ export default function CreateOrganizationForm() {
         </div>
 
         <div className="flex gap-3">
-          <Button type="submit" size="sm" loading={mutation.isPending}>
+          <Button type="submit" size="sm" loading={mutation.isPending} startIcon={<Icon name="mdi:domain-plus" size={18} />}>
             {mutation.isPending ? "Creando…" : "Crear empresa"}
           </Button>
           <Link href="/admin/organizations" className="inline-flex items-center text-theme-sm text-gray-500">

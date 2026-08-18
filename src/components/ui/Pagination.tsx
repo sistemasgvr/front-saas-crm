@@ -41,7 +41,7 @@ export default function Pagination({
 
   return (
     <div
-      className={`flex flex-col gap-3 border-t border-gray-100 pt-4 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between ${className}`}
+      className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${className}`}
     >
       <p className="text-center text-theme-xs text-gray-500 dark:text-gray-400 sm:text-start sm:text-theme-sm">
         Mostrando <span className="font-medium text-gray-700 dark:text-gray-300">{desde}</span>–

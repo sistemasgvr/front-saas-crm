@@ -1,14 +1,18 @@
 "use client";
 
 import { useDeferredValue, useState } from "react";
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/src/components/tables";
 import Select from "@/src/components/form/Select";
 import Label from "@/src/components/form/Label";
 import Input from "@/src/components/form/input/InputField";
+import EntityCell from "@/src/components/ui/avatar/EntityCell";
+import EmptyState from "@/src/components/ui/EmptyState";
+import PageHeader from "@/src/components/ui/PageHeader";
 import Pagination from "@/src/components/ui/Pagination";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import TableAction from "@/src/components/ui/TableAction";
+import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getAnunciosFiltro, getCampanasFiltro, getLeads } from "./queries";
 
@@ -28,7 +32,15 @@ export default function LeadsView() {
 
   const deferredQ = useDeferredValue(q);
 
-  const filtro = { q: deferredQ || undefined, campanaId: campanaId || undefined, anuncioId: anuncioId || undefined, formularioId: formularioId || undefined, fechaDesde: fechaDesde || undefined, fechaHasta: fechaHasta || undefined, page };
+  const filtro = {
+    q: deferredQ || undefined,
+    campanaId: campanaId || undefined,
+    anuncioId: anuncioId || undefined,
+    formularioId: formularioId || undefined,
+    fechaDesde: fechaDesde || undefined,
+    fechaHasta: fechaHasta || undefined,
+    page,
+  };
 
   const campanasQuery = useQuery({ queryKey: queryKeys.metaCampaigns, queryFn: () => getCampanasFiltro() });
   const anunciosQuery = useQuery({ queryKey: queryKeys.metaAds, queryFn: () => getAnunciosFiltro() });
@@ -41,7 +53,7 @@ export default function LeadsView() {
 
   return (
     <div>
-      <h1 className="mb-6 text-title-sm font-semibold text-gray-800 dark:text-white/90">Leads</h1>
+      <PageHeader title="Leads" description="Contactos captados desde formularios de Meta." />
 
       <div className="mb-4 grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <div>
@@ -82,11 +94,21 @@ export default function LeadsView() {
         </div>
         <div>
           <Label htmlFor="fechaDesde">Desde</Label>
-          <Input id="fechaDesde" type="date" defaultValue={fechaDesde} onChange={(e) => cambiarFiltro(setFechaDesde)(e.target.value)} />
+          <Input
+            id="fechaDesde"
+            type="date"
+            defaultValue={fechaDesde}
+            onChange={(e) => cambiarFiltro(setFechaDesde)(e.target.value)}
+          />
         </div>
         <div>
           <Label htmlFor="fechaHasta">Hasta</Label>
-          <Input id="fechaHasta" type="date" defaultValue={fechaHasta} onChange={(e) => cambiarFiltro(setFechaHasta)(e.target.value)} />
+          <Input
+            id="fechaHasta"
+            type="date"
+            defaultValue={fechaHasta}
+            onChange={(e) => cambiarFiltro(setFechaHasta)(e.target.value)}
+          />
         </div>
       </div>
 
@@ -102,49 +124,9 @@ export default function LeadsView() {
       ) : leadsQuery.isError ? (
         <QueryError error={leadsQuery.error} />
       ) : (
-        <>
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-            <div className="max-w-full overflow-x-auto">
-              <Table>
-                <TableHeader className="border-b border-gray-100 dark:border-gray-800">
-                  <TableRow>
-                    <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500">Nombre</TableCell>
-                    <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500">Email</TableCell>
-                    <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500">Teléfono</TableCell>
-                    <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500">Campaña</TableCell>
-                    <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500">Anuncio</TableCell>
-                    <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500">Fecha</TableCell>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {leadsQuery.data?.data.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="px-5 py-8 text-center text-theme-sm text-gray-500">
-                        No hay leads con estos filtros.
-                      </td>
-                    </tr>
-                  )}
-                  {(leadsQuery.data?.data ?? []).map((lead) => (
-                    <TableRow key={lead.id}>
-                      <TableCell className="px-5 py-4 text-theme-sm text-gray-800 dark:text-white/90">
-                        <Link href={`/leads/${lead.id}`} className="text-brand-500 hover:underline">
-                          {lead.nombre ?? "(sin nombre)"}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="px-5 py-4 text-theme-sm text-gray-500">{lead.email ?? "—"}</TableCell>
-                      <TableCell className="px-5 py-4 text-theme-sm text-gray-500">{lead.telefono ?? "—"}</TableCell>
-                      <TableCell className="px-5 py-4 text-theme-sm text-gray-500">{lead.campana?.nombre ?? "—"}</TableCell>
-                      <TableCell className="px-5 py-4 text-theme-sm text-gray-500">{lead.anuncio?.nombre ?? "—"}</TableCell>
-                      <TableCell className="px-5 py-4 text-theme-sm text-gray-500">{formatearFecha(lead.fechaLead)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-
-          {leadsQuery.data && (
-            <div className="mt-4">
+        <TableCard
+          footer={
+            leadsQuery.data ? (
               <Pagination
                 page={leadsQuery.data.page}
                 pageSize={leadsQuery.data.pageSize}
@@ -153,9 +135,63 @@ export default function LeadsView() {
                 onPageChange={setPage}
                 itemLabel="leads"
               />
-            </div>
-          )}
-        </>
+            ) : null
+          }
+        >
+          <Table>
+            <TableHeader className="border-b border-gray-100 dark:border-gray-800">
+              <TableRow>
+                <TableCell isHeader className={thClass}>
+                  Contacto
+                </TableCell>
+                <TableCell isHeader className={thClass}>
+                  Teléfono
+                </TableCell>
+                <TableCell isHeader className={thClass}>
+                  Campaña
+                </TableCell>
+                <TableCell isHeader className={thClass}>
+                  Anuncio
+                </TableCell>
+                <TableCell isHeader className={thClass}>
+                  Fecha
+                </TableCell>
+                <TableCell isHeader className={thClassEnd}>
+                  Acción
+                </TableCell>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+              {leadsQuery.data?.data.length === 0 && (
+                <EmptyState
+                  colSpan={6}
+                  icon="mdi:account-search-outline"
+                  title="No hay leads con estos filtros."
+                  description="Prueba a cambiar la búsqueda o el rango de fechas."
+                />
+              )}
+              {(leadsQuery.data?.data ?? []).map((lead) => {
+                const nombre = lead.nombre ?? "Sin nombre";
+                return (
+                  <TableRow key={lead.id}>
+                    <TableCell className={tdPrimaryClass}>
+                      <EntityCell name={nombre} subtitle={lead.email ?? "Sin email"} />
+                    </TableCell>
+                    <TableCell className={tdClass}>{lead.telefono ?? "—"}</TableCell>
+                    <TableCell className={tdClass}>{lead.campana?.nombre ?? "—"}</TableCell>
+                    <TableCell className={tdClass}>{lead.anuncio?.nombre ?? "—"}</TableCell>
+                    <TableCell className={tdClass}>{formatearFecha(lead.fechaLead)}</TableCell>
+                    <TableCell className="px-5 py-4">
+                      <div className="flex justify-end">
+                        <TableAction href={`/leads/${lead.id}`} icon="mdi:eye-outline" label={`Ver ${nombre}`} />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableCard>
       )}
     </div>
   );

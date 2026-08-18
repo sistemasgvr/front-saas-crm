@@ -4,9 +4,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
+import Avatar from "@/src/components/ui/avatar/Avatar";
 import { toggleOrganizationModuleAction } from "./actions";
 import type { ModuloMatriz } from "../types";
-import { Icon } from "@/src/components/ui/Icon";
 import Switch from "@/src/components/form/switch/Switch";
 import { Spinner } from "@/src/components/ui/Spinner";
 
@@ -32,7 +32,7 @@ export default function ModulesMatrix({
         return (
           <li key={modulo.id} className="flex items-center justify-between py-3">
             <div className="flex items-center gap-3">
-              {modulo.icono && <Icon name={modulo.icono} size={20} />}
+              <Avatar name={modulo.nombre} icon={modulo.icono || "mdi:puzzle-outline"} shape="rounded" size="sm" />
               <div>
                 <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">{modulo.nombre}</p>
                 <p className="text-theme-xs text-gray-500">{modulo.codigo}</p>

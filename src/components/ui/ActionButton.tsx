@@ -13,6 +13,7 @@ interface ActionButtonProps {
   size?: "sm" | "md";
   className?: string;
   loadingText?: string;
+  startIcon?: ReactNode;
   invalidateKeys?: QueryKey[];
 }
 
@@ -24,6 +25,7 @@ export default function ActionButton({
   size = "sm",
   className,
   loadingText,
+  startIcon,
   invalidateKeys,
 }: ActionButtonProps) {
   const mutation = useAppMutation({
@@ -38,6 +40,7 @@ export default function ActionButton({
       size={size}
       variant={variant}
       className={className}
+      startIcon={startIcon}
       loading={mutation.isPending}
       disabled={mutation.isPending}
       onClick={() => mutation.mutate()}

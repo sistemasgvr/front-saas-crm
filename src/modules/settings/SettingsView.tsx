@@ -7,6 +7,7 @@ import { getCurrentOrganization } from "./queries";
 import { canManageOrganization } from "@/src/lib/roles";
 import OrganizationSettingsForm from "./OrganizationSettingsForm";
 import MetaConnectionCard from "./meta/MetaConnectionCard";
+import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 
 export default function SettingsView({ metaCallback }: { metaCallback?: string }) {
@@ -34,12 +35,16 @@ export default function SettingsView({ metaCallback }: { metaCallback?: string }
 
   return (
     <div className="space-y-6">
+      <PageHeader title="Configuración" description="Datos de la empresa y conexión con Meta." />
       {orgQuery.isLoading ? (
         <PageLoader label="Cargando datos de la empresa…" />
       ) : orgQuery.isError ? (
         <QueryError error={orgQuery.error} />
       ) : orgQuery.data ? (
-        <OrganizationSettingsForm org={orgQuery.data} />
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+          <h2 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90">Datos de la empresa</h2>
+          <OrganizationSettingsForm org={orgQuery.data} />
+        </div>
       ) : (
         <p className="text-theme-sm text-gray-500 dark:text-gray-400">
           No se pudieron cargar los datos de la empresa.
