@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useState } from "react";
 import { ThemeToggleButton } from "@/src/components/common/ThemeToggleButton";
 import { Icon } from "@/src/components/ui/Icon";
+import NotificationBell from "@/src/modules/notifications/NotificationBell";
 import { useSidebar } from "./SidebarContext";
 import UserMenu from "./UserMenu";
 
 interface HeaderProps {
   nombre: string;
   email: string;
+  organizacionId?: string;
   organizacionNombre?: string;
   profileHref: string;
   settingsHref?: string;
@@ -20,6 +22,7 @@ interface HeaderProps {
 export default function Header({
   nombre,
   email,
+  organizacionId,
   organizacionNombre,
   profileHref,
   settingsHref,
@@ -88,6 +91,7 @@ export default function Header({
               </span>
             )}
             <ThemeToggleButton />
+            {organizacionId && <NotificationBell organizacionId={organizacionId} />}
           </div>
           <UserMenu nombre={nombre} email={email} profileHref={profileHref} settingsHref={settingsHref} />
         </div>

@@ -44,6 +44,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Header
               nombre={me.usuario.nombre}
               email={me.usuario.email}
+              organizacionId={me.organizacion?.id}
               organizacionNombre={me.organizacion?.nombre}
               profileHref="/profile"
               settingsHref={canManageOrganization(me.rol) ? "/settings" : undefined}
