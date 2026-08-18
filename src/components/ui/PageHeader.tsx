@@ -42,6 +42,7 @@ export default function PageHeader({
         {description && <p className="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">{description}</p>}
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">
+        {children}
         {action && (
           <Link href={action.href}>
             <Button
@@ -52,7 +53,6 @@ export default function PageHeader({
             </Button>
           </Link>
         )}
-        {children}
       </div>
     </div>
   );

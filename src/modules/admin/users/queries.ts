@@ -1,13 +1,20 @@
 "use server";
 
 import { apiFetch } from "@/src/lib/api";
-import type { ListaUsuariosResultado, UsuarioAdminDetalle } from "../types";
+import type { FiltroAdminUsuarios, ListaUsuariosResultado, UsuarioAdminDetalle } from "../types";
 
-export async function getAdminUsers(params?: { page?: number; pageSize?: number }) {
+function toSearch(params?: FiltroAdminUsuarios) {
   const search = new URLSearchParams();
   search.set("page", String(params?.page ?? 1));
   search.set("pageSize", String(params?.pageSize ?? 20));
-  return apiFetch<ListaUsuariosResultado>(`/admin/users?${search.toString()}`);
+  if (params?.q) search.set("q", params.q);
+  if (params?.estado !== undefined) search.set("estado", String(params.estado));
+  if (params?.esAdminPlataforma !== undefined) search.set("esAdminPlataforma", String(params.esAdminPlataforma));
+  return search.toString();
+}
+
+export async function getAdminUsers(params?: FiltroAdminUsuarios) {
+  return apiFetch<ListaUsuariosResultado>(`/admin/users?${toSearch(params)}`);
 }
 
 export async function getAdminUser(id: string) {

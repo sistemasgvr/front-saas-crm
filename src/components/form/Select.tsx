@@ -73,7 +73,7 @@ export default function Select({
             </option>
           ))}
         </select>
-        <span className="pointer-events-none absolute right-3 top-0 flex h-11 items-center text-gray-500 dark:text-gray-400">
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500 dark:text-gray-400">
           <Icon name="mdi:chevron-down" size={20} />
         </span>
       </div>

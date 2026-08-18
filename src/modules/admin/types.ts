@@ -54,6 +54,17 @@ export interface ModuloMatriz {
   habilitado: boolean;
 }
 
+export interface FiltroAdminOrganizaciones {
+  page?: number;
+  pageSize?: number;
+  q?: string;
+  estado?: 0 | 1;
+}
+
+export interface FiltroAdminUsuarios extends FiltroAdminOrganizaciones {
+  esAdminPlataforma?: 0 | 1;
+}
+
 export interface ListaOrganizacionesResultado {
   data: OrganizacionAdmin[];
   total: number;

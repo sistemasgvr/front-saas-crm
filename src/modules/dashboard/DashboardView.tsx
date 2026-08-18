@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Select from "@/src/components/form/Select";
-import Label from "@/src/components/form/Label";
-import Input from "@/src/components/form/input/InputField";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import DynamicFilters from "@/src/components/ui/filters/DynamicFilters";
+import type { DynamicFilterFieldDef, DynamicFilterValues } from "@/src/components/ui/filters/types";
 import LineChart from "@/src/components/charts/LineChart";
 import BarChart from "@/src/components/charts/BarChart";
 import { queryKeys } from "@/src/lib/query/keys";
@@ -22,18 +21,14 @@ function formatearFechaCorta(fechaYYYYMMDD: string) {
 }
 
 export default function DashboardView() {
-  const [campanaId, setCampanaId] = useState("");
-  const [conjuntoAnuncioId, setConjuntoAnuncioId] = useState("");
-  const [anuncioId, setAnuncioId] = useState("");
-  const [fechaDesde, setFechaDesde] = useState("");
-  const [fechaHasta, setFechaHasta] = useState("");
+  const [values, setValues] = useState<DynamicFilterValues>({});
 
   const filtro: FiltroDashboard = {
-    campanaId: campanaId || undefined,
-    conjuntoAnuncioId: conjuntoAnuncioId || undefined,
-    anuncioId: anuncioId || undefined,
-    fechaDesde: fechaDesde || undefined,
-    fechaHasta: fechaHasta || undefined,
+    campanaId: values.campanaId || undefined,
+    conjuntoAnuncioId: values.conjuntoAnuncioId || undefined,
+    anuncioId: values.anuncioId || undefined,
+    fechaDesde: values.fechaDesde || undefined,
+    fechaHasta: values.fechaHasta || undefined,
   };
 
   const campanasQuery = useQuery({ queryKey: queryKeys.metaCampaigns, queryFn: () => getCampanasFiltro() });
@@ -43,47 +38,54 @@ export default function DashboardView() {
   const kpisQuery = useQuery({ queryKey: ["dashboard", "kpis", filtro], queryFn: () => getDashboardKpis(filtro) });
   const seriesQuery = useQuery({ queryKey: ["dashboard", "series", filtro], queryFn: () => getDashboardSeries(filtro) });
 
+  const fields = useMemo<DynamicFilterFieldDef[]>(
+    () => [
+      {
+        key: "campanaId",
+        label: "Campaña",
+        type: "select",
+        searchable: true,
+        placeholder: "Todas",
+        searchPlaceholder: "Buscar campaña...",
+        options: (campanasQuery.data ?? []).map((campana) => ({ value: campana.id, label: campana.nombre })),
+      },
+      {
+        key: "conjuntoAnuncioId",
+        label: "Conjunto",
+        type: "select",
+        searchable: true,
+        placeholder: "Todos",
+        searchPlaceholder: "Buscar conjunto...",
+        options: (conjuntosQuery.data ?? []).map((conjunto) => ({ value: conjunto.id, label: conjunto.nombre })),
+      },
+      {
+        key: "anuncioId",
+        label: "Anuncio",
+        type: "select",
+        searchable: true,
+        placeholder: "Todos",
+        searchPlaceholder: "Buscar anuncio...",
+        options: (anunciosQuery.data ?? []).map((anuncio) => ({ value: anuncio.id, label: anuncio.nombre })),
+      },
+      { key: "fechaDesde", label: "Desde", type: "date" },
+      { key: "fechaHasta", label: "Hasta", type: "date" },
+    ],
+    [campanasQuery.data, conjuntosQuery.data, anunciosQuery.data],
+  );
+
   return (
     <div>
-      <PageHeader title="Dashboard" description="Resumen de leads por periodo y campaña." />
+      <PageHeader title="Dashboard" description="Resumen de leads por periodo y campaña.">
+        <DynamicFilters fields={fields} values={values} onChange={setValues} />
+      </PageHeader>
 
-      <div className="mb-6 grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] sm:grid-cols-2 lg:grid-cols-5">
-        <div>
-          <Label>Campaña</Label>
-          <Select
-            options={(campanasQuery.data ?? []).map((c) => ({ value: c.id, label: c.nombre }))}
-            value={campanaId}
-            onChange={setCampanaId}
-            placeholder="Todas"
-          />
+      {(campanasQuery.isError || conjuntosQuery.isError || anunciosQuery.isError) && (
+        <div className="mb-4 space-y-2">
+          {campanasQuery.isError && <QueryError error={campanasQuery.error} />}
+          {conjuntosQuery.isError && <QueryError error={conjuntosQuery.error} />}
+          {anunciosQuery.isError && <QueryError error={anunciosQuery.error} />}
         </div>
-        <div>
-          <Label>Conjunto de anuncios</Label>
-          <Select
-            options={(conjuntosQuery.data ?? []).map((c) => ({ value: c.id, label: c.nombre }))}
-            value={conjuntoAnuncioId}
-            onChange={setConjuntoAnuncioId}
-            placeholder="Todos"
-          />
-        </div>
-        <div>
-          <Label>Anuncio</Label>
-          <Select
-            options={(anunciosQuery.data ?? []).map((a) => ({ value: a.id, label: a.nombre }))}
-            value={anuncioId}
-            onChange={setAnuncioId}
-            placeholder="Todos"
-          />
-        </div>
-        <div>
-          <Label htmlFor="fechaDesde">Desde</Label>
-          <Input id="fechaDesde" type="date" defaultValue={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
-        </div>
-        <div>
-          <Label htmlFor="fechaHasta">Hasta</Label>
-          <Input id="fechaHasta" type="date" defaultValue={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
-        </div>
-      </div>
+      )}
 
       {kpisQuery.isLoading ? (
         <PageLoader label="Cargando KPIs…" />

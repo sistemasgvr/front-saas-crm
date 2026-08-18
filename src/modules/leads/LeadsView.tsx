@@ -1,13 +1,12 @@
 "use client";
 
-import { useDeferredValue, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/src/components/tables";
-import Select from "@/src/components/form/Select";
-import Label from "@/src/components/form/Label";
-import Input from "@/src/components/form/input/InputField";
 import EntityCell from "@/src/components/ui/avatar/EntityCell";
 import EmptyState from "@/src/components/ui/EmptyState";
+import DynamicFilters from "@/src/components/ui/filters/DynamicFilters";
+import type { DynamicFilterFieldDef, DynamicFilterValues } from "@/src/components/ui/filters/types";
 import PageHeader from "@/src/components/ui/PageHeader";
 import Pagination from "@/src/components/ui/Pagination";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
@@ -22,23 +21,17 @@ function formatearFecha(iso: string | null) {
 }
 
 export default function LeadsView() {
-  const [q, setQ] = useState("");
-  const [campanaId, setCampanaId] = useState("");
-  const [anuncioId, setAnuncioId] = useState("");
-  const [formularioId, setFormularioId] = useState("");
-  const [fechaDesde, setFechaDesde] = useState("");
-  const [fechaHasta, setFechaHasta] = useState("");
+  const [values, setValues] = useState<DynamicFilterValues>({});
   const [page, setPage] = useState(1);
-
-  const deferredQ = useDeferredValue(q);
+  const deferredQ = useDeferredValue(values.q ?? "");
 
   const filtro = {
-    q: deferredQ || undefined,
-    campanaId: campanaId || undefined,
-    anuncioId: anuncioId || undefined,
-    formularioId: formularioId || undefined,
-    fechaDesde: fechaDesde || undefined,
-    fechaHasta: fechaHasta || undefined,
+    q: deferredQ.trim() || undefined,
+    campanaId: values.campanaId || undefined,
+    anuncioId: values.anuncioId || undefined,
+    formularioId: values.formularioId || undefined,
+    fechaDesde: values.fechaDesde || undefined,
+    fechaHasta: values.fechaHasta || undefined,
     page,
   };
 
@@ -46,71 +39,46 @@ export default function LeadsView() {
   const anunciosQuery = useQuery({ queryKey: queryKeys.metaAds, queryFn: () => getAnunciosFiltro() });
   const leadsQuery = useQuery({ queryKey: queryKeys.leads(filtro), queryFn: () => getLeads(filtro) });
 
-  const cambiarFiltro = (setter: (v: string) => void) => (v: string) => {
-    setter(v);
-    setPage(1);
-  };
+  const fields = useMemo<DynamicFilterFieldDef[]>(
+    () => [
+      { key: "q", label: "Buscar", type: "text", placeholder: "Nombre, email o teléfono" },
+      {
+        key: "campanaId",
+        label: "Campaña",
+        type: "select",
+        searchable: true,
+        placeholder: "Todas",
+        searchPlaceholder: "Buscar campaña...",
+        options: (campanasQuery.data ?? []).map((campana) => ({ value: campana.id, label: campana.nombre })),
+      },
+      {
+        key: "anuncioId",
+        label: "Anuncio",
+        type: "select",
+        searchable: true,
+        placeholder: "Todos",
+        searchPlaceholder: "Buscar anuncio...",
+        options: (anunciosQuery.data ?? []).map((anuncio) => ({ value: anuncio.id, label: anuncio.nombre })),
+      },
+      { key: "formularioId", label: "Formulario", type: "text", placeholder: "ID Meta del formulario" },
+      { key: "fechaDesde", label: "Desde", type: "date" },
+      { key: "fechaHasta", label: "Hasta", type: "date" },
+    ],
+    [campanasQuery.data, anunciosQuery.data],
+  );
 
   return (
     <div>
-      <PageHeader title="Leads" description="Contactos captados desde formularios de Meta." />
-
-      <div className="mb-4 grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <div>
-          <Label htmlFor="q">Buscar</Label>
-          <Input
-            id="q"
-            placeholder="Nombre, email o teléfono"
-            defaultValue={q}
-            onChange={(e) => cambiarFiltro(setQ)(e.target.value)}
-          />
-        </div>
-        <div>
-          <Label>Campaña</Label>
-          <Select
-            options={(campanasQuery.data ?? []).map((c) => ({ value: c.id, label: c.nombre }))}
-            value={campanaId}
-            onChange={cambiarFiltro(setCampanaId)}
-            placeholder="Todas"
-          />
-        </div>
-        <div>
-          <Label>Anuncio</Label>
-          <Select
-            options={(anunciosQuery.data ?? []).map((a) => ({ value: a.id, label: a.nombre }))}
-            value={anuncioId}
-            onChange={cambiarFiltro(setAnuncioId)}
-            placeholder="Todos"
-          />
-        </div>
-        <div>
-          <Label htmlFor="formularioId">Formulario</Label>
-          <Input
-            id="formularioId"
-            placeholder="ID Meta del formulario"
-            defaultValue={formularioId}
-            onChange={(e) => cambiarFiltro(setFormularioId)(e.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor="fechaDesde">Desde</Label>
-          <Input
-            id="fechaDesde"
-            type="date"
-            defaultValue={fechaDesde}
-            onChange={(e) => cambiarFiltro(setFechaDesde)(e.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor="fechaHasta">Hasta</Label>
-          <Input
-            id="fechaHasta"
-            type="date"
-            defaultValue={fechaHasta}
-            onChange={(e) => cambiarFiltro(setFechaHasta)(e.target.value)}
-          />
-        </div>
-      </div>
+      <PageHeader title="Leads" description="Contactos captados desde formularios de Meta.">
+        <DynamicFilters
+          fields={fields}
+          values={values}
+          onChange={(next) => {
+            setValues(next);
+            setPage(1);
+          }}
+        />
+      </PageHeader>
 
       {(campanasQuery.isError || anunciosQuery.isError) && (
         <div className="mb-4 space-y-2">

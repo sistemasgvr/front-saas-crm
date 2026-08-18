@@ -19,8 +19,8 @@ export default function UserDetailView({ id }: { id: string }) {
     queryFn: () => getAdminUser(id),
   });
   const orgsQuery = useQuery({
-    queryKey: queryKeys.adminOrganizations({ page: 1, pageSize: 100 }),
-    queryFn: () => getAdminOrganizations({ page: 1, pageSize: 100 }),
+    queryKey: queryKeys.adminOrganizations({ page: 1, pageSize: 100, estado: 1 }),
+    queryFn: () => getAdminOrganizations({ page: 1, pageSize: 100, estado: 1 }),
   });
 
   if (userQuery.isLoading) return <PageLoader />;

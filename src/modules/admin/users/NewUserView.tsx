@@ -9,8 +9,8 @@ import { getAdminOrganizations } from "../organizations/queries";
 
 export default function NewUserView() {
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: queryKeys.adminOrganizations({ page: 1, pageSize: 100 }),
-    queryFn: () => getAdminOrganizations({ page: 1, pageSize: 100 }),
+    queryKey: queryKeys.adminOrganizations({ page: 1, pageSize: 100, estado: 1 }),
+    queryFn: () => getAdminOrganizations({ page: 1, pageSize: 100, estado: 1 }),
   });
 
   if (isLoading) return <PageLoader />;
