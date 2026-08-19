@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
@@ -11,7 +12,7 @@ import BarChart from "@/src/components/charts/BarChart";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getCampanasFiltro, getAnunciosFiltro } from "@/src/modules/leads/queries";
 import KpiCard from "./KpiCard";
-import { getConjuntosAnunciosFiltro, getDashboardKpis, getDashboardSeries } from "./queries";
+import { getConjuntosAnunciosFiltro, getCuentasFiltro, getDashboardKpis, getDashboardSeries } from "./queries";
 import type { FiltroDashboard } from "./types";
 
 function formatearFechaCorta(fechaYYYYMMDD: string) {
@@ -21,12 +22,19 @@ function formatearFechaCorta(fechaYYYYMMDD: string) {
 }
 
 export default function DashboardView() {
-  const [values, setValues] = useState<DynamicFilterValues>({});
+  const searchParams = useSearchParams();
+  const [values, setValues] = useState<DynamicFilterValues>(() => {
+    const metaCuentaId = searchParams.get("metaCuentaId");
+    const init: DynamicFilterValues = {};
+    if (metaCuentaId) init.metaCuentaId = metaCuentaId;
+    return init;
+  });
 
   const filtro: FiltroDashboard = {
     campanaId: values.campanaId || undefined,
     conjuntoAnuncioId: values.conjuntoAnuncioId || undefined,
     anuncioId: values.anuncioId || undefined,
+    metaCuentaId: values.metaCuentaId || undefined,
     fechaDesde: values.fechaDesde || undefined,
     fechaHasta: values.fechaHasta || undefined,
   };
@@ -34,6 +42,7 @@ export default function DashboardView() {
   const campanasQuery = useQuery({ queryKey: queryKeys.metaCampaigns, queryFn: () => getCampanasFiltro() });
   const conjuntosQuery = useQuery({ queryKey: queryKeys.metaAdsets, queryFn: () => getConjuntosAnunciosFiltro() });
   const anunciosQuery = useQuery({ queryKey: queryKeys.metaAds, queryFn: () => getAnunciosFiltro() });
+  const cuentasQuery = useQuery({ queryKey: queryKeys.metaAdAccountsFiltro, queryFn: () => getCuentasFiltro() });
 
   const kpisQuery = useQuery({ queryKey: ["dashboard", "kpis", filtro], queryFn: () => getDashboardKpis(filtro) });
   const seriesQuery = useQuery({ queryKey: ["dashboard", "series", filtro], queryFn: () => getDashboardSeries(filtro) });
@@ -67,10 +76,19 @@ export default function DashboardView() {
         searchPlaceholder: "Buscar anuncio...",
         options: (anunciosQuery.data ?? []).map((anuncio) => ({ value: anuncio.id, label: anuncio.nombre })),
       },
+      {
+        key: "metaCuentaId",
+        label: "Cuenta publicitaria",
+        type: "select",
+        searchable: true,
+        placeholder: "Todas",
+        searchPlaceholder: "Buscar cuenta...",
+        options: (cuentasQuery.data ?? []).map((cuenta) => ({ value: cuenta.id, label: cuenta.nombre })),
+      },
       { key: "fechaDesde", label: "Desde", type: "date" },
       { key: "fechaHasta", label: "Hasta", type: "date" },
     ],
-    [campanasQuery.data, conjuntosQuery.data, anunciosQuery.data],
+    [campanasQuery.data, conjuntosQuery.data, anunciosQuery.data, cuentasQuery.data],
   );
 
   return (
@@ -79,11 +97,12 @@ export default function DashboardView() {
         <DynamicFilters fields={fields} values={values} onChange={setValues} />
       </PageHeader>
 
-      {(campanasQuery.isError || conjuntosQuery.isError || anunciosQuery.isError) && (
+      {(campanasQuery.isError || conjuntosQuery.isError || anunciosQuery.isError || cuentasQuery.isError) && (
         <div className="mb-4 space-y-2">
           {campanasQuery.isError && <QueryError error={campanasQuery.error} />}
           {conjuntosQuery.isError && <QueryError error={conjuntosQuery.error} />}
           {anunciosQuery.isError && <QueryError error={anunciosQuery.error} />}
+          {cuentasQuery.isError && <QueryError error={cuentasQuery.error} />}
         </div>
       )}
 

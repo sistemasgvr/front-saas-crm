@@ -26,6 +26,7 @@ export interface FiltroDashboard {
   campanaId?: string;
   conjuntoAnuncioId?: string;
   anuncioId?: string;
+  metaCuentaId?: string;
   fechaDesde?: string;
   fechaHasta?: string;
 }

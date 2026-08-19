@@ -6,11 +6,11 @@ import { getMeQuery } from "@/src/modules/auth/queries";
 import { getCurrentOrganization } from "./queries";
 import { canManageOrganization } from "@/src/lib/roles";
 import OrganizationSettingsForm from "./OrganizationSettingsForm";
-import MetaConnectionCard from "./meta/MetaConnectionCard";
+import MetaSettingsEntryCard from "./meta/MetaSettingsEntryCard";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 
-export default function SettingsView({ metaCallback }: { metaCallback?: string }) {
+export default function SettingsView() {
   const meQuery = useQuery({ queryKey: queryKeys.me, queryFn: () => getMeQuery() });
   const canEdit = canManageOrganization(meQuery.data?.rol);
   const orgQuery = useQuery({
@@ -51,7 +51,7 @@ export default function SettingsView({ metaCallback }: { metaCallback?: string }
         </p>
       )}
 
-      {metaLeadsHabilitado && <MetaConnectionCard metaCallback={metaCallback} />}
+      {metaLeadsHabilitado && <MetaSettingsEntryCard />}
     </div>
   );
 }

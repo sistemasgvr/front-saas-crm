@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/src/lib/auth";
 import { canManageOrganization } from "@/src/lib/roles";
-import SettingsView from "@/src/modules/settings/SettingsView";
+import { isModuloHabilitado } from "@/src/lib/modules";
+import MetaHubView from "@/src/modules/settings/meta/MetaHubView";
 
-export default async function SettingsPage({
+export default async function SettingsMetaPage({
   searchParams,
 }: {
   searchParams: Promise<{ meta?: string }>;
@@ -12,12 +13,11 @@ export default async function SettingsPage({
   if (!me || !canManageOrganization(me.rol)) {
     redirect("/profile");
   }
+  if (!isModuloHabilitado(me.modulos, "META_LEADS")) {
+    redirect("/settings");
+  }
 
   const { meta } = await searchParams;
 
-  if (meta) {
-    redirect(`/settings/meta?meta=${meta}`);
-  }
-
-  return <SettingsView />;
+  return <MetaHubView metaCallback={meta} />;
 }

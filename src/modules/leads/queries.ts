@@ -11,6 +11,7 @@ export async function getLeads(filtro: FiltroLeads) {
   if (filtro.q) params.set("q", filtro.q);
   if (filtro.campanaId) params.set("campanaId", filtro.campanaId);
   if (filtro.anuncioId) params.set("anuncioId", filtro.anuncioId);
+  if (filtro.metaPaginaId) params.set("metaPaginaId", filtro.metaPaginaId);
   if (filtro.formularioId) params.set("formularioId", filtro.formularioId);
   if (filtro.fechaDesde) params.set("fechaDesde", filtro.fechaDesde);
   if (filtro.fechaHasta) params.set("fechaHasta", filtro.fechaHasta);
@@ -30,5 +31,10 @@ export async function getCampanasFiltro() {
 
 export async function getAnunciosFiltro() {
   const data = await apiFetch<ReferenciaNombrada[]>("/meta/ads");
+  return Array.isArray(data) ? data : [];
+}
+
+export async function getPaginasFiltro() {
+  const data = await apiFetch<ReferenciaNombrada[]>("/meta/pages/filtro");
   return Array.isArray(data) ? data : [];
 }

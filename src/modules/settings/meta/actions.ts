@@ -30,35 +30,67 @@ export async function connectMetaAction() {
   redirect(url);
 }
 
-export async function selectMetaPageAction(pageId: string, pageNombre: string): Promise<MetaConnection> {
-  try {
-    return await apiFetch<MetaConnection>("/meta/connections/page", {
-      method: "POST",
-      body: JSON.stringify({ pageId, pageNombre }),
-    });
-  } catch (error) {
-    fail(error, "No se pudo guardar la página");
-  }
-}
-
-export async function selectMetaAdAccountAction(
-  adAccountId: string,
-  adAccountNombre: string,
-): Promise<MetaConnection> {
-  try {
-    return await apiFetch<MetaConnection>("/meta/connections/ad-account", {
-      method: "POST",
-      body: JSON.stringify({ adAccountId, adAccountNombre }),
-    });
-  } catch (error) {
-    fail(error, "No se pudo guardar la cuenta publicitaria");
-  }
-}
-
 export async function disconnectMetaAction(): Promise<void> {
   try {
     await apiFetch("/meta/connections/disconnect", { method: "POST" });
   } catch (error) {
     fail(error, "No se pudo desconectar Meta");
+  }
+}
+
+export async function linkMetaPageAction(pageId: string, pageNombre: string): Promise<void> {
+  try {
+    await apiFetch("/meta/pages", { method: "POST", body: JSON.stringify({ pageId, pageNombre }) });
+  } catch (error) {
+    fail(error, "No se pudo vincular la página");
+  }
+}
+
+export async function unlinkMetaPageAction(id: string): Promise<void> {
+  try {
+    await apiFetch(`/meta/pages/${id}`, { method: "DELETE" });
+  } catch (error) {
+    fail(error, "No se pudo desvincular la página");
+  }
+}
+
+export async function resyncMetaPageWebhookAction(id: string): Promise<void> {
+  try {
+    await apiFetch(`/meta/pages/${id}/resync-webhook`, { method: "POST" });
+  } catch (error) {
+    fail(error, "No se pudo re-suscribir el webhook");
+  }
+}
+
+export async function linkMetaAdAccountAction(adAccountId: string, adAccountNombre: string): Promise<void> {
+  try {
+    await apiFetch("/meta/ad-accounts", {
+      method: "POST",
+      body: JSON.stringify({ adAccountId, adAccountNombre }),
+    });
+  } catch (error) {
+    fail(error, "No se pudo vincular la cuenta publicitaria");
+  }
+}
+
+export async function unlinkMetaAdAccountAction(id: string): Promise<void> {
+  try {
+    await apiFetch(`/meta/ad-accounts/${id}`, { method: "DELETE" });
+  } catch (error) {
+    fail(error, "No se pudo desvincular la cuenta publicitaria");
+  }
+}
+
+export interface ResultadoSync {
+  campanas: number;
+  conjuntos: number;
+  anuncios: number;
+}
+
+export async function syncMetaAdAccountAction(id: string): Promise<ResultadoSync> {
+  try {
+    return await apiFetch<ResultadoSync>(`/meta/ad-accounts/${id}/sync`, { method: "POST" });
+  } catch (error) {
+    fail(error, "No se pudo sincronizar la cuenta publicitaria");
   }
 }

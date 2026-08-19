@@ -9,6 +9,7 @@ function paramsDe(filtro: FiltroDashboard) {
   if (filtro.campanaId) params.set("campanaId", filtro.campanaId);
   if (filtro.conjuntoAnuncioId) params.set("conjuntoAnuncioId", filtro.conjuntoAnuncioId);
   if (filtro.anuncioId) params.set("anuncioId", filtro.anuncioId);
+  if (filtro.metaCuentaId) params.set("metaCuentaId", filtro.metaCuentaId);
   return params;
 }
 
@@ -25,5 +26,10 @@ export async function getDashboardSeries(filtro: FiltroDashboard) {
 
 export async function getConjuntosAnunciosFiltro() {
   const data = await apiFetch<ReferenciaNombrada[]>("/meta/adsets");
+  return Array.isArray(data) ? data : [];
+}
+
+export async function getCuentasFiltro() {
+  const data = await apiFetch<ReferenciaNombrada[]>("/meta/ad-accounts/filtro");
   return Array.isArray(data) ? data : [];
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useDeferredValue, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/src/components/tables";
 import EntityCell from "@/src/components/ui/avatar/EntityCell";
@@ -13,7 +14,7 @@ import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import TableAction from "@/src/components/ui/TableAction";
 import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
-import { getAnunciosFiltro, getCampanasFiltro, getLeads } from "./queries";
+import { getAnunciosFiltro, getCampanasFiltro, getLeads, getPaginasFiltro } from "./queries";
 
 function formatearFecha(iso: string | null) {
   if (!iso) return "—";
@@ -21,7 +22,13 @@ function formatearFecha(iso: string | null) {
 }
 
 export default function LeadsView() {
-  const [values, setValues] = useState<DynamicFilterValues>({});
+  const searchParams = useSearchParams();
+  const [values, setValues] = useState<DynamicFilterValues>(() => {
+    const metaPaginaId = searchParams.get("metaPaginaId");
+    const init: DynamicFilterValues = {};
+    if (metaPaginaId) init.metaPaginaId = metaPaginaId;
+    return init;
+  });
   const [page, setPage] = useState(1);
   const deferredQ = useDeferredValue(values.q ?? "");
 
@@ -29,6 +36,7 @@ export default function LeadsView() {
     q: deferredQ.trim() || undefined,
     campanaId: values.campanaId || undefined,
     anuncioId: values.anuncioId || undefined,
+    metaPaginaId: values.metaPaginaId || undefined,
     formularioId: values.formularioId || undefined,
     fechaDesde: values.fechaDesde || undefined,
     fechaHasta: values.fechaHasta || undefined,
@@ -37,6 +45,7 @@ export default function LeadsView() {
 
   const campanasQuery = useQuery({ queryKey: queryKeys.metaCampaigns, queryFn: () => getCampanasFiltro() });
   const anunciosQuery = useQuery({ queryKey: queryKeys.metaAds, queryFn: () => getAnunciosFiltro() });
+  const paginasQuery = useQuery({ queryKey: queryKeys.metaPagesFiltro, queryFn: () => getPaginasFiltro() });
   const leadsQuery = useQuery({ queryKey: queryKeys.leads(filtro), queryFn: () => getLeads(filtro) });
 
   const fields = useMemo<DynamicFilterFieldDef[]>(
@@ -60,11 +69,20 @@ export default function LeadsView() {
         searchPlaceholder: "Buscar anuncio...",
         options: (anunciosQuery.data ?? []).map((anuncio) => ({ value: anuncio.id, label: anuncio.nombre })),
       },
+      {
+        key: "metaPaginaId",
+        label: "Página",
+        type: "select",
+        searchable: true,
+        placeholder: "Todas",
+        searchPlaceholder: "Buscar página...",
+        options: (paginasQuery.data ?? []).map((pagina) => ({ value: pagina.id, label: pagina.nombre })),
+      },
       { key: "formularioId", label: "Formulario", type: "text", placeholder: "ID Meta del formulario" },
       { key: "fechaDesde", label: "Desde", type: "date" },
       { key: "fechaHasta", label: "Hasta", type: "date" },
     ],
-    [campanasQuery.data, anunciosQuery.data],
+    [campanasQuery.data, anunciosQuery.data, paginasQuery.data],
   );
 
   return (
@@ -80,10 +98,11 @@ export default function LeadsView() {
         />
       </PageHeader>
 
-      {(campanasQuery.isError || anunciosQuery.isError) && (
+      {(campanasQuery.isError || anunciosQuery.isError || paginasQuery.isError) && (
         <div className="mb-4 space-y-2">
           {campanasQuery.isError && <QueryError error={campanasQuery.error} />}
           {anunciosQuery.isError && <QueryError error={anunciosQuery.error} />}
+          {paginasQuery.isError && <QueryError error={paginasQuery.error} />}
         </div>
       )}
 
