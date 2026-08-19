@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import AppLogo from "@/src/components/ui/AppLogo";
 import { Icon } from "@/src/components/ui/Icon";
 import { useSidebar } from "./SidebarContext";
 
@@ -36,16 +36,11 @@ export default function Sidebar({ items, homeHref, sectionTitle = "Menú" }: Sid
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className={`flex py-8 ${!expanded ? "lg:justify-center" : "justify-start"}`}>
-        <Link href={homeHref}>
-          {expanded ? (
-            <>
-              <Image className="dark:hidden" src="/images/logo/logo.svg" alt="GVR CRM" width={150} height={40} />
-              <Image className="hidden dark:block" src="/images/logo/logo-dark.svg" alt="GVR CRM" width={150} height={40} />
-            </>
-          ) : (
-            <Image src="/images/logo/logo-icon.svg" alt="GVR CRM" width={32} height={32} />
-          )}
-        </Link>
+        {expanded ? (
+          <AppLogo href={homeHref} variant="full" width={150} height={40} priority />
+        ) : (
+          <AppLogo href={homeHref} variant="icon" priority />
+        )}
       </div>
 
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">

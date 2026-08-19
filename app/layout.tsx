@@ -8,8 +8,12 @@ import "./globals.css";
 const outfit = Outfit({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "GVR CRM",
+  title: "CRM",
   description: "Panel de gestión de leads y campañas Meta",
+  icons: {
+    icon: "/images/logo/logo-crm.png",
+    apple: "/images/logo/logo-crm.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

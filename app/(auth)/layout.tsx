@@ -1,6 +1,6 @@
 import GridShape from "@/src/components/common/GridShape";
 import ThemeTogglerTwo from "@/src/components/common/ThemeTogglerTwo";
-import Image from "next/image";
+import AppLogo from "@/src/components/ui/AppLogo";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,14 +10,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="hidden h-full w-full items-center bg-brand-950 dark:bg-white/5 lg:grid lg:w-1/2">
           <div className="relative z-1 flex items-center justify-center">
             <GridShape />
-            <div className="flex max-w-xs flex-col items-center">
-              <Image
-                width={180}
-                height={40}
-                src="/images/logo/auth-logo.svg"
-                alt="GVR CRM"
-                className="mb-4"
-              />
+            <div className="flex max-w-sm flex-col items-center">
+              <AppLogo variant="full" width={240} height={60} className="mb-4" priority />
               <p className="text-center text-gray-400 dark:text-white/60">
                 Panel de gestión de leads y campañas Meta
               </p>

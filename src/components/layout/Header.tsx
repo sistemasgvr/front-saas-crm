@@ -1,9 +1,8 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
 import { ThemeToggleButton } from "@/src/components/common/ThemeToggleButton";
+import AppLogo from "@/src/components/ui/AppLogo";
 import { Icon } from "@/src/components/ui/Icon";
 import NotificationBell from "@/src/modules/notifications/NotificationBell";
 import { useSidebar } from "./SidebarContext";
@@ -52,22 +51,7 @@ export default function Header({
             <Icon name={isMobileOpen ? "mdi:close" : "mdi:menu"} size={isMobileOpen ? 24 : 20} />
           </button>
 
-          <Link href={homeHref} className="lg:hidden">
-            <Image
-              width={154}
-              height={32}
-              className="dark:hidden"
-              src="/images/logo/logo.svg"
-              alt="GVR CRM"
-            />
-            <Image
-              width={154}
-              height={32}
-              className="hidden dark:block"
-              src="/images/logo/logo-dark.svg"
-              alt="GVR CRM"
-            />
-          </Link>
+          <AppLogo href={homeHref} variant="full" width={154} height={36} className="lg:hidden" />
 
           <button
             type="button"

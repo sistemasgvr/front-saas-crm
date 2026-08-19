@@ -9,6 +9,7 @@ import Input from "@/src/components/form/input/InputField";
 import PasswordInput from "@/src/components/form/input/PasswordInput";
 import Label from "@/src/components/form/Label";
 import Button from "@/src/components/ui/button/Button";
+import AppLogo from "@/src/components/ui/AppLogo";
 import { toFormData } from "@/src/lib/form-data";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { useAuthUiStore } from "@/src/stores/auth-ui.store";
@@ -53,6 +54,9 @@ export default function LoginForm() {
     <div className="flex flex-col flex-1 w-full lg:w-1/2">
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
+          <div className="mb-6 flex justify-center lg:hidden">
+            <AppLogo variant="full" width={200} height={50} priority />
+          </div>
           <div className="mb-5 sm:mb-8">
             <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
               Iniciar sesión
