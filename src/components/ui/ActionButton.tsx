@@ -9,7 +9,7 @@ interface ActionButtonProps {
   action: () => Promise<void>;
   successMessage: string;
   children: ReactNode;
-  variant?: "primary" | "outline";
+  variant?: "primary" | "outline" | "danger";
   size?: "sm" | "md";
   className?: string;
   loadingText?: string;

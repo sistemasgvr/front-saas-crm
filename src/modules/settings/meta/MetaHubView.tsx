@@ -140,37 +140,38 @@ export default function MetaHubView({ metaCallback }: { metaCallback?: string })
               />
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <Link href="/settings/meta/pages">
-                <Button type="button" size="sm" variant="outline" startIcon={<Icon name="mdi:facebook" size={18} />}>
-                  Gestionar páginas
-                </Button>
-              </Link>
-              <Link href="/settings/meta/ad-accounts">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  startIcon={<Icon name="mdi:bullhorn-outline" size={18} />}
-                >
-                  Gestionar cuentas
-                </Button>
-              </Link>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap gap-3">
+                <Link href="/settings/meta/pages">
+                  <Button type="button" size="sm" variant="outline" startIcon={<Icon name="mdi:facebook" size={18} />}>
+                    Gestionar páginas
+                  </Button>
+                </Link>
+                <Link href="/settings/meta/ad-accounts">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    startIcon={<Icon name="mdi:bullhorn-outline" size={18} />}
+                  >
+                    Gestionar cuentas
+                  </Button>
+                </Link>
+              </div>
+              <ActionButton
+                action={disconnectMetaAction}
+                successMessage="Meta desconectado"
+                variant="danger"
+                startIcon={<Icon name="mdi:link-off" size={18} />}
+                invalidateKeys={[
+                  queryKeys.metaConnection,
+                  queryKeys.metaPagesVinculadasAll,
+                  queryKeys.metaAdAccountsVinculadasAll,
+                ]}
+              >
+                Desconectar Meta
+              </ActionButton>
             </div>
-
-            <ActionButton
-              action={disconnectMetaAction}
-              successMessage="Meta desconectado"
-              variant="outline"
-              startIcon={<Icon name="mdi:link-off" size={18} />}
-              invalidateKeys={[
-                queryKeys.metaConnection,
-                queryKeys.metaPagesVinculadasAll,
-                queryKeys.metaAdAccountsVinculadasAll,
-              ]}
-            >
-              Desconectar Meta
-            </ActionButton>
           </div>
         )}
       </div>
