@@ -14,7 +14,8 @@ import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import TableAction from "@/src/components/ui/TableAction";
 import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
-import { getAnunciosFiltro, getCampanasFiltro, getLeads, getPaginasFiltro } from "./queries";
+import { getAnunciosFiltro, getCampanasFiltro, getCuentasFiltro, getLeads, getPaginasFiltro } from "./queries";
+import type { LeadResumen, ReferenciaNombrada } from "./types";
 
 function formatearFecha(iso: string | null) {
   if (!iso) return "—";
@@ -24,9 +25,11 @@ function formatearFecha(iso: string | null) {
 export default function LeadsView() {
   const searchParams = useSearchParams();
   const [values, setValues] = useState<DynamicFilterValues>(() => {
-    const metaPaginaId = searchParams.get("metaPaginaId");
     const init: DynamicFilterValues = {};
+    const metaPaginaId = searchParams.get("metaPaginaId");
+    const metaCuentaId = searchParams.get("metaCuentaId");
     if (metaPaginaId) init.metaPaginaId = metaPaginaId;
+    if (metaCuentaId) init.metaCuentaId = metaCuentaId;
     return init;
   });
   const [page, setPage] = useState(1);
@@ -37,6 +40,7 @@ export default function LeadsView() {
     campanaId: values.campanaId || undefined,
     anuncioId: values.anuncioId || undefined,
     metaPaginaId: values.metaPaginaId || undefined,
+    metaCuentaId: values.metaCuentaId || undefined,
     formularioId: values.formularioId || undefined,
     fechaDesde: values.fechaDesde || undefined,
     fechaHasta: values.fechaHasta || undefined,
@@ -46,6 +50,7 @@ export default function LeadsView() {
   const campanasQuery = useQuery({ queryKey: queryKeys.metaCampaigns, queryFn: () => getCampanasFiltro() });
   const anunciosQuery = useQuery({ queryKey: queryKeys.metaAds, queryFn: () => getAnunciosFiltro() });
   const paginasQuery = useQuery({ queryKey: queryKeys.metaPagesFiltro, queryFn: () => getPaginasFiltro() });
+  const cuentasQuery = useQuery({ queryKey: queryKeys.metaAdAccountsFiltro, queryFn: () => getCuentasFiltro() });
   const leadsQuery = useQuery({ queryKey: queryKeys.leads(filtro), queryFn: () => getLeads(filtro) });
 
   const fields = useMemo<DynamicFilterFieldDef[]>(
@@ -58,7 +63,10 @@ export default function LeadsView() {
         searchable: true,
         placeholder: "Todas",
         searchPlaceholder: "Buscar campaña...",
-        options: (campanasQuery.data ?? []).map((campana) => ({ value: campana.id, label: campana.nombre })),
+        options: (campanasQuery.data ?? []).map((campana: ReferenciaNombrada) => ({
+          value: campana.id,
+          label: campana.nombre,
+        })),
       },
       {
         key: "anuncioId",
@@ -67,7 +75,10 @@ export default function LeadsView() {
         searchable: true,
         placeholder: "Todos",
         searchPlaceholder: "Buscar anuncio...",
-        options: (anunciosQuery.data ?? []).map((anuncio) => ({ value: anuncio.id, label: anuncio.nombre })),
+        options: (anunciosQuery.data ?? []).map((anuncio: ReferenciaNombrada) => ({
+          value: anuncio.id,
+          label: anuncio.nombre,
+        })),
       },
       {
         key: "metaPaginaId",
@@ -76,13 +87,28 @@ export default function LeadsView() {
         searchable: true,
         placeholder: "Todas",
         searchPlaceholder: "Buscar página...",
-        options: (paginasQuery.data ?? []).map((pagina) => ({ value: pagina.id, label: pagina.nombre })),
+        options: (paginasQuery.data ?? []).map((pagina: ReferenciaNombrada) => ({
+          value: pagina.id,
+          label: pagina.nombre,
+        })),
+      },
+      {
+        key: "metaCuentaId",
+        label: "Cuenta publicitaria",
+        type: "select",
+        searchable: true,
+        placeholder: "Todas",
+        searchPlaceholder: "Buscar cuenta...",
+        options: (cuentasQuery.data ?? []).map((cuenta: ReferenciaNombrada) => ({
+          value: cuenta.id,
+          label: cuenta.nombre,
+        })),
       },
       { key: "formularioId", label: "Formulario", type: "text", placeholder: "ID Meta del formulario" },
       { key: "fechaDesde", label: "Desde", type: "date" },
       { key: "fechaHasta", label: "Hasta", type: "date" },
     ],
-    [campanasQuery.data, anunciosQuery.data, paginasQuery.data],
+    [campanasQuery.data, anunciosQuery.data, paginasQuery.data, cuentasQuery.data],
   );
 
   return (
@@ -98,11 +124,12 @@ export default function LeadsView() {
         />
       </PageHeader>
 
-      {(campanasQuery.isError || anunciosQuery.isError || paginasQuery.isError) && (
+      {(campanasQuery.isError || anunciosQuery.isError || paginasQuery.isError || cuentasQuery.isError) && (
         <div className="mb-4 space-y-2">
           {campanasQuery.isError && <QueryError error={campanasQuery.error} />}
           {anunciosQuery.isError && <QueryError error={anunciosQuery.error} />}
           {paginasQuery.isError && <QueryError error={paginasQuery.error} />}
+          {cuentasQuery.isError && <QueryError error={cuentasQuery.error} />}
         </div>
       )}
 
@@ -157,7 +184,7 @@ export default function LeadsView() {
                   description="Prueba a cambiar la búsqueda o el rango de fechas."
                 />
               )}
-              {(leadsQuery.data?.data ?? []).map((lead) => {
+              {(leadsQuery.data?.data ?? []).map((lead: LeadResumen) => {
                 const nombre = lead.nombre ?? "Sin nombre";
                 return (
                   <TableRow key={lead.id}>

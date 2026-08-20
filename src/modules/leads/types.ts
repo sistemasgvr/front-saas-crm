@@ -34,6 +34,7 @@ export interface FiltroLeads {
   campanaId?: string;
   anuncioId?: string;
   metaPaginaId?: string;
+  metaCuentaId?: string;
   formularioId?: string;
   fechaDesde?: string;
   fechaHasta?: string;

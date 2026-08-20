@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Checkbox from "@/src/components/form/input/Checkbox";
 import Input from "@/src/components/form/input/InputField";
@@ -21,10 +21,29 @@ interface DynamicFiltersProps {
   onChange: (values: DynamicFilterValues) => void;
 }
 
+const COMPACT_CONTROL = "!h-9 px-3 py-1.5 text-theme-sm";
+const COMPACT_SELECT = "!h-9 px-3 py-1.5 pr-9 text-theme-sm";
+
 function nextValues(current: DynamicFilterValues, key: string, value: string): DynamicFilterValues {
   const next = { ...current, [key]: value };
   if (!value) delete next[key];
   return next;
+}
+
+/** Empareja dos fechas consecutivas (Desde/Hasta) en una sola fila. */
+function agruparCampos(fields: DynamicFilterFieldDef[]): DynamicFilterFieldDef[][] {
+  const rows: DynamicFilterFieldDef[][] = [];
+  for (let i = 0; i < fields.length; i += 1) {
+    const field = fields[i];
+    const next = fields[i + 1];
+    if (field.type === "date" && next?.type === "date") {
+      rows.push([field, next]);
+      i += 1;
+    } else {
+      rows.push([field]);
+    }
+  }
+  return rows;
 }
 
 export default function DynamicFilters({ fields, values, onChange }: DynamicFiltersProps) {
@@ -39,6 +58,7 @@ export default function DynamicFilters({ fields, values, onChange }: DynamicFilt
     maxHeight: 800,
   });
   const activeCount = countActiveFilters(values);
+  const rows = useMemo(() => agruparCampos(fields), [fields]);
 
   useEffect(() => {
     setPortalReady(true);
@@ -50,7 +70,7 @@ export default function DynamicFilters({ fields, values, onChange }: DynamicFilt
     if (!trigger) return;
 
     const rect = trigger.getBoundingClientRect();
-    const panelWidth = Math.min(window.innerWidth - 32, 360);
+    const panelWidth = Math.min(window.innerWidth - 32, 320);
     const left = Math.min(Math.max(16, rect.right - panelWidth), window.innerWidth - panelWidth - 16);
     const viewportPadding = 16;
     const maxHeight = window.innerHeight - viewportPadding * 2;
@@ -111,90 +131,117 @@ export default function DynamicFilters({ fields, values, onChange }: DynamicFilt
 
   const clearAll = () => onChange({});
 
+  const renderControl = (field: DynamicFilterFieldDef, value: string) => {
+    if (field.type === "select" && field.searchable) {
+      return (
+        <SelectSearch
+          compact
+          value={value}
+          options={field.options ?? []}
+          placeholder={field.placeholder ?? "Seleccionar"}
+          searchPlaceholder={field.searchPlaceholder ?? "Buscar..."}
+          disabled={field.disabled}
+          onChange={(next) => setField(field.key, next)}
+        />
+      );
+    }
+    if (field.type === "select") {
+      return (
+        <Select
+          value={value}
+          options={field.options ?? []}
+          placeholder={field.placeholder ?? "Seleccionar"}
+          disabled={field.disabled}
+          className={COMPACT_SELECT}
+          onChange={(next) => setField(field.key, next)}
+        />
+      );
+    }
+    if (field.type === "date") {
+      return (
+        <Input
+          type="date"
+          value={value}
+          className={COMPACT_CONTROL}
+          onChange={(event) => setField(field.key, event.target.value)}
+        />
+      );
+    }
+    if (field.type === "checkbox") {
+      return (
+        <div className="flex h-9 items-center rounded-lg border border-gray-200 px-3 dark:border-gray-700">
+          <Checkbox
+            checked={value === "true"}
+            label={field.placeholder ?? "Sí"}
+            onChange={(checked) => setField(field.key, checked ? "true" : "")}
+          />
+        </div>
+      );
+    }
+    return (
+      <Input
+        type="search"
+        value={value}
+        placeholder={field.placeholder ?? "Valor"}
+        className={COMPACT_CONTROL}
+        onChange={(event) => setField(field.key, event.target.value)}
+      />
+    );
+  };
+
+  const renderField = (field: DynamicFilterFieldDef) => {
+    const value = values[field.key] ?? "";
+    const active = isActiveFilterValue(value);
+    return (
+      <div key={field.key} className="min-w-0 space-y-1">
+        <div className="flex items-center justify-between gap-1">
+          <label className="truncate text-[11px] font-medium leading-4 text-gray-500 dark:text-gray-400">
+            {field.label}
+          </label>
+          {active && (
+            <button
+              type="button"
+              title="Limpiar filtro"
+              onClick={() => setField(field.key, "")}
+              className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-gray-400 transition hover:bg-gray-100 hover:text-brand-600 dark:hover:bg-white/5 dark:hover:text-brand-400"
+            >
+              <Icon name="mdi:close" size={12} />
+            </button>
+          )}
+        </div>
+        <div className="min-w-0">{renderControl(field, value)}</div>
+      </div>
+    );
+  };
+
   const panel = visible && portalReady && (
     <div
       ref={panelRef}
       style={{ top: panelStyle.top, left: panelStyle.left, maxHeight: panelStyle.maxHeight }}
-      className={`fixed z-[100000] flex w-[min(100vw-2rem,22.5rem)] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-theme-lg dark:border-gray-700 dark:bg-gray-900 ${popoverMotionClass(entered)}`}
+      className={`fixed z-[100000] flex w-[min(100vw-2rem,20rem)] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-theme-lg dark:border-gray-700 dark:bg-gray-900 ${popoverMotionClass(entered)}`}
     >
-      <div className="custom-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4">
-        <div className="space-y-4">
-          {fields.map((field) => {
-            const value = values[field.key] ?? "";
-            const active = isActiveFilterValue(value);
-            return (
-              <div key={field.key} className="min-w-0 space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <label className="truncate text-theme-xs font-medium text-gray-600 dark:text-gray-400">
-                    {field.label}
-                  </label>
-                  {active && (
-                    <button
-                      type="button"
-                      title="Limpiar filtro"
-                      onClick={() => setField(field.key, "")}
-                      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-100 hover:text-brand-600 dark:hover:bg-white/5 dark:hover:text-brand-400"
-                    >
-                      <Icon name="mdi:close" size={14} />
-                    </button>
-                  )}
-                </div>
-
-                <div className="min-w-0">
-                  {field.type === "select" && field.searchable ? (
-                    <SelectSearch
-                      value={value}
-                      options={field.options ?? []}
-                      placeholder={field.placeholder ?? "Seleccionar"}
-                      searchPlaceholder={field.searchPlaceholder ?? "Buscar..."}
-                      disabled={field.disabled}
-                      onChange={(next) => setField(field.key, next)}
-                    />
-                  ) : field.type === "select" ? (
-                    <Select
-                      value={value}
-                      options={field.options ?? []}
-                      placeholder={field.placeholder ?? "Seleccionar"}
-                      disabled={field.disabled}
-                      onChange={(next) => setField(field.key, next)}
-                    />
-                  ) : field.type === "date" ? (
-                    <Input
-                      type="date"
-                      value={value}
-                      onChange={(event) => setField(field.key, event.target.value)}
-                    />
-                  ) : field.type === "checkbox" ? (
-                    <div className="flex min-h-11 items-center rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700">
-                      <Checkbox
-                        checked={value === "true"}
-                        label={field.placeholder ?? "Sí"}
-                        onChange={(checked) => setField(field.key, checked ? "true" : "")}
-                      />
-                    </div>
-                  ) : (
-                    <Input
-                      type="search"
-                      value={value}
-                      placeholder={field.placeholder ?? "Valor"}
-                      onChange={(event) => setField(field.key, event.target.value)}
-                    />
-                  )}
-                </div>
+      <div className="custom-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3">
+        <div className="space-y-2.5">
+          {rows.map((row) =>
+            row.length === 2 ? (
+              <div key={`${row[0].key}-${row[1].key}`} className="grid grid-cols-2 gap-2">
+                {row.map(renderField)}
               </div>
-            );
-          })}
+            ) : (
+              renderField(row[0])
+            ),
+          )}
         </div>
       </div>
 
-      <div className="flex shrink-0 justify-end border-t border-gray-200 px-4 py-3 dark:border-gray-800">
+      <div className="flex shrink-0 justify-end border-t border-gray-200 px-3 py-2 dark:border-gray-800">
         <button
           type="button"
           disabled={activeCount === 0}
           onClick={clearAll}
-          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-error-600 transition hover:bg-error-50 disabled:pointer-events-none disabled:opacity-40 dark:text-error-400 dark:hover:bg-error-500/10"
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-theme-xs font-medium text-error-600 transition hover:bg-error-50 disabled:pointer-events-none disabled:opacity-40 dark:text-error-400 dark:hover:bg-error-500/10"
         >
-          <Icon name="mdi:broom" size={16} />
+          <Icon name="mdi:broom" size={14} />
           Limpiar todo
         </button>
       </div>

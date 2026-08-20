@@ -12,6 +12,7 @@ interface SelectSearchProps {
   placeholder?: string;
   searchPlaceholder?: string;
   disabled?: boolean;
+  compact?: boolean;
   onChange: (value: string) => void;
 }
 
@@ -21,6 +22,7 @@ export default function SelectSearch({
   placeholder = "Seleccionar",
   searchPlaceholder = "Buscar...",
   disabled = false,
+  compact = false,
   onChange,
 }: SelectSearchProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -149,7 +151,9 @@ export default function SelectSearch({
           setOpen((prev) => !prev);
           setQ("");
         }}
-        className={`flex h-11 w-full min-w-0 items-center justify-between gap-2 rounded-lg border px-3 text-left text-sm shadow-theme-xs transition disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-900 ${
+        className={`flex w-full min-w-0 items-center justify-between gap-2 rounded-lg border px-3 text-left text-sm shadow-theme-xs transition disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-900 ${
+          compact ? "h-9" : "h-11"
+        } ${
           selected
             ? "border-gray-300 text-gray-800 dark:border-gray-700 dark:text-white/90"
             : "border-gray-300 text-gray-400 dark:border-gray-700 dark:text-gray-400"
