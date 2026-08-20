@@ -209,6 +209,7 @@ export default function DashboardView() {
                   <LineChart
                     categories={adsSeriesQuery.data.porDia.map((p) => formatearFechaCorta(p.fecha))}
                     data={adsSeriesQuery.data.porDia.map((p) => p.spend)}
+                    seriesName="Inversión"
                   />
                 )}
               </div>
