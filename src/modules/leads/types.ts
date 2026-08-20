@@ -3,6 +3,20 @@ export interface ReferenciaNombrada {
   nombre: string;
 }
 
+/** Opciones de filtro con parent ids para cascada Cuenta → Campaña → Conjunto → Anuncio. */
+export interface CampanaFiltroOpcion extends ReferenciaNombrada {
+  metaCuentaPublicitariaId?: string | null;
+}
+
+export interface ConjuntoAnuncioFiltroOpcion extends ReferenciaNombrada {
+  campanaId: string;
+}
+
+export interface AnuncioFiltroOpcion extends ReferenciaNombrada {
+  conjuntoAnuncioId: string;
+  campanaId?: string;
+}
+
 export interface LeadResumen {
   id: string;
   nombre: string | null;

@@ -2,7 +2,6 @@
 
 import { apiFetch } from "@/src/lib/api";
 import type { DashboardKpis, DashboardSeries, FiltroDashboard, KpisPublicitarios, SeriesPublicitarias } from "./types";
-import type { ReferenciaNombrada } from "@/src/modules/leads/types";
 
 function paramsDe(filtro: FiltroDashboard) {
   const params = new URLSearchParams();
@@ -36,14 +35,4 @@ export async function getDashboardAdsSeries(filtro: FiltroDashboard) {
   if (filtro.fechaDesde) params.set("fechaDesde", filtro.fechaDesde);
   if (filtro.fechaHasta) params.set("fechaHasta", filtro.fechaHasta);
   return apiFetch<SeriesPublicitarias>(`/dashboard/ads-series?${params.toString()}`);
-}
-
-export async function getConjuntosAnunciosFiltro() {
-  const data = await apiFetch<ReferenciaNombrada[]>("/meta/adsets");
-  return Array.isArray(data) ? data : [];
-}
-
-export async function getCuentasFiltro() {
-  const data = await apiFetch<ReferenciaNombrada[]>("/meta/ad-accounts/filtro");
-  return Array.isArray(data) ? data : [];
 }

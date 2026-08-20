@@ -10,11 +10,11 @@ import type { DynamicFilterFieldDef, DynamicFilterValues } from "@/src/component
 import LineChart from "@/src/components/charts/LineChart";
 import BarChart from "@/src/components/charts/BarChart";
 import { queryKeys } from "@/src/lib/query/keys";
-import { getCampanasFiltro, getAnunciosFiltro } from "@/src/modules/leads/queries";
+import { getCampanasFiltro, getAnunciosFiltro, getConjuntosAnunciosFiltro, getCuentasFiltro } from "@/src/modules/leads/queries";
+import { aplicarCascadaFiltros, CASCADA_META_ADS } from "@/src/components/ui/filters/cascadeFilters";
+import type { AnuncioFiltroOpcion, CampanaFiltroOpcion, ConjuntoAnuncioFiltroOpcion } from "@/src/modules/leads/types";
 import KpiCard from "./KpiCard";
 import {
-  getConjuntosAnunciosFiltro,
-  getCuentasFiltro,
   getDashboardAdsKpis,
   getDashboardAdsSeries,
   getDashboardKpis,
@@ -71,35 +71,39 @@ export default function DashboardView() {
     queryFn: () => getDashboardAdsSeries(filtro),
   });
 
+  const campanasFiltradas = useMemo(() => {
+    const todas = (campanasQuery.data ?? []) as CampanaFiltroOpcion[];
+    if (!values.metaCuentaId) return todas;
+    return todas.filter((c) => c.metaCuentaPublicitariaId === values.metaCuentaId);
+  }, [campanasQuery.data, values.metaCuentaId]);
+
+  const conjuntosFiltrados = useMemo(() => {
+    const todos = (conjuntosQuery.data ?? []) as ConjuntoAnuncioFiltroOpcion[];
+    const campanaIds = new Set(campanasFiltradas.map((c) => c.id));
+    return todos.filter((conjunto) => {
+      if (values.campanaId) return conjunto.campanaId === values.campanaId;
+      if (values.metaCuentaId) return campanaIds.has(conjunto.campanaId);
+      return true;
+    });
+  }, [conjuntosQuery.data, campanasFiltradas, values.campanaId, values.metaCuentaId]);
+
+  const anunciosFiltrados = useMemo(() => {
+    const todos = (anunciosQuery.data ?? []) as AnuncioFiltroOpcion[];
+    const conjuntoIds = new Set(conjuntosFiltrados.map((c) => c.id));
+    return todos.filter((anuncio) => {
+      if (values.conjuntoAnuncioId) return anuncio.conjuntoAnuncioId === values.conjuntoAnuncioId;
+      if (values.campanaId) {
+        return anuncio.campanaId
+          ? anuncio.campanaId === values.campanaId
+          : conjuntoIds.has(anuncio.conjuntoAnuncioId);
+      }
+      if (values.metaCuentaId) return conjuntoIds.has(anuncio.conjuntoAnuncioId);
+      return true;
+    });
+  }, [anunciosQuery.data, conjuntosFiltrados, values.conjuntoAnuncioId, values.campanaId, values.metaCuentaId]);
+
   const fields = useMemo<DynamicFilterFieldDef[]>(
     () => [
-      {
-        key: "campanaId",
-        label: "Campaña",
-        type: "select",
-        searchable: true,
-        placeholder: "Todas",
-        searchPlaceholder: "Buscar campaña...",
-        options: (campanasQuery.data ?? []).map((campana) => ({ value: campana.id, label: campana.nombre })),
-      },
-      {
-        key: "conjuntoAnuncioId",
-        label: "Conjunto",
-        type: "select",
-        searchable: true,
-        placeholder: "Todos",
-        searchPlaceholder: "Buscar conjunto...",
-        options: (conjuntosQuery.data ?? []).map((conjunto) => ({ value: conjunto.id, label: conjunto.nombre })),
-      },
-      {
-        key: "anuncioId",
-        label: "Anuncio",
-        type: "select",
-        searchable: true,
-        placeholder: "Todos",
-        searchPlaceholder: "Buscar anuncio...",
-        options: (anunciosQuery.data ?? []).map((anuncio) => ({ value: anuncio.id, label: anuncio.nombre })),
-      },
       {
         key: "metaCuentaId",
         label: "Cuenta publicitaria",
@@ -109,16 +113,47 @@ export default function DashboardView() {
         searchPlaceholder: "Buscar cuenta...",
         options: (cuentasQuery.data ?? []).map((cuenta) => ({ value: cuenta.id, label: cuenta.nombre })),
       },
+      {
+        key: "campanaId",
+        label: "Campaña",
+        type: "select",
+        searchable: true,
+        placeholder: "Todas",
+        searchPlaceholder: "Buscar campaña...",
+        options: campanasFiltradas.map((campana) => ({ value: campana.id, label: campana.nombre })),
+      },
+      {
+        key: "conjuntoAnuncioId",
+        label: "Conjunto",
+        type: "select",
+        searchable: true,
+        placeholder: "Todos",
+        searchPlaceholder: "Buscar conjunto...",
+        options: conjuntosFiltrados.map((conjunto) => ({ value: conjunto.id, label: conjunto.nombre })),
+      },
+      {
+        key: "anuncioId",
+        label: "Anuncio",
+        type: "select",
+        searchable: true,
+        placeholder: "Todos",
+        searchPlaceholder: "Buscar anuncio...",
+        options: anunciosFiltrados.map((anuncio) => ({ value: anuncio.id, label: anuncio.nombre })),
+      },
       { key: "fechaDesde", label: "Desde", type: "date" },
       { key: "fechaHasta", label: "Hasta", type: "date" },
     ],
-    [campanasQuery.data, conjuntosQuery.data, anunciosQuery.data, cuentasQuery.data],
+    [cuentasQuery.data, campanasFiltradas, conjuntosFiltrados, anunciosFiltrados],
   );
 
   return (
     <div>
       <PageHeader title="Dashboard" description="Resumen de leads por periodo y campaña.">
-        <DynamicFilters fields={fields} values={values} onChange={setValues} />
+        <DynamicFilters
+          fields={fields}
+          values={values}
+          onChange={(next) => setValues((prev) => aplicarCascadaFiltros(prev, next, CASCADA_META_ADS))}
+        />
       </PageHeader>
 
       {(campanasQuery.isError || conjuntosQuery.isError || anunciosQuery.isError || cuentasQuery.isError) && (
@@ -202,9 +237,27 @@ export default function DashboardView() {
 
             {adsSeriesQuery.data && adsSeriesQuery.data.porDia.length > 0 && (
               <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:col-span-2">
-                <h2 className="mb-4 text-theme-sm font-semibold text-gray-800 dark:text-white/90">Inversión por día</h2>
+                <h2 className="mb-4 text-theme-sm font-semibold text-gray-800 dark:text-white/90">
+                  {adsSeriesQuery.data.porCuenta && adsSeriesQuery.data.porCuenta.length > 1
+                    ? "Inversión por día (por cuenta)"
+                    : "Inversión por día"}
+                </h2>
                 {adsSeriesQuery.data.porDia.every((p) => p.spend === 0) ? (
                   <p className="text-theme-sm text-gray-500 dark:text-gray-400">Sin inversión sincronizada en el rango seleccionado.</p>
+                ) : adsSeriesQuery.data.porCuenta && adsSeriesQuery.data.porCuenta.length > 1 ? (
+                  <LineChart
+                    categories={adsSeriesQuery.data.porDia.map((p) => formatearFechaCorta(p.fecha))}
+                    series={[
+                      {
+                        name: "Total",
+                        data: adsSeriesQuery.data.porDia.map((p) => p.spend),
+                      },
+                      ...adsSeriesQuery.data.porCuenta.map((cuenta) => ({
+                        name: cuenta.nombre,
+                        data: cuenta.porDia.map((p) => p.spend),
+                      })),
+                    ]}
+                  />
                 ) : (
                   <LineChart
                     categories={adsSeriesQuery.data.porDia.map((p) => formatearFechaCorta(p.fecha))}

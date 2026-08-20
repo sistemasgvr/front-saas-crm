@@ -47,6 +47,13 @@ export interface PuntoSpendDia {
   spend: number;
 }
 
+export interface SerieSpendCuenta {
+  id: string;
+  nombre: string;
+  porDia: PuntoSpendDia[];
+}
+
 export interface SeriesPublicitarias {
   porDia: PuntoSpendDia[];
+  porCuenta?: SerieSpendCuenta[];
 }

@@ -1,8 +1,15 @@
 "use server";
 
 import { apiFetch } from "@/src/lib/api";
-import type { FiltroLeads, LeadDetalle, ListaLeadsResultado } from "./types";
-import type { ReferenciaNombrada } from "./types";
+import type {
+  AnuncioFiltroOpcion,
+  CampanaFiltroOpcion,
+  ConjuntoAnuncioFiltroOpcion,
+  FiltroLeads,
+  LeadDetalle,
+  ListaLeadsResultado,
+  ReferenciaNombrada,
+} from "./types";
 
 const PAGE_SIZE = 20;
 
@@ -25,13 +32,18 @@ export async function getLead(id: string): Promise<LeadDetalle> {
   return apiFetch<LeadDetalle>(`/leads/${id}`);
 }
 
-export async function getCampanasFiltro(): Promise<ReferenciaNombrada[]> {
-  const data = await apiFetch<ReferenciaNombrada[]>("/meta/campaigns");
+export async function getCampanasFiltro(): Promise<CampanaFiltroOpcion[]> {
+  const data = await apiFetch<CampanaFiltroOpcion[]>("/meta/campaigns");
   return Array.isArray(data) ? data : [];
 }
 
-export async function getAnunciosFiltro(): Promise<ReferenciaNombrada[]> {
-  const data = await apiFetch<ReferenciaNombrada[]>("/meta/ads");
+export async function getAnunciosFiltro(): Promise<AnuncioFiltroOpcion[]> {
+  const data = await apiFetch<AnuncioFiltroOpcion[]>("/meta/ads");
+  return Array.isArray(data) ? data : [];
+}
+
+export async function getConjuntosAnunciosFiltro(): Promise<ConjuntoAnuncioFiltroOpcion[]> {
+  const data = await apiFetch<ConjuntoAnuncioFiltroOpcion[]>("/meta/adsets");
   return Array.isArray(data) ? data : [];
 }
 
