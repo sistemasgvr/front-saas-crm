@@ -16,7 +16,8 @@ import { queryKeys } from "@/src/lib/query/keys";
 import { getMetaAdAccountProfile } from "./queries";
 import { syncMetaAdAccountAction, unlinkMetaAdAccountAction } from "./actions";
 import MetaStatCard from "./MetaStatCard";
-import { formatearFechaMeta } from "./format";
+import MetaInsightsSyncPanel from "./MetaInsightsSyncPanel";
+import { formatearFechaMeta, formatearMonto } from "./format";
 
 export default function MetaAdAccountProfileView({ id }: { id: string }) {
   const router = useRouter();
@@ -59,7 +60,15 @@ export default function MetaAdAccountProfileView({ id }: { id: string }) {
           value={formatearFechaMeta(cuenta.ultimoSyncEn, "Nunca")}
           icon="mdi:sync"
         />
+        <MetaStatCard
+          label="Inversión (Insights)"
+          value={formatearMonto(cuenta.spend, cuenta.moneda)}
+          icon="mdi:cash-multiple"
+        />
+        <MetaStatCard label="CPL" value={formatearMonto(cuenta.cpl, cuenta.moneda)} icon="mdi:account-cash-outline" />
       </div>
+
+      <MetaInsightsSyncPanel cuentaId={cuenta.id} />
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -76,12 +85,12 @@ export default function MetaAdAccountProfileView({ id }: { id: string }) {
             action={async () => {
               await syncMetaAdAccountAction(cuenta.id);
             }}
-            successMessage="Cuenta sincronizada"
+            successMessage="Estructura sincronizada"
             loadingText="Sincronizando…"
             invalidateKeys={[queryKeys.metaAdAccountProfile(id), queryKeys.metaAdAccountsVinculadasAll]}
             startIcon={<Icon name="mdi:sync" size={18} />}
           >
-            Sincronizar ahora
+            Sincronizar estructura
           </ActionButton>
         </div>
 

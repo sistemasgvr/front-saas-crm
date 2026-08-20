@@ -12,13 +12,29 @@ import BarChart from "@/src/components/charts/BarChart";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getCampanasFiltro, getAnunciosFiltro } from "@/src/modules/leads/queries";
 import KpiCard from "./KpiCard";
-import { getConjuntosAnunciosFiltro, getCuentasFiltro, getDashboardKpis, getDashboardSeries } from "./queries";
+import {
+  getConjuntosAnunciosFiltro,
+  getCuentasFiltro,
+  getDashboardAdsKpis,
+  getDashboardAdsSeries,
+  getDashboardKpis,
+  getDashboardSeries,
+} from "./queries";
 import type { FiltroDashboard } from "./types";
 
 function formatearFechaCorta(fechaYYYYMMDD: string) {
   const [, mes, dia] = fechaYYYYMMDD.split("-");
   const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
   return `${dia} ${meses[Number(mes) - 1]}`;
+}
+
+function formatearMonto(valor: number | null, moneda: string | null) {
+  if (valor === null) return "—";
+  try {
+    return new Intl.NumberFormat("es-PE", { style: "currency", currency: moneda ?? "USD" }).format(valor);
+  } catch {
+    return valor.toFixed(2);
+  }
 }
 
 export default function DashboardView() {
@@ -46,6 +62,14 @@ export default function DashboardView() {
 
   const kpisQuery = useQuery({ queryKey: ["dashboard", "kpis", filtro], queryFn: () => getDashboardKpis(filtro) });
   const seriesQuery = useQuery({ queryKey: ["dashboard", "series", filtro], queryFn: () => getDashboardSeries(filtro) });
+  const adsKpisQuery = useQuery({
+    queryKey: ["dashboard", "ads-kpis", filtro],
+    queryFn: () => getDashboardAdsKpis(filtro),
+  });
+  const adsSeriesQuery = useQuery({
+    queryKey: ["dashboard", "ads-series", filtro],
+    queryFn: () => getDashboardAdsSeries(filtro),
+  });
 
   const fields = useMemo<DynamicFilterFieldDef[]>(
     () => [
@@ -121,6 +145,42 @@ export default function DashboardView() {
         )
       )}
 
+      {adsKpisQuery.isLoading ? (
+        <PageLoader label="Cargando métricas de anuncios…" />
+      ) : adsKpisQuery.isError ? (
+        <QueryError error={adsKpisQuery.error} />
+      ) : (
+        adsKpisQuery.data &&
+        (adsKpisQuery.data.spend === null ? (
+          <p className="mb-6 text-theme-sm text-gray-500 dark:text-gray-400">
+            Sin datos de inversión para conjunto/anuncio — Insights solo se sincroniza a nivel cuenta o campaña.
+          </p>
+        ) : adsKpisQuery.data.spend === 0 && adsKpisQuery.data.impressions === 0 ? (
+          <p className="mb-6 text-theme-sm text-gray-500 dark:text-gray-400">
+            Sin métricas Meta sincronizadas en este periodo — sincroniza desde el perfil de la cuenta publicitaria.
+          </p>
+        ) : (
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
+            <KpiCard
+              label="Inversión"
+              value={formatearMonto(adsKpisQuery.data.spend, adsKpisQuery.data.moneda)}
+              icon="mdi:cash-multiple"
+            />
+            <KpiCard label="CTR" value={adsKpisQuery.data.ctr !== null ? `${adsKpisQuery.data.ctr.toFixed(2)}%` : "—"} icon="mdi:cursor-default-click-outline" />
+            <KpiCard
+              label="CPC"
+              value={formatearMonto(adsKpisQuery.data.cpc, adsKpisQuery.data.moneda)}
+              icon="mdi:mouse-outline"
+            />
+            <KpiCard
+              label="CPL"
+              value={formatearMonto(adsKpisQuery.data.cpl, adsKpisQuery.data.moneda)}
+              icon="mdi:account-cash-outline"
+            />
+          </div>
+        ))
+      )}
+
       {seriesQuery.isLoading ? (
         <PageLoader label="Cargando gráficos…" />
       ) : seriesQuery.isError ? (
@@ -139,6 +199,20 @@ export default function DashboardView() {
                 />
               )}
             </div>
+
+            {adsSeriesQuery.data && adsSeriesQuery.data.porDia.length > 0 && (
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:col-span-2">
+                <h2 className="mb-4 text-theme-sm font-semibold text-gray-800 dark:text-white/90">Inversión por día</h2>
+                {adsSeriesQuery.data.porDia.every((p) => p.spend === 0) ? (
+                  <p className="text-theme-sm text-gray-500 dark:text-gray-400">Sin inversión sincronizada en el rango seleccionado.</p>
+                ) : (
+                  <LineChart
+                    categories={adsSeriesQuery.data.porDia.map((p) => formatearFechaCorta(p.fecha))}
+                    data={adsSeriesQuery.data.porDia.map((p) => p.spend)}
+                  />
+                )}
+              </div>
+            )}
 
             <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
               <h2 className="mb-4 text-theme-sm font-semibold text-gray-800 dark:text-white/90">Leads por campaña</h2>

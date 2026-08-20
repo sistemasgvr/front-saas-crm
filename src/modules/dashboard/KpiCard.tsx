@@ -2,7 +2,7 @@ import { Icon } from "@/src/components/ui/Icon";
 
 interface KpiCardProps {
   label: string;
-  value: number;
+  value: number | string;
   icon: string;
 }
 
@@ -15,7 +15,7 @@ export default function KpiCard({ label, value, icon }: KpiCardProps) {
       <div className="mt-5">
         <span className="text-theme-sm text-gray-500 dark:text-gray-400">{label}</span>
         <h4 className="mt-2 text-title-sm font-bold text-gray-800 dark:text-white/90">
-          {value.toLocaleString("es-PE")}
+          {typeof value === "number" ? value.toLocaleString("es-PE") : value}
         </h4>
       </div>
     </div>

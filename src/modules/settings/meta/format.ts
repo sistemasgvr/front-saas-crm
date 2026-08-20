@@ -6,3 +6,12 @@ export function formatearFechaMeta(iso: string | null, fallback = "—") {
     timeStyle: "short",
   });
 }
+
+export function formatearMonto(valor: number | null, moneda: string | null, fallback = "—") {
+  if (valor === null) return fallback;
+  try {
+    return new Intl.NumberFormat("es-PE", { style: "currency", currency: moneda ?? "USD" }).format(valor);
+  } catch {
+    return valor.toFixed(2);
+  }
+}

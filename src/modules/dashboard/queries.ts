@@ -1,7 +1,7 @@
 "use server";
 
 import { apiFetch } from "@/src/lib/api";
-import type { DashboardKpis, DashboardSeries, FiltroDashboard } from "./types";
+import type { DashboardKpis, DashboardSeries, FiltroDashboard, KpisPublicitarios, SeriesPublicitarias } from "./types";
 import type { ReferenciaNombrada } from "@/src/modules/leads/types";
 
 function paramsDe(filtro: FiltroDashboard) {
@@ -22,6 +22,20 @@ export async function getDashboardSeries(filtro: FiltroDashboard) {
   if (filtro.fechaDesde) params.set("fechaDesde", filtro.fechaDesde);
   if (filtro.fechaHasta) params.set("fechaHasta", filtro.fechaHasta);
   return apiFetch<DashboardSeries>(`/dashboard/series?${params.toString()}`);
+}
+
+export async function getDashboardAdsKpis(filtro: FiltroDashboard) {
+  const params = paramsDe(filtro);
+  if (filtro.fechaDesde) params.set("fechaDesde", filtro.fechaDesde);
+  if (filtro.fechaHasta) params.set("fechaHasta", filtro.fechaHasta);
+  return apiFetch<KpisPublicitarios>(`/dashboard/ads-kpis?${params.toString()}`);
+}
+
+export async function getDashboardAdsSeries(filtro: FiltroDashboard) {
+  const params = paramsDe(filtro);
+  if (filtro.fechaDesde) params.set("fechaDesde", filtro.fechaDesde);
+  if (filtro.fechaHasta) params.set("fechaHasta", filtro.fechaHasta);
+  return apiFetch<SeriesPublicitarias>(`/dashboard/ads-series?${params.toString()}`);
 }
 
 export async function getConjuntosAnunciosFiltro() {

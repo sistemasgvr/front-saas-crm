@@ -30,3 +30,23 @@ export interface FiltroDashboard {
   fechaDesde?: string;
   fechaHasta?: string;
 }
+
+export interface KpisPublicitarios {
+  spend: number | null;
+  impressions: number | null;
+  clicks: number | null;
+  ctr: number | null;
+  cpc: number | null;
+  cpl: number | null;
+  leads: number;
+  moneda: string | null;
+}
+
+export interface PuntoSpendDia {
+  fecha: string;
+  spend: number;
+}
+
+export interface SeriesPublicitarias {
+  porDia: PuntoSpendDia[];
+}

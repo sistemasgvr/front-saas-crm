@@ -78,6 +78,15 @@ export interface MetaCuentaPublicitariaPerfil extends MetaCuentaPublicitaria {
   totalCampanas: number;
   totalLeads: number;
   ultimasCampanas: CampanaResumen[];
+  spend: number;
+  cpl: number | null;
+}
+
+export interface ResultadoSyncInsights {
+  filasCuenta: number;
+  filasCampana: number;
+  errores: number;
+  moneda: string | null;
 }
 
 export interface ListaMetaCuentasResultado {

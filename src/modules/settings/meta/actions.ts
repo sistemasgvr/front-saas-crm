@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { apiFetch, ApiError } from "@/src/lib/api";
-import type { MetaConnection, ResultadoBackfill, ResultadoSyncFormularios } from "./types";
+import type { MetaConnection, ResultadoBackfill, ResultadoSyncFormularios, ResultadoSyncInsights } from "./types";
 
 function fail(error: unknown, fallback: string): never {
   throw new Error(error instanceof ApiError ? error.message : fallback);
@@ -105,6 +105,21 @@ export async function syncMetaAdAccountAction(id: string): Promise<ResultadoSync
     return await apiFetch<ResultadoSync>(`/meta/ad-accounts/${id}/sync`, { method: "POST" });
   } catch (error) {
     fail(error, "No se pudo sincronizar la cuenta publicitaria");
+  }
+}
+
+export async function syncMetaAdAccountInsightsAction(
+  id: string,
+  desde: string,
+  hasta: string,
+): Promise<ResultadoSyncInsights> {
+  try {
+    return await apiFetch<ResultadoSyncInsights>(`/meta/ad-accounts/${id}/insights/sync`, {
+      method: "POST",
+      body: JSON.stringify({ desde, hasta }),
+    });
+  } catch (error) {
+    fail(error, "No se pudieron sincronizar las métricas");
   }
 }
 
