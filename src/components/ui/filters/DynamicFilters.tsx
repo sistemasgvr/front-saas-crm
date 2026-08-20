@@ -6,6 +6,7 @@ import Checkbox from "@/src/components/form/input/Checkbox";
 import Input from "@/src/components/form/input/InputField";
 import Select from "@/src/components/form/Select";
 import { Icon } from "@/src/components/ui/Icon";
+import { popoverMotionClass, useOpenTransition } from "@/src/components/ui/use-open-transition";
 import SelectSearch from "./SelectSearch";
 import {
   countActiveFilters,
@@ -30,7 +31,8 @@ export default function DynamicFilters({ fields, values, onChange }: DynamicFilt
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [portalReady, setPortalReady] = useState(false);
+  const { visible, entered } = useOpenTransition(open);
   const [panelStyle, setPanelStyle] = useState({
     top: 0,
     left: 0,
@@ -39,7 +41,7 @@ export default function DynamicFilters({ fields, values, onChange }: DynamicFilt
   const activeCount = countActiveFilters(values);
 
   useEffect(() => {
-    setMounted(true);
+    setPortalReady(true);
   }, []);
 
   const updatePanelPosition = useCallback(() => {
@@ -48,7 +50,7 @@ export default function DynamicFilters({ fields, values, onChange }: DynamicFilt
     if (!trigger) return;
 
     const rect = trigger.getBoundingClientRect();
-    const panelWidth = Math.min(window.innerWidth - 32, 448);
+    const panelWidth = Math.min(window.innerWidth - 32, 360);
     const left = Math.min(Math.max(16, rect.right - panelWidth), window.innerWidth - panelWidth - 16);
     const viewportPadding = 16;
     const maxHeight = window.innerHeight - viewportPadding * 2;
@@ -71,11 +73,11 @@ export default function DynamicFilters({ fields, values, onChange }: DynamicFilt
   }, []);
 
   useLayoutEffect(() => {
-    if (!open) return;
+    if (!visible) return;
     updatePanelPosition();
     const frame = requestAnimationFrame(() => updatePanelPosition());
     return () => cancelAnimationFrame(frame);
-  }, [open, fields, values, updatePanelPosition]);
+  }, [visible, fields, values, updatePanelPosition]);
 
   useEffect(() => {
     if (!open) return;
@@ -109,86 +111,88 @@ export default function DynamicFilters({ fields, values, onChange }: DynamicFilt
 
   const clearAll = () => onChange({});
 
-  const panel = open && mounted && (
+  const panel = visible && portalReady && (
     <div
       ref={panelRef}
       style={{ top: panelStyle.top, left: panelStyle.left, maxHeight: panelStyle.maxHeight }}
-      className="fixed z-[100000] flex w-[min(100vw-2rem,28rem)] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-theme-lg dark:border-gray-700 dark:bg-gray-900"
+      className={`fixed z-[100000] flex w-[min(100vw-2rem,22.5rem)] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-theme-lg dark:border-gray-700 dark:bg-gray-900 ${popoverMotionClass(entered)}`}
     >
-      <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto p-4">
-        <div className="space-y-3">
+      <div className="custom-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4">
+        <div className="space-y-4">
           {fields.map((field) => {
             const value = values[field.key] ?? "";
+            const active = isActiveFilterValue(value);
             return (
-              <div
-                key={field.key}
-                className="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)_auto] items-start gap-2"
-              >
-                <div className="flex h-11 items-center rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-700 dark:border-gray-700 dark:bg-white/[0.03] dark:text-gray-300">
-                  <span className="truncate">{field.label}</span>
+              <div key={field.key} className="min-w-0 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="truncate text-theme-xs font-medium text-gray-600 dark:text-gray-400">
+                    {field.label}
+                  </label>
+                  {active && (
+                    <button
+                      type="button"
+                      title="Limpiar filtro"
+                      onClick={() => setField(field.key, "")}
+                      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-100 hover:text-brand-600 dark:hover:bg-white/5 dark:hover:text-brand-400"
+                    >
+                      <Icon name="mdi:close" size={14} />
+                    </button>
+                  )}
                 </div>
 
-                {field.type === "select" && field.searchable ? (
-                  <SelectSearch
-                    value={value}
-                    options={field.options ?? []}
-                    placeholder={field.placeholder ?? "Seleccionar"}
-                    searchPlaceholder={field.searchPlaceholder ?? "Buscar..."}
-                    disabled={field.disabled}
-                    onChange={(next) => setField(field.key, next)}
-                  />
-                ) : field.type === "select" ? (
-                  <Select
-                    value={value}
-                    options={field.options ?? []}
-                    placeholder={field.placeholder ?? "Seleccionar"}
-                    disabled={field.disabled}
-                    onChange={(next) => setField(field.key, next)}
-                  />
-                ) : field.type === "date" ? (
-                  <Input
-                    type="date"
-                    value={value}
-                    onChange={(event) => setField(field.key, event.target.value)}
-                  />
-                ) : field.type === "checkbox" ? (
-                  <div className="flex min-h-11 items-center rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700">
-                    <Checkbox
-                      checked={value === "true"}
-                      label={field.placeholder ?? "Sí"}
-                      onChange={(checked) => setField(field.key, checked ? "true" : "")}
+                <div className="min-w-0">
+                  {field.type === "select" && field.searchable ? (
+                    <SelectSearch
+                      value={value}
+                      options={field.options ?? []}
+                      placeholder={field.placeholder ?? "Seleccionar"}
+                      searchPlaceholder={field.searchPlaceholder ?? "Buscar..."}
+                      disabled={field.disabled}
+                      onChange={(next) => setField(field.key, next)}
                     />
-                  </div>
-                ) : (
-                  <Input
-                    type="search"
-                    value={value}
-                    placeholder={field.placeholder ?? "Valor"}
-                    onChange={(event) => setField(field.key, event.target.value)}
-                  />
-                )}
-
-                <button
-                  type="button"
-                  title="Limpiar filtro"
-                  disabled={!isActiveFilterValue(value)}
-                  onClick={() => setField(field.key, "")}
-                  className="inline-flex h-11 w-10 shrink-0 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-brand-600 disabled:pointer-events-none disabled:opacity-40 dark:hover:bg-white/5 dark:hover:text-brand-400"
-                >
-                  <Icon name="mdi:broom" size={16} />
-                </button>
+                  ) : field.type === "select" ? (
+                    <Select
+                      value={value}
+                      options={field.options ?? []}
+                      placeholder={field.placeholder ?? "Seleccionar"}
+                      disabled={field.disabled}
+                      onChange={(next) => setField(field.key, next)}
+                    />
+                  ) : field.type === "date" ? (
+                    <Input
+                      type="date"
+                      value={value}
+                      onChange={(event) => setField(field.key, event.target.value)}
+                    />
+                  ) : field.type === "checkbox" ? (
+                    <div className="flex min-h-11 items-center rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700">
+                      <Checkbox
+                        checked={value === "true"}
+                        label={field.placeholder ?? "Sí"}
+                        onChange={(checked) => setField(field.key, checked ? "true" : "")}
+                      />
+                    </div>
+                  ) : (
+                    <Input
+                      type="search"
+                      value={value}
+                      placeholder={field.placeholder ?? "Valor"}
+                      onChange={(event) => setField(field.key, event.target.value)}
+                    />
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-gray-200 px-4 py-3 dark:border-gray-800">
+      <div className="flex shrink-0 justify-end border-t border-gray-200 px-4 py-3 dark:border-gray-800">
         <button
           type="button"
           disabled={activeCount === 0}
           onClick={clearAll}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-brand-600 disabled:pointer-events-none disabled:opacity-40 dark:text-gray-400 dark:hover:text-brand-400"
+          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-error-600 transition hover:bg-error-50 disabled:pointer-events-none disabled:opacity-40 dark:text-error-400 dark:hover:bg-error-500/10"
         >
           <Icon name="mdi:broom" size={16} />
           Limpiar todo
@@ -213,7 +217,7 @@ export default function DynamicFilters({ fields, values, onChange }: DynamicFilt
         <Icon name="mdi:filter-outline" size={18} />
         {activeCount > 0 && <span className="tabular-nums">{activeCount}</span>}
       </button>
-      {mounted ? createPortal(panel, document.body) : null}
+      {portalReady ? createPortal(panel, document.body) : null}
     </div>
   );
 }

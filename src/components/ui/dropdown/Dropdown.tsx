@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useEffect, useRef } from "react";
+import { popoverMotionClass, useOpenTransition } from "@/src/components/ui/use-open-transition";
 
 interface DropdownProps {
   isOpen: boolean;
@@ -17,8 +18,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
   className = "",
 }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { visible, entered } = useOpenTransition(isOpen);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (event: MouseEvent) => {
       if (
         dropdownRef.current &&
@@ -31,14 +35,14 @@ export const Dropdown: React.FC<DropdownProps> = ({
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
+  }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!visible) return null;
 
   return (
     <div
       ref={dropdownRef}
-      className={`absolute right-0 z-40 mt-2 rounded-xl border border-gray-200 bg-white shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark ${className}`}
+      className={`absolute right-0 z-40 mt-2 rounded-xl border border-gray-200 bg-white shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark ${popoverMotionClass(entered)} ${className}`}
     >
       {children}
     </div>
