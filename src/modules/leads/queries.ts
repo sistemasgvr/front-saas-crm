@@ -44,3 +44,9 @@ export async function getCuentasFiltro(): Promise<ReferenciaNombrada[]> {
   const data = await apiFetch<ReferenciaNombrada[]>("/meta/ad-accounts/filtro");
   return Array.isArray(data) ? data : [];
 }
+
+export async function getFormulariosFiltro(metaPaginaId?: string): Promise<ReferenciaNombrada[]> {
+  const params = metaPaginaId ? `?metaPaginaId=${metaPaginaId}` : "";
+  const data = await apiFetch<ReferenciaNombrada[]>(`/meta/forms${params}`);
+  return Array.isArray(data) ? data : [];
+}

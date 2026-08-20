@@ -14,7 +14,14 @@ import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import TableAction from "@/src/components/ui/TableAction";
 import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
-import { getAnunciosFiltro, getCampanasFiltro, getCuentasFiltro, getLeads, getPaginasFiltro } from "./queries";
+import {
+  getAnunciosFiltro,
+  getCampanasFiltro,
+  getCuentasFiltro,
+  getFormulariosFiltro,
+  getLeads,
+  getPaginasFiltro,
+} from "./queries";
 import type { LeadResumen, ReferenciaNombrada } from "./types";
 
 function formatearFecha(iso: string | null) {
@@ -51,6 +58,10 @@ export default function LeadsView() {
   const anunciosQuery = useQuery({ queryKey: queryKeys.metaAds, queryFn: () => getAnunciosFiltro() });
   const paginasQuery = useQuery({ queryKey: queryKeys.metaPagesFiltro, queryFn: () => getPaginasFiltro() });
   const cuentasQuery = useQuery({ queryKey: queryKeys.metaAdAccountsFiltro, queryFn: () => getCuentasFiltro() });
+  const formulariosQuery = useQuery({
+    queryKey: queryKeys.metaFormsFiltro(values.metaPaginaId),
+    queryFn: () => getFormulariosFiltro(values.metaPaginaId || undefined),
+  });
   const leadsQuery = useQuery({ queryKey: queryKeys.leads(filtro), queryFn: () => getLeads(filtro) });
 
   const fields = useMemo<DynamicFilterFieldDef[]>(
@@ -104,11 +115,22 @@ export default function LeadsView() {
           label: cuenta.nombre,
         })),
       },
-      { key: "formularioId", label: "Formulario", type: "text", placeholder: "ID Meta del formulario" },
+      {
+        key: "formularioId",
+        label: "Formulario",
+        type: "select",
+        searchable: true,
+        placeholder: "Todos",
+        searchPlaceholder: "Buscar formulario...",
+        options: (formulariosQuery.data ?? []).map((formulario) => ({
+          value: formulario.id,
+          label: formulario.nombre,
+        })),
+      },
       { key: "fechaDesde", label: "Desde", type: "date" },
       { key: "fechaHasta", label: "Hasta", type: "date" },
     ],
-    [campanasQuery.data, anunciosQuery.data, paginasQuery.data, cuentasQuery.data],
+    [campanasQuery.data, anunciosQuery.data, paginasQuery.data, cuentasQuery.data, formulariosQuery.data],
   );
 
   return (
@@ -124,12 +146,17 @@ export default function LeadsView() {
         />
       </PageHeader>
 
-      {(campanasQuery.isError || anunciosQuery.isError || paginasQuery.isError || cuentasQuery.isError) && (
+      {(campanasQuery.isError ||
+        anunciosQuery.isError ||
+        paginasQuery.isError ||
+        cuentasQuery.isError ||
+        formulariosQuery.isError) && (
         <div className="mb-4 space-y-2">
           {campanasQuery.isError && <QueryError error={campanasQuery.error} />}
           {anunciosQuery.isError && <QueryError error={anunciosQuery.error} />}
           {paginasQuery.isError && <QueryError error={paginasQuery.error} />}
           {cuentasQuery.isError && <QueryError error={cuentasQuery.error} />}
+          {formulariosQuery.isError && <QueryError error={formulariosQuery.error} />}
         </div>
       )}
 

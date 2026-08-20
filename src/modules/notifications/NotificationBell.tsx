@@ -13,7 +13,7 @@ import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { useNotificationsSocket } from "./useNotificationsSocket";
 import { getNotifications, getUnreadCount } from "./queries";
 import { markNotificationReadAction } from "./actions";
-import type { NotificacionItem } from "./types";
+import { resolverRutaNotificacion, type NotificacionItem } from "./types";
 
 function formatearFecha(iso: string) {
   return new Date(iso).toLocaleString("es-PE", { timeZone: "America/Lima", dateStyle: "short", timeStyle: "short" });
@@ -50,8 +50,8 @@ export default function NotificationBell({ organizacionId }: NotificationBellPro
   function abrirNotificacion(item: NotificacionItem) {
     setIsOpen(false);
     if (!item.leida) marcarLeida.mutate(item.id);
-    const leadId = item.payload?.leadId;
-    if (typeof leadId === "string") router.push(`/leads/${leadId}`);
+    const ruta = resolverRutaNotificacion(item.payload);
+    if (ruta) router.push(ruta);
   }
 
   return (

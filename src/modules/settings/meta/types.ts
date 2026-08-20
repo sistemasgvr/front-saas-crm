@@ -34,6 +34,8 @@ export interface MetaPagina {
   nombre: string;
   webhookSuscrito: boolean;
   webhookSuscritoEn: string | null;
+  webhookUltimoCheckEn: string | null;
+  webhookUltimoError: string | null;
   fotoUrl: string | null;
   categoria: string | null;
   fechaCreacion: string;
@@ -84,4 +86,29 @@ export interface ListaMetaCuentasResultado {
   page: number;
   pageSize: number;
   totalPages: number;
+}
+
+export interface MetaFormulario {
+  id: string;
+  organizacionId: string;
+  metaPaginaId: string;
+  formId: string;
+  nombre: string;
+  estadoMeta: string | null;
+  locale: string | null;
+  ultimoSyncEn: string | null;
+  fechaCreacion: string;
+}
+
+export interface ResultadoSyncFormularios {
+  sincronizados: number;
+  total: number;
+}
+
+export interface ResultadoBackfill {
+  importados: number;
+  yaExistian: number;
+  errores: number;
+  incompleto: boolean;
+  nextCursor?: string;
 }

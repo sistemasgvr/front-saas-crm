@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { apiFetch, ApiError } from "@/src/lib/api";
-import type { MetaConnection } from "./types";
+import type { MetaConnection, ResultadoBackfill, ResultadoSyncFormularios } from "./types";
 
 function fail(error: unknown, fallback: string): never {
   throw new Error(error instanceof ApiError ? error.message : fallback);
@@ -62,6 +62,19 @@ export async function resyncMetaPageWebhookAction(id: string): Promise<void> {
   }
 }
 
+export interface ResultadoSaludWebhook {
+  webhookSuscrito: boolean;
+  webhookUltimoError: string | null;
+}
+
+export async function healthCheckMetaPageAction(id: string): Promise<ResultadoSaludWebhook> {
+  try {
+    return await apiFetch<ResultadoSaludWebhook>(`/meta/pages/${id}/health-check`, { method: "POST" });
+  } catch (error) {
+    fail(error, "No se pudo verificar el webhook en Meta");
+  }
+}
+
 export async function linkMetaAdAccountAction(adAccountId: string, adAccountNombre: string): Promise<void> {
   try {
     await apiFetch("/meta/ad-accounts", {
@@ -92,5 +105,28 @@ export async function syncMetaAdAccountAction(id: string): Promise<ResultadoSync
     return await apiFetch<ResultadoSync>(`/meta/ad-accounts/${id}/sync`, { method: "POST" });
   } catch (error) {
     fail(error, "No se pudo sincronizar la cuenta publicitaria");
+  }
+}
+
+export async function syncMetaPageFormsAction(pageId: string): Promise<ResultadoSyncFormularios> {
+  try {
+    return await apiFetch<ResultadoSyncFormularios>(`/meta/pages/${pageId}/forms/sync`, { method: "POST" });
+  } catch (error) {
+    fail(error, "No se pudieron sincronizar los formularios");
+  }
+}
+
+export async function backfillMetaPageFormAction(
+  pageId: string,
+  formId: string,
+  body: { desde?: string; hasta?: string; cursor?: string },
+): Promise<ResultadoBackfill> {
+  try {
+    return await apiFetch<ResultadoBackfill>(`/meta/pages/${pageId}/forms/${formId}/backfill`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  } catch (error) {
+    fail(error, "No se pudo reimportar los leads de este formulario");
   }
 }

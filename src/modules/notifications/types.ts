@@ -25,3 +25,11 @@ export interface NotificacionEventoSocket {
   payload: Record<string, unknown> | null;
   fechaCreacion: string;
 }
+
+/** Deep link por tipo de notificación — hoy "lead nuevo" y "salud de webhook" (Fase 14.4). */
+export function resolverRutaNotificacion(payload: Record<string, unknown> | null): string | null {
+  if (!payload) return null;
+  if (typeof payload.leadId === "string") return `/leads/${payload.leadId}`;
+  if (typeof payload.metaPaginaId === "string") return `/settings/meta/pages/${payload.metaPaginaId}`;
+  return null;
+}

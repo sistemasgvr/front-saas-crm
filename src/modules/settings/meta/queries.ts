@@ -6,6 +6,7 @@ import type {
   ListaMetaPaginasResultado,
   MetaConnection,
   MetaCuentaPublicitariaPerfil,
+  MetaFormulario,
   MetaOption,
   MetaPaginaPerfil,
 } from "./types";
@@ -38,4 +39,9 @@ export async function getMetaAdAccountsAvailable() {
 
 export async function getMetaAdAccountProfile(id: string) {
   return apiFetch<MetaCuentaPublicitariaPerfil>(`/meta/ad-accounts/${id}`);
+}
+
+export async function getMetaPageForms(pageId: string) {
+  const data = await apiFetch<MetaFormulario[]>(`/meta/pages/${pageId}/forms`);
+  return Array.isArray(data) ? data : [];
 }

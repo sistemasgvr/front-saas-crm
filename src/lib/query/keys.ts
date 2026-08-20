@@ -27,6 +27,8 @@ export const queryKeys = {
   metaAdAccountsVinculadasAll: ["meta", "ad-accounts", "vinculadas"] as const,
   metaAdAccountsAvailable: ["meta", "ad-accounts", "available"] as const,
   metaAdAccountProfile: (id: string) => ["meta", "ad-accounts", "perfil", id] as const,
+  metaPageForms: (pageId: string) => ["meta", "pages", pageId, "forms"] as const,
+  metaFormsFiltro: (metaPaginaId?: string) => ["meta", "forms", "filtro", metaPaginaId ?? null] as const,
   metaPagesFiltro: ["meta", "pages", "filtro"] as const,
   metaAdAccountsFiltro: ["meta", "ad-accounts", "filtro"] as const,
   metaCampaigns: ["meta", "campaigns"] as const,
