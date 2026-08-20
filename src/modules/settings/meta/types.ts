@@ -82,6 +82,25 @@ export interface MetaCuentaPublicitariaPerfil extends MetaCuentaPublicitaria {
   cpl: number | null;
 }
 
+export interface FeaturePermisoEstado {
+  id: string;
+  label: string;
+  tipo: "nucleo" | "optin";
+  deseada: boolean;
+  estado: "ok" | "falta";
+  scopesRequeridos: string[];
+  scopesFaltantes: string[];
+  puedeDesactivar: boolean;
+}
+
+export interface SaludPermisosMeta {
+  isValid: boolean;
+  scopesOtorgados: string[];
+  features: FeaturePermisoEstado[];
+  tieneFaltantesDeseados: boolean;
+  notaAdvancedAccess: string;
+}
+
 export interface ResultadoSyncInsights {
   filasCuenta: number;
   filasCampana: number;

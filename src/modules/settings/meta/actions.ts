@@ -30,6 +30,49 @@ export async function connectMetaAction() {
   redirect(url);
 }
 
+/** Reconecta pidiendo que Meta vuelva a mostrar el diálogo de permisos que el
+ * usuario haya denegado antes (`auth_type=rerequest`) — PLAN-FASE-16 §6.2. */
+export async function reconnectMetaAction() {
+  let url: string;
+  try {
+    const data = await apiFetch<{ url: string }>("/meta/oauth/url?rerequest=1");
+    url = data.url;
+  } catch (error) {
+    fail(error, "No se pudo iniciar la reconexión con Meta");
+  }
+  redirect(url);
+}
+
+/** Pide en Meta solo los scopes de una feature puntual (botón "Otorgar en Meta"
+ * de una fila opt-in) — PLAN-FASE-16-META-PERMISOS.md §6.1/§8. */
+export async function grantMetaFeatureAction(featureId: string) {
+  let url: string;
+  try {
+    const data = await apiFetch<{ url: string }>(
+      `/meta/oauth/url?features=${encodeURIComponent(featureId)}&rerequest=1`,
+    );
+    url = data.url;
+  } catch (error) {
+    fail(error, "No se pudo iniciar la solicitud del permiso en Meta");
+  }
+  redirect(url);
+}
+
+export async function toggleMetaFeatureAction(
+  featureId: string,
+  deseada: boolean,
+  revocarEnMeta?: boolean,
+): Promise<void> {
+  try {
+    await apiFetch("/meta/connections/permissions/features", {
+      method: "PATCH",
+      body: JSON.stringify({ featureId, deseada, revocarEnMeta }),
+    });
+  } catch (error) {
+    fail(error, "No se pudo actualizar la preferencia del permiso");
+  }
+}
+
 export async function disconnectMetaAction(): Promise<void> {
   try {
     await apiFetch("/meta/connections/disconnect", { method: "POST" });

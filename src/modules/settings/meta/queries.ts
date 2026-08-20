@@ -1,6 +1,6 @@
 "use server";
 
-import { apiFetch } from "@/src/lib/api";
+import { apiFetch, ApiError } from "@/src/lib/api";
 import type {
   ListaMetaCuentasResultado,
   ListaMetaPaginasResultado,
@@ -9,10 +9,29 @@ import type {
   MetaFormulario,
   MetaOption,
   MetaPaginaPerfil,
+  SaludPermisosMeta,
 } from "./types";
 
 export async function getMetaConnection() {
   return apiFetch<MetaConnection>("/meta/connections/current");
+}
+
+export type ResultadoPermisos = { ok: true; data: SaludPermisosMeta } | { ok: false; message: string };
+
+/** Devuelve un resultado envuelto en vez de lanzar: un Server Action llamado
+ * directo desde queryFn (sin <form>) que lanza por una falla real de Graph (no
+ * de auth) no propaga correctamente el error al estado isError de useQuery en
+ * esta versión de Next.js — se evita por completo capturando acá. */
+export async function getMetaPermissions(): Promise<ResultadoPermisos> {
+  try {
+    const data = await apiFetch<SaludPermisosMeta>("/meta/connections/permissions");
+    return { ok: true, data };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof ApiError ? error.message : "No se pudieron verificar los permisos",
+    };
+  }
 }
 
 export async function getMetaPagesVinculadas(page: number) {

@@ -19,6 +19,7 @@ export const queryKeys = {
   adminUser: (id: string) => ["admin", "users", id] as const,
   adminModules: ["admin", "modules"] as const,
   metaConnection: ["meta", "connection"] as const,
+  metaPermissions: ["meta", "connection", "permissions"] as const,
   metaPagesVinculadas: (params?: { page?: number }) => ["meta", "pages", "vinculadas", params ?? {}] as const,
   metaPagesVinculadasAll: ["meta", "pages", "vinculadas"] as const,
   metaPagesAvailable: ["meta", "pages", "available"] as const,

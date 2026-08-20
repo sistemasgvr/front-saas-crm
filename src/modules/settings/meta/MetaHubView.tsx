@@ -11,10 +11,11 @@ import Button from "@/src/components/ui/button/Button";
 import Badge from "@/src/components/ui/badge/Badge";
 import { Icon } from "@/src/components/ui/Icon";
 import ActionButton from "@/src/components/ui/ActionButton";
-import { getMetaConnection } from "./queries";
+import { getMetaConnection, getMetaPermissions } from "./queries";
 import { connectMetaAction, disconnectMetaAction } from "./actions";
 import MetaAppCredentialsForm from "./MetaAppCredentialsForm";
 import MetaHubLayout from "./MetaHubLayout";
+import MetaPermissionsPanel from "./MetaPermissionsPanel";
 import MetaStatCard from "./MetaStatCard";
 import { formatearFechaMeta } from "./format";
 
@@ -38,6 +39,16 @@ export default function MetaHubView({ metaCallback }: { metaCallback?: string })
     queryFn: () => getMetaConnection(),
   });
   const connection = connectionQuery.data;
+
+  // Mismo queryKey que MetaPermissionsPanel — comparte caché, no duplica el fetch.
+  const permissionsQuery = useQuery({
+    queryKey: queryKeys.metaPermissions,
+    queryFn: () => getMetaPermissions(),
+    enabled: Boolean(connection?.appConfigurada && connection.conectado),
+  });
+  const permisosFaltantes = permissionsQuery.data?.ok
+    ? permissionsQuery.data.data.features.filter((f) => f.deseada && f.estado === "falta").length
+    : 0;
 
   if (connectionQuery.isLoading) {
     return (
@@ -79,6 +90,11 @@ export default function MetaHubView({ metaCallback }: { metaCallback?: string })
               {connection.appConfigurada && (
                 <Badge color={connection.conectado ? "success" : "warning"} size="sm">
                   {connection.conectado ? "Conectado" : "Pendiente"}
+                </Badge>
+              )}
+              {permisosFaltantes > 0 && (
+                <Badge color="error" size="sm">
+                  {permisosFaltantes} {permisosFaltantes === 1 ? "permiso faltante" : "permisos faltantes"}
                 </Badge>
               )}
             </div>
@@ -139,6 +155,8 @@ export default function MetaHubView({ metaCallback }: { metaCallback?: string })
                 icon="mdi:bullhorn-outline"
               />
             </div>
+
+            <MetaPermissionsPanel />
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap gap-3">
