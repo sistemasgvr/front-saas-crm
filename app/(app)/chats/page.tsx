@@ -1,16 +1,16 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/src/lib/auth";
 import { getDefaultClientRoute, isModuloHabilitado } from "@/src/lib/modules";
-import LeadsView from "@/src/modules/leads/LeadsView";
+import ChatsView from "@/src/modules/chats/ChatsView";
 
-export default async function LeadsPage() {
+export default async function ChatsPage() {
   const me = await getMe();
   if (!me) {
     redirect("/login");
   }
-  if (!isModuloHabilitado(me.modulos, "META_LEADS")) {
+  if (!isModuloHabilitado(me.modulos, "WHATSAPP")) {
     redirect(getDefaultClientRoute(me));
   }
 
-  return <LeadsView rol={me.rol} usuarioId={me.usuario.id} />;
+  return <ChatsView />;
 }

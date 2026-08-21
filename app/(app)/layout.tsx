@@ -12,6 +12,7 @@ import { canManageOrganization } from "@/src/lib/roles";
 const CLIENT_NAV: NavItem[] = [
   { name: "Dashboard", icon: "mdi:view-dashboard-outline", path: "/dashboard", requiereModulo: "DASHBOARD" },
   { name: "Leads", icon: "mdi:account-multiple-outline", path: "/leads", requiereModulo: "META_LEADS" },
+  { name: "Chats", icon: "mdi:whatsapp", path: "/chats", requiereModulo: "WHATSAPP" },
   { name: "Perfil", icon: "mdi:account-outline", path: "/profile" },
   { name: "Configuración", icon: "mdi:cog-outline", path: "/settings" },
 ];

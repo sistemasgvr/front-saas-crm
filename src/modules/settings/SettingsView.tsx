@@ -7,6 +7,7 @@ import { getCurrentOrganization } from "./queries";
 import { canManageOrganization } from "@/src/lib/roles";
 import OrganizationSettingsForm from "./OrganizationSettingsForm";
 import MetaSettingsEntryCard from "./meta/MetaSettingsEntryCard";
+import WhatsappSettingsEntryCard from "./whatsapp/WhatsappSettingsEntryCard";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 
@@ -32,6 +33,7 @@ export default function SettingsView() {
 
   const me = meQuery.data;
   const metaLeadsHabilitado = me.modulos.some((m) => m.codigo === "META_LEADS" && m.habilitado);
+  const whatsappHabilitado = me.modulos.some((m) => m.codigo === "WHATSAPP" && m.habilitado);
 
   return (
     <div className="space-y-6">
@@ -52,6 +54,7 @@ export default function SettingsView() {
       )}
 
       {metaLeadsHabilitado && <MetaSettingsEntryCard />}
+      {whatsappHabilitado && <WhatsappSettingsEntryCard />}
     </div>
   );
 }

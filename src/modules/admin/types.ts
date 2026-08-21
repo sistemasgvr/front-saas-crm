@@ -9,6 +9,7 @@ export interface OrganizacionAdmin {
   logoUrl: string | null;
   pais: string | null;
   zonaHoraria: string;
+  rubro: string;
   notas: string | null;
   estado: number;
   fechaCreacion: string;
