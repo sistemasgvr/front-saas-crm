@@ -15,3 +15,20 @@ export function formatearMonto(valor: number | null, moneda: string | null, fall
     return valor.toFixed(2);
   }
 }
+
+/** YYYY-MM-DD en zona America/Lima para inputs `type="date"`. */
+export function aFechaInput(iso: string | Date | null | undefined): string {
+  if (!iso) return "";
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Lima",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+export function hoyFechaInput(): string {
+  return aFechaInput(new Date());
+}

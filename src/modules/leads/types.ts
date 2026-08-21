@@ -54,3 +54,12 @@ export interface FiltroLeads {
   fechaHasta?: string;
   page: number;
 }
+
+export interface ResultadoSyncLeadsOrganizacion {
+  formulariosProcesados: number;
+  formulariosOmitidos: number;
+  importados: number;
+  yaExistian: number;
+  errores: number;
+  incompleto: boolean;
+}

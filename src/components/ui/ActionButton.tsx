@@ -7,7 +7,7 @@ import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 
 interface ActionButtonProps {
   action: () => Promise<void>;
-  successMessage: string;
+  successMessage?: string;
   children: ReactNode;
   variant?: "primary" | "outline" | "danger";
   size?: "sm" | "md";

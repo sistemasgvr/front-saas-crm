@@ -19,7 +19,7 @@ export default function EntityCell({
   size = "md",
 }: EntityCellProps) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex min-w-0 items-center gap-3">
       <Avatar name={name} src={src} icon={icon} shape={shape} size={size} />
       <div className="min-w-0">
         <span className="block truncate font-medium text-gray-800 text-theme-sm dark:text-white/90">{name}</span>

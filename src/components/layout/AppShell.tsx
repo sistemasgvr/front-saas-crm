@@ -13,7 +13,7 @@ export default function AppShell({ header, children }: { header: ReactNode; chil
       : "lg:ml-[90px]";
 
   return (
-    <div className={`flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}>
+    <div className={`min-w-0 flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}>
       {header}
       <div className="mx-auto max-w-(--breakpoint-2xl) p-4 md:p-6">{children}</div>
     </div>

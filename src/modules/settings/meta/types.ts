@@ -126,6 +126,7 @@ export interface MetaFormulario {
   locale: string | null;
   ultimoSyncEn: string | null;
   fechaCreacion: string;
+  totalLeads: number;
 }
 
 export interface ResultadoSyncFormularios {

@@ -174,6 +174,20 @@ export async function syncMetaPageFormsAction(pageId: string): Promise<Resultado
   }
 }
 
+/** Bajo demanda: golpea Graph API por cada formulario de la página para
+ * comparar el total real de Meta contra lo ya importado. */
+export async function contarLeadsMetaPaginaAction(
+  pageId: string,
+): Promise<Record<string, number>> {
+  try {
+    return await apiFetch<Record<string, number>>(`/meta/pages/${pageId}/forms/meta-counts`, {
+      method: "POST",
+    });
+  } catch (error) {
+    fail(error, "No se pudo obtener el conteo de leads en Meta");
+  }
+}
+
 export async function backfillMetaPageFormAction(
   pageId: string,
   formId: string,

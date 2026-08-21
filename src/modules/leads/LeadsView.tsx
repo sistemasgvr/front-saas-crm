@@ -3,11 +3,14 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/src/components/tables";
 import EntityCell from "@/src/components/ui/avatar/EntityCell";
 import EmptyState from "@/src/components/ui/EmptyState";
 import DynamicFilters from "@/src/components/ui/filters/DynamicFilters";
 import type { DynamicFilterFieldDef, DynamicFilterValues } from "@/src/components/ui/filters/types";
+import { Icon } from "@/src/components/ui/Icon";
+import ActionButton from "@/src/components/ui/ActionButton";
 import PageHeader from "@/src/components/ui/PageHeader";
 import Pagination from "@/src/components/ui/Pagination";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
@@ -15,6 +18,7 @@ import TableAction from "@/src/components/ui/TableAction";
 import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
 import { aplicarCascadaFiltros, CASCADA_META_LEADS } from "@/src/components/ui/filters/cascadeFilters";
+import { syncAllLeadsFromMetaAction } from "./actions";
 import {
   getAnunciosFiltro,
   getCampanasFiltro,
@@ -28,6 +32,28 @@ import type { AnuncioFiltroOpcion, CampanaFiltroOpcion, LeadResumen, ReferenciaN
 function formatearFecha(iso: string | null) {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("es-PE", { timeZone: "America/Lima", dateStyle: "short", timeStyle: "short" });
+}
+
+function CeldaConIcono({
+  icon,
+  value,
+  fallback = "—",
+  className = "",
+}: {
+  icon: string;
+  value: string | null | undefined;
+  fallback?: string;
+  className?: string;
+}) {
+  const texto = value?.trim() || fallback;
+  return (
+    <span className={`flex min-w-0 items-center gap-1.5 ${className}`}>
+      <Icon name={icon} size={16} className="shrink-0 text-gray-400" />
+      <span className="truncate" title={texto}>
+        {texto}
+      </span>
+    </span>
+  );
 }
 
 export default function LeadsView() {
@@ -76,9 +102,7 @@ export default function LeadsView() {
     const campanaIds = new Set(campanasFiltradas.map((c) => c.id));
     return todos.filter((anuncio) => {
       if (values.campanaId) {
-        return anuncio.campanaId
-          ? anuncio.campanaId === values.campanaId
-          : false;
+        return anuncio.campanaId ? anuncio.campanaId === values.campanaId : false;
       }
       if (values.metaCuentaId) {
         return anuncio.campanaId ? campanaIds.has(anuncio.campanaId) : false;
@@ -159,6 +183,24 @@ export default function LeadsView() {
   return (
     <div>
       <PageHeader title="Leads" description="Contactos captados desde formularios de Meta.">
+        <ActionButton
+          action={async () => {
+            const resultado = await syncAllLeadsFromMetaAction();
+            const base = `${resultado.importados} importados · ${resultado.yaExistian} ya existían · ${resultado.errores} errores (${resultado.formulariosProcesados} formularios)`;
+            if (resultado.formulariosProcesados === 0) {
+              toast.message("No hay formularios sincronizados. Ve a Configuración → Meta → Páginas.");
+            } else if (resultado.incompleto || resultado.formulariosOmitidos > 0) {
+              toast.success(`${base}. Quedan más por sincronizar; vuelve a pulsar.`);
+            } else {
+              toast.success(base);
+            }
+          }}
+          loadingText="Sincronizando…"
+          invalidateKeys={[queryKeys.leadsAll]}
+          startIcon={<Icon name="mdi:cloud-sync-outline" size={18} />}
+        >
+          Sincronizar todo
+        </ActionButton>
         <DynamicFilters
           fields={fields}
           values={values}
@@ -202,25 +244,25 @@ export default function LeadsView() {
             ) : null
           }
         >
-          <Table>
+          <Table className="w-full table-fixed">
             <TableHeader className="border-b border-gray-100 dark:border-gray-800">
               <TableRow>
-                <TableCell isHeader className={thClass}>
+                <TableCell isHeader className={`${thClass} w-[24%]`}>
                   Contacto
                 </TableCell>
-                <TableCell isHeader className={thClass}>
+                <TableCell isHeader className={`${thClass} w-[14%]`}>
                   Teléfono
                 </TableCell>
-                <TableCell isHeader className={thClass}>
+                <TableCell isHeader className={`${thClass} w-[22%]`}>
                   Campaña
                 </TableCell>
-                <TableCell isHeader className={thClass}>
+                <TableCell isHeader className={`${thClass} w-[22%]`}>
                   Anuncio
                 </TableCell>
-                <TableCell isHeader className={thClass}>
+                <TableCell isHeader className={`${thClass} w-[12%]`}>
                   Fecha
                 </TableCell>
-                <TableCell isHeader className={thClassEnd}>
+                <TableCell isHeader className={`${thClassEnd} w-[6%]`}>
                   Acción
                 </TableCell>
               </TableRow>
@@ -230,21 +272,33 @@ export default function LeadsView() {
                 <EmptyState
                   colSpan={6}
                   icon="mdi:account-search-outline"
-                  title="No hay leads con estos filtros."
-                  description="Prueba a cambiar la búsqueda o el rango de fechas."
+                  title="No hay leads con estos filtros"
+                  description="Prueba a cambiar la búsqueda, sincronizar desde Meta o ampliar el rango de fechas."
                 />
               )}
               {(leadsQuery.data?.data ?? []).map((lead: LeadResumen) => {
                 const nombre = lead.nombre ?? "Sin nombre";
                 return (
                   <TableRow key={lead.id}>
-                    <TableCell className={tdPrimaryClass}>
-                      <EntityCell name={nombre} subtitle={lead.email ?? "Sin email"} />
+                    <TableCell className={`${tdPrimaryClass} min-w-0`}>
+                      <EntityCell name={nombre} subtitle={lead.email ?? "Sin email"} icon="mdi:account-outline" size="sm" />
                     </TableCell>
-                    <TableCell className={tdClass}>{lead.telefono ?? "—"}</TableCell>
-                    <TableCell className={tdClass}>{lead.campana?.nombre ?? "—"}</TableCell>
-                    <TableCell className={tdClass}>{lead.anuncio?.nombre ?? "—"}</TableCell>
-                    <TableCell className={tdClass}>{formatearFecha(lead.fechaLead)}</TableCell>
+                    <TableCell className={`${tdClass} min-w-0`}>
+                      <CeldaConIcono icon="mdi:phone-outline" value={lead.telefono} className="text-gray-600 dark:text-gray-300" />
+                    </TableCell>
+                    <TableCell className={`${tdClass} min-w-0`}>
+                      <CeldaConIcono icon="mdi:bullhorn-outline" value={lead.campana?.nombre} />
+                    </TableCell>
+                    <TableCell className={`${tdClass} min-w-0`}>
+                      <CeldaConIcono icon="mdi:image-outline" value={lead.anuncio?.nombre} />
+                    </TableCell>
+                    <TableCell className={`${tdClass} min-w-0`}>
+                      <CeldaConIcono
+                        icon="mdi:calendar-clock-outline"
+                        value={formatearFecha(lead.fechaLead)}
+                        className="text-gray-600 dark:text-gray-300"
+                      />
+                    </TableCell>
                     <TableCell className="px-5 py-4">
                       <div className="flex justify-end">
                         <TableAction href={`/leads/${lead.id}`} icon="mdi:eye-outline" label={`Ver ${nombre}`} />
