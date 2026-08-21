@@ -8,7 +8,12 @@ function fail(error: unknown, fallback: string): never {
 
 export async function enviarMensajeAction(
   conversacionId: string,
-  input: { texto?: string; plantillaNombre?: string; plantillaIdioma?: string },
+  input: {
+    texto?: string;
+    plantillaNombre?: string;
+    plantillaIdioma?: string;
+    parametros?: string[];
+  },
 ): Promise<void> {
   try {
     await apiFetch(`/whatsapp/chats/${conversacionId}/messages`, {

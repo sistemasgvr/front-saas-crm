@@ -52,4 +52,5 @@ export const queryKeys = {
   whatsappChats: ["whatsapp", "chats"] as const,
   whatsappChat: (id: string) => ["whatsapp", "chats", id] as const,
   whatsappTemplates: ["whatsapp", "templates"] as const,
+  whatsappTemplatesAll: ["whatsapp", "templates", "all"] as const,
 };

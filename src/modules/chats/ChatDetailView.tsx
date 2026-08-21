@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Avatar from "@/src/components/ui/avatar/Avatar";
 import Button from "@/src/components/ui/button/Button";
+import Input from "@/src/components/form/input/InputField";
 import Select from "@/src/components/form/Select";
 import { Icon } from "@/src/components/ui/Icon";
 import PageHeader from "@/src/components/ui/PageHeader";
@@ -25,6 +26,12 @@ const ICONO_ESTADO: Record<string, string> = {
 
 function estaDentroDeVentana(ventanaExpiraEn: string | null | undefined): boolean {
   return !!ventanaExpiraEn && new Date(ventanaExpiraEn).getTime() > Date.now();
+}
+
+function contarVariables(texto: string | undefined): number {
+  if (!texto) return 0;
+  const numeros = [...texto.matchAll(/\{\{(\d+)\}\}/g)].map((m) => Number(m[1]));
+  return numeros.length > 0 ? Math.max(...numeros) : 0;
 }
 
 function formatearHora(iso: string) {
@@ -68,6 +75,7 @@ export default function ChatDetailView({ id }: { id: string }) {
   const queryClient = useQueryClient();
   const [texto, setTexto] = useState("");
   const [plantillaSeleccionada, setPlantillaSeleccionada] = useState("");
+  const [parametrosPlantilla, setParametrosPlantilla] = useState<string[]>([]);
   const finRef = useRef<HTMLDivElement>(null);
 
   const chatQuery = useQuery({
@@ -84,16 +92,20 @@ export default function ChatDetailView({ id }: { id: string }) {
     enabled: !dentroDeVentana,
   });
 
+  const plantilla = templatesQuery.data?.find((p) => p.nombre === plantillaSeleccionada);
+  const numVariables = contarVariables(plantilla?.cuerpoTexto);
+  const parametrosCompletos = parametrosPlantilla.every((p) => p.trim().length > 0);
+
   const enviar = useAppMutation({
     mutationFn: async () => {
       if (dentroDeVentana) {
         await enviarMensajeAction(id, { texto });
       } else {
-        const plantilla = templatesQuery.data?.find((p) => p.nombre === plantillaSeleccionada);
         if (!plantilla) throw new Error("Elige una plantilla aprobada");
         await enviarMensajeAction(id, {
           plantillaNombre: plantilla.nombre,
           plantillaIdioma: plantilla.idioma,
+          parametros: numVariables > 0 ? parametrosPlantilla : undefined,
         });
       }
     },
@@ -181,29 +193,79 @@ export default function ChatDetailView({ id }: { id: string }) {
               <div className="flex items-end gap-2">
                 <div className="flex-1">
                   <Select
-                    options={(templatesQuery.data ?? []).map((plantilla) => ({
-                      value: plantilla.nombre,
-                      label: `${plantilla.nombre} (${plantilla.idioma})`,
+                    options={(templatesQuery.data ?? []).map((t) => ({
+                      value: t.nombre,
+                      label: `${t.nombre} (${t.idioma})`,
                     }))}
                     placeholder={
                       templatesQuery.isLoading ? "Cargando plantillas…" : "Elige una plantilla aprobada"
                     }
                     value={plantillaSeleccionada}
-                    onChange={setPlantillaSeleccionada}
+                    onChange={(valor) => {
+                      setPlantillaSeleccionada(valor);
+                      const seleccionada = templatesQuery.data?.find((t) => t.nombre === valor);
+                      setParametrosPlantilla(
+                        Array(contarVariables(seleccionada?.cuerpoTexto)).fill(""),
+                      );
+                    }}
                   />
                 </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  loading={enviar.isPending}
-                  disabled={!plantillaSeleccionada}
-                  onClick={() =>
-                    enviar.mutate(undefined, { onSuccess: () => setPlantillaSeleccionada("") })
-                  }
-                >
-                  Enviar plantilla
-                </Button>
+                {numVariables === 0 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    loading={enviar.isPending}
+                    disabled={!plantillaSeleccionada}
+                    onClick={() =>
+                      enviar.mutate(undefined, {
+                        onSuccess: () => {
+                          setPlantillaSeleccionada("");
+                          setParametrosPlantilla([]);
+                        },
+                      })
+                    }
+                  >
+                    Enviar plantilla
+                  </Button>
+                )}
               </div>
+              {plantilla && (
+                <p className="rounded-lg bg-gray-50 px-3 py-2 text-theme-xs text-gray-600 dark:bg-white/[0.03] dark:text-gray-300">
+                  {plantilla.cuerpoTexto}
+                </p>
+              )}
+              {numVariables > 0 && (
+                <div className="space-y-2">
+                  {parametrosPlantilla.map((valor, i) => (
+                    <Input
+                      key={i}
+                      placeholder={`Valor para {{${i + 1}}}`}
+                      value={valor}
+                      onChange={(e) =>
+                        setParametrosPlantilla((prev) =>
+                          prev.map((p, idx) => (idx === i ? e.target.value : p)),
+                        )
+                      }
+                    />
+                  ))}
+                  <Button
+                    type="button"
+                    size="sm"
+                    loading={enviar.isPending}
+                    disabled={!plantillaSeleccionada || !parametrosCompletos}
+                    onClick={() =>
+                      enviar.mutate(undefined, {
+                        onSuccess: () => {
+                          setPlantillaSeleccionada("");
+                          setParametrosPlantilla([]);
+                        },
+                      })
+                    }
+                  >
+                    Enviar plantilla
+                  </Button>
+                </div>
+              )}
               {templatesQuery.data?.length === 0 && (
                 <p className="text-theme-xs text-gray-500 dark:text-gray-400">
                   No hay plantillas aprobadas — créalas en Meta Business Suite primero.

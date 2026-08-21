@@ -8,6 +8,13 @@ export interface NumeroWhatsAppDisponible {
   qualityRating?: string;
 }
 
+export interface PlantillaWhatsApp {
+  nombre: string;
+  idioma: string;
+  categoria: string;
+  estado: string;
+}
+
 export interface WhatsappConexion {
   id: string;
   wabaId: string;

@@ -34,4 +34,5 @@ export interface PlantillaWhatsApp {
   idioma: string;
   categoria: string;
   estado: string;
+  cuerpoTexto?: string;
 }

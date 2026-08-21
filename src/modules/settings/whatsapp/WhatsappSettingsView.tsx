@@ -10,6 +10,7 @@ import TableAction from "@/src/components/ui/TableAction";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import MetaLinkResourcePanel from "../meta/MetaLinkResourcePanel";
+import WhatsappTemplatesPanel from "./WhatsappTemplatesPanel";
 import { linkWhatsappNumeroAction, unlinkWhatsappNumeroAction } from "./actions";
 import { getWhatsappConexiones, getWhatsappNumerosDisponibles } from "./queries";
 
@@ -110,6 +111,8 @@ export default function WhatsappSettingsView() {
           ))}
         </div>
       )}
+
+      <WhatsappTemplatesPanel />
     </div>
   );
 }

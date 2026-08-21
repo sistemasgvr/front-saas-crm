@@ -29,3 +29,25 @@ export async function unlinkWhatsappNumeroAction(id: string): Promise<void> {
     fail(error, "No se pudo desvincular el número");
   }
 }
+
+export interface CrearPlantillaInput {
+  nombre: string;
+  categoria: "AUTHENTICATION" | "MARKETING" | "UTILITY";
+  idioma: string;
+  cuerpo: string;
+  ejemplosCuerpo?: string[];
+  encabezado?: string;
+  ejemploEncabezado?: string;
+  pie?: string;
+}
+
+export async function crearPlantillaWhatsAppAction(input: CrearPlantillaInput): Promise<void> {
+  try {
+    await apiFetch("/whatsapp/chats/templates", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  } catch (error) {
+    fail(error, "No se pudo crear la plantilla");
+  }
+}
