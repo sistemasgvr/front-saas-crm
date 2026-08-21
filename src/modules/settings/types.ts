@@ -9,5 +9,6 @@ export interface OrganizacionActual {
   logoUrl: string | null;
   pais: string | null;
   zonaHoraria: string;
+  rubro: string;
   fechaCreacion: string;
 }

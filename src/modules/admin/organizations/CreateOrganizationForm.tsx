@@ -114,6 +114,12 @@ export default function CreateOrganizationForm() {
                 {...register("zonaHoraria")}
               />
             </div>
+            <div>
+              <Label>Rubro</Label>
+              <p className="flex h-11 items-center text-theme-sm text-gray-500 dark:text-gray-400">
+                Inmobiliaria — único rubro operativo por ahora
+              </p>
+            </div>
           </div>
         </div>
 

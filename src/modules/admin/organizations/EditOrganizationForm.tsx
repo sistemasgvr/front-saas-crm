@@ -103,6 +103,12 @@ export default function EditOrganizationForm({ org }: { org: OrganizacionAdmin }
               {...register("zonaHoraria")}
             />
           </div>
+          <div>
+            <Label>Rubro</Label>
+            <p className="flex h-11 items-center text-theme-sm text-gray-500 dark:text-gray-400">
+              {org.rubro === "INMOBILIARIA" ? "Inmobiliaria" : org.rubro}
+            </p>
+          </div>
           <div className="sm:col-span-2">
             <Label htmlFor="notas">Notas internas</Label>
             <TextArea
