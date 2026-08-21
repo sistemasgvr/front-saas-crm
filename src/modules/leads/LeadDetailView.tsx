@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import Avatar from "@/src/components/ui/avatar/Avatar";
 import { Icon } from "@/src/components/ui/Icon";
@@ -104,12 +105,18 @@ export default function LeadDetailView({ id }: { id: string }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title={nombre} description={lead.email ?? undefined} backHref="/leads" backLabel="Volver a Leads" />
+      <Link
+        href="/leads"
+        className="inline-flex items-center gap-1 text-theme-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+      >
+        <Icon name="mdi:chevron-left" size={18} />
+        Volver a Leads
+      </Link>
 
       <div className="flex flex-wrap items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
         <Avatar name={nombre} size="xl" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-lg font-semibold text-gray-800 dark:text-white/90">{nombre}</p>
+          <h1 className="truncate text-lg font-semibold text-gray-800 dark:text-white/90">{nombre}</h1>
           <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:gap-x-4">
             <span className="inline-flex items-center gap-1.5 text-theme-sm text-gray-500 dark:text-gray-400">
               <Icon name="mdi:email-outline" size={16} className="shrink-0" />
