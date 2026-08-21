@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Avatar from "@/src/components/ui/avatar/Avatar";
 import Button from "@/src/components/ui/button/Button";
+import Select from "@/src/components/form/Select";
 import { Icon } from "@/src/components/ui/Icon";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
@@ -178,20 +179,19 @@ export default function ChatDetailView({ id }: { id: string }) {
                 Pasaron 24h desde el último mensaje del contacto — hace falta enviar una plantilla aprobada.
               </p>
               <div className="flex items-end gap-2">
-                <select
-                  value={plantillaSeleccionada}
-                  onChange={(event) => setPlantillaSeleccionada(event.target.value)}
-                  className="flex-1 rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-theme-sm text-gray-800 outline-none focus:border-brand-500 dark:border-gray-700 dark:text-white/90 dark:[color-scheme:dark]"
-                >
-                  <option value="">
-                    {templatesQuery.isLoading ? "Cargando plantillas…" : "Elige una plantilla aprobada"}
-                  </option>
-                  {(templatesQuery.data ?? []).map((plantilla) => (
-                    <option key={`${plantilla.nombre}-${plantilla.idioma}`} value={plantilla.nombre}>
-                      {plantilla.nombre} ({plantilla.idioma})
-                    </option>
-                  ))}
-                </select>
+                <div className="flex-1">
+                  <Select
+                    options={(templatesQuery.data ?? []).map((plantilla) => ({
+                      value: plantilla.nombre,
+                      label: `${plantilla.nombre} (${plantilla.idioma})`,
+                    }))}
+                    placeholder={
+                      templatesQuery.isLoading ? "Cargando plantillas…" : "Elige una plantilla aprobada"
+                    }
+                    value={plantillaSeleccionada}
+                    onChange={setPlantillaSeleccionada}
+                  />
+                </div>
                 <Button
                   type="button"
                   size="sm"
