@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Avatar from "@/src/components/ui/avatar/Avatar";
 import Badge from "@/src/components/ui/badge/Badge";
@@ -21,6 +22,7 @@ import {
 import { actualizarTipoLeadAction } from "./actions";
 import { getLead } from "./queries";
 import { TIPOS_LEAD_INMOBILIARIA } from "./types";
+import { iniciarChatDesdeLeadAction } from "@/src/modules/chats/actions";
 
 type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 
@@ -90,12 +92,26 @@ function Seccion({
   );
 }
 
-export default function LeadDetailView({ id, rol, usuarioId }: { id: string; rol: Rol; usuarioId: string }) {
+export default function LeadDetailView({
+  id,
+  rol,
+  usuarioId,
+  whatsappHabilitado,
+}: {
+  id: string;
+  rol: Rol;
+  usuarioId: string;
+  whatsappHabilitado: boolean;
+}) {
+  const router = useRouter();
   const leadQuery = useQuery({ queryKey: queryKeys.lead(id), queryFn: () => getLead(id) });
   const tipoMutation = useAppMutation({
     mutationFn: (tipoLead: string) => actualizarTipoLeadAction(id, tipoLead),
     successMessage: "Tipo de lead actualizado",
     invalidateKeys: [queryKeys.leadsAll],
+  });
+  const iniciarChat = useAppMutation({
+    mutationFn: () => iniciarChatDesdeLeadAction(id),
   });
 
   if (leadQuery.isLoading) return <PageLoader />;
@@ -166,8 +182,30 @@ export default function LeadDetailView({ id, rol, usuarioId }: { id: string; rol
             <LeadAssignmentActions leadId={id} asignado={lead.asignado} rol={rol} />
           </div>
 
-          <span title="Disponible cuando se conecte WhatsApp (próximamente)">
-            <Button type="button" size="sm" variant="outline" disabled startIcon={<Icon name="mdi:whatsapp" size={18} />}>
+          <span
+            title={
+              !whatsappHabilitado
+                ? "Activa el módulo WhatsApp en Configuración"
+                : !lead.telefono
+                  ? "Este lead no tiene teléfono registrado"
+                  : undefined
+            }
+          >
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={!whatsappHabilitado || !lead.telefono}
+              loading={iniciarChat.isPending}
+              startIcon={<Icon name="mdi:whatsapp" size={18} />}
+              onClick={() =>
+                iniciarChat.mutate(undefined, {
+                  onSuccess: (resultado) => {
+                    router.push(`/chats/${resultado.conversacionId}`);
+                  },
+                })
+              }
+            >
               Iniciar chat
             </Button>
           </span>

@@ -47,4 +47,9 @@ export const queryKeys = {
   /** Prefijo para invalidar todas las páginas a la vez (no usar para fetch). */
   notificationsAll: ["notifications"] as const,
   notificationsUnreadCount: ["notifications", "unread-count"] as const,
+  whatsappConexiones: ["whatsapp", "connections"] as const,
+  whatsappNumerosDisponibles: ["whatsapp", "connections", "available"] as const,
+  whatsappChats: ["whatsapp", "chats"] as const,
+  whatsappChat: (id: string) => ["whatsapp", "chats", id] as const,
+  whatsappTemplates: ["whatsapp", "templates"] as const,
 };
