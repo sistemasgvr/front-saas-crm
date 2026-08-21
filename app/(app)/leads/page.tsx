@@ -12,5 +12,5 @@ export default async function LeadsPage() {
     redirect(getDefaultClientRoute(me));
   }
 
-  return <LeadsView />;
+  return <LeadsView rol={me.rol} usuarioId={me.usuario.id} />;
 }

@@ -23,6 +23,7 @@ export async function getLeads(filtro: FiltroLeads): Promise<ListaLeadsResultado
   if (filtro.formularioId) params.set("formularioId", filtro.formularioId);
   if (filtro.fechaDesde) params.set("fechaDesde", filtro.fechaDesde);
   if (filtro.fechaHasta) params.set("fechaHasta", filtro.fechaHasta);
+  if (filtro.asignado) params.set("asignado", filtro.asignado);
   params.set("page", String(filtro.page));
   params.set("pageSize", String(PAGE_SIZE));
   return apiFetch<ListaLeadsResultado>(`/leads?${params.toString()}`);
@@ -30,6 +31,11 @@ export async function getLeads(filtro: FiltroLeads): Promise<ListaLeadsResultado
 
 export async function getLead(id: string): Promise<LeadDetalle> {
   return apiFetch<LeadDetalle>(`/leads/${id}`);
+}
+
+export async function getAsignables(): Promise<ReferenciaNombrada[]> {
+  const data = await apiFetch<ReferenciaNombrada[]>("/leads/asignables");
+  return Array.isArray(data) ? data : [];
 }
 
 export async function getCampanasFiltro(): Promise<CampanaFiltroOpcion[]> {

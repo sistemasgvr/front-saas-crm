@@ -3,17 +3,32 @@
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Avatar from "@/src/components/ui/avatar/Avatar";
+import Badge from "@/src/components/ui/badge/Badge";
+import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
+import { useAppMutation } from "@/src/lib/query/use-app-mutation";
+import { canManageOrganization } from "@/src/lib/roles";
+import LeadAssignmentActions from "./LeadAssignmentActions";
 import {
   etiquetaCampoMeta,
   iconoCampoMeta,
   parsearMetaLeadPayload,
   valorCampoMeta,
 } from "./meta-lead-payload";
+import { actualizarTipoLeadAction } from "./actions";
 import { getLead } from "./queries";
+import { TIPOS_LEAD_INMOBILIARIA } from "./types";
+
+type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
+
+const ETIQUETA_TIPO_LEAD: Record<string, string> = {
+  COMPRA: "Compra",
+  VENTA: "Venta",
+  OTRO: "Otro",
+};
 
 function formatearFecha(iso: string | null | undefined) {
   if (!iso) return "—";
@@ -75,8 +90,13 @@ function Seccion({
   );
 }
 
-export default function LeadDetailView({ id }: { id: string }) {
+export default function LeadDetailView({ id, rol, usuarioId }: { id: string; rol: Rol; usuarioId: string }) {
   const leadQuery = useQuery({ queryKey: queryKeys.lead(id), queryFn: () => getLead(id) });
+  const tipoMutation = useAppMutation({
+    mutationFn: (tipoLead: string) => actualizarTipoLeadAction(id, tipoLead),
+    successMessage: "Tipo de lead actualizado",
+    invalidateKeys: [queryKeys.leadsAll],
+  });
 
   if (leadQuery.isLoading) return <PageLoader />;
   if (leadQuery.isError) {
@@ -128,6 +148,59 @@ export default function LeadDetailView({ id }: { id: string }) {
           </div>
         </div>
       </div>
+
+      <Seccion title="Gestión" icon="mdi:account-cog-outline" description="Dueño, tipo de lead y seguimiento.">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            {lead.asignado ? (
+              <span className="inline-flex items-center gap-1.5 text-theme-sm text-gray-700 dark:text-gray-200">
+                <Icon name="mdi:account-check-outline" size={16} className="shrink-0 text-success-500" />
+                Asignado a <span className="font-medium">{lead.asignado.nombre}</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-theme-sm text-warning-500">
+                <Icon name="mdi:account-question-outline" size={16} className="shrink-0" />
+                Sin asignar
+              </span>
+            )}
+            <LeadAssignmentActions leadId={id} asignado={lead.asignado} rol={rol} />
+          </div>
+
+          <span title="Disponible cuando se conecte WhatsApp (próximamente)">
+            <Button type="button" size="sm" variant="outline" disabled startIcon={<Icon name="mdi:whatsapp" size={18} />}>
+              Iniciar chat
+            </Button>
+          </span>
+        </div>
+
+        {(canManageOrganization(rol) || lead.asignado?.id === usuarioId) && (
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">
+            <span className="text-theme-sm text-gray-500 dark:text-gray-400">Tipo de lead:</span>
+            {TIPOS_LEAD_INMOBILIARIA.map((tipo) => (
+              <button
+                key={tipo}
+                type="button"
+                disabled={tipoMutation.isPending}
+                onClick={() => tipoMutation.mutate(tipo)}
+                className={`rounded-full px-3 py-1 text-theme-xs font-medium transition ${
+                  lead.tipoLead === tipo
+                    ? "bg-brand-500 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                }`}
+              >
+                {ETIQUETA_TIPO_LEAD[tipo] ?? tipo}
+              </button>
+            ))}
+          </div>
+        )}
+        {!canManageOrganization(rol) && lead.asignado?.id !== usuarioId && lead.tipoLead && (
+          <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-800">
+            <Badge size="sm" color="light">
+              {ETIQUETA_TIPO_LEAD[lead.tipoLead] ?? lead.tipoLead}
+            </Badge>
+          </div>
+        )}
+      </Seccion>
 
       <Seccion
         title="Respuestas del formulario"

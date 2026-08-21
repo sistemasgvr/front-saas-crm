@@ -17,6 +17,9 @@ export interface AnuncioFiltroOpcion extends ReferenciaNombrada {
   campanaId?: string;
 }
 
+export const TIPOS_LEAD_INMOBILIARIA = ["COMPRA", "VENTA", "OTRO"] as const;
+export type TipoLeadInmobiliaria = (typeof TIPOS_LEAD_INMOBILIARIA)[number];
+
 export interface LeadResumen {
   id: string;
   nombre: string | null;
@@ -25,6 +28,8 @@ export interface LeadResumen {
   fechaLead: string | null;
   campana: ReferenciaNombrada | null;
   anuncio: ReferenciaNombrada | null;
+  tipoLead: string | null;
+  asignado: ReferenciaNombrada | null;
 }
 
 export interface LeadDetalle extends LeadResumen {
@@ -52,5 +57,7 @@ export interface FiltroLeads {
   formularioId?: string;
   fechaDesde?: string;
   fechaHasta?: string;
+  /** "mios" | "sin_asignar" | usuarioId puntual (solo admin puede pedir el de otro). */
+  asignado?: string;
   page: number;
 }

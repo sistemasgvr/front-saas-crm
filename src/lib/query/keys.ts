@@ -39,7 +39,10 @@ export const queryKeys = {
   metaAdsets: ["meta", "adsets"] as const,
   metaAds: ["meta", "ads"] as const,
   leads: (filtro: Record<string, string | number | undefined>) => ["leads", filtro] as const,
+  /** Prefijo para invalidar listado + detalle a la vez tras tomar/asignar/liberar. */
+  leadsAll: ["leads"] as const,
   lead: (id: string) => ["leads", id] as const,
+  leadsAsignables: ["leads", "asignables"] as const,
   notifications: (params?: { page?: number }) => ["notifications", params ?? {}] as const,
   /** Prefijo para invalidar todas las páginas a la vez (no usar para fetch). */
   notificationsAll: ["notifications"] as const,
