@@ -37,7 +37,7 @@ export default function LineChart({
   data,
   seriesName = "Leads",
   series,
-  height = 280,
+  height = 220,
   showLegend,
 }: LineChartProps) {
   const apexSeries: LineChartSerie[] =
@@ -54,9 +54,10 @@ export default function LineChart({
       position: "top",
       horizontalAlign: "left",
       fontFamily: "Outfit, sans-serif",
-      fontSize: "12px",
-      markers: { size: 6, strokeWidth: 0 },
-      itemMargin: { horizontal: 12, vertical: 4 },
+      fontSize: "11px",
+      markers: { size: 5, strokeWidth: 0 },
+      itemMargin: { horizontal: 8, vertical: 0 },
+      height: 28,
     },
     colors: COLORES_SERIES.slice(0, Math.max(apexSeries.length, 1)),
     chart: {
@@ -65,6 +66,7 @@ export default function LineChart({
       type: "area",
       toolbar: { show: false },
       zoom: { enabled: false },
+      parentHeightOffset: 0,
     },
     stroke: {
       show: true,
@@ -78,12 +80,16 @@ export default function LineChart({
         }
       : { type: "gradient", gradient: { opacityFrom: 0.45, opacityTo: 0 } },
     markers: {
-      size: multi ? 3 : 0,
+      size: multi ? 2 : 0,
       strokeColors: "#fff",
-      strokeWidth: 2,
-      hover: { size: 5 },
+      strokeWidth: 1,
+      hover: { size: 4 },
     },
-    grid: { xaxis: { lines: { show: false } }, yaxis: { lines: { show: true } } },
+    grid: {
+      padding: { left: 4, right: 4, top: -8, bottom: 0 },
+      xaxis: { lines: { show: false } },
+      yaxis: { lines: { show: true } },
+    },
     dataLabels: { enabled: false },
     tooltip: { enabled: true, shared: multi, intersect: false, x: { format: "dd MMM" } },
     xaxis: {
@@ -92,13 +98,17 @@ export default function LineChart({
       axisBorder: { show: false },
       axisTicks: { show: false },
       tooltip: { enabled: false },
+      labels: {
+        hideOverlappingLabels: true,
+        style: { fontSize: "11px", colors: ["#6B7280"] },
+      },
     },
-    yaxis: { labels: { style: { fontSize: "12px", colors: ["#6B7280"] } } },
+    yaxis: { labels: { style: { fontSize: "11px", colors: ["#6B7280"] } } },
   };
 
   return (
-    <div className="max-w-full overflow-x-auto custom-scrollbar">
-      <ReactApexChart options={options} series={apexSeries} type="area" height={height} />
+    <div className="w-full overflow-hidden">
+      <ReactApexChart options={options} series={apexSeries} type="area" height={height} width="100%" />
     </div>
   );
 }

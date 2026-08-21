@@ -141,6 +141,9 @@ export interface ResultadoSync {
   campanas: number;
   conjuntos: number;
   anuncios: number;
+  /** true si Graph cortó la paginación (jerarquía incompleta). */
+  truncado?: boolean;
+  aviso?: string;
 }
 
 export async function syncMetaAdAccountAction(id: string): Promise<ResultadoSync> {

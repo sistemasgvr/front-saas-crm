@@ -147,7 +147,7 @@ export default function MetaHubView({ metaCallback }: { metaCallback?: string })
               )}
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-2">
               <MetaStatCard label="Páginas activas" value={connection.paginasActivas} icon="mdi:facebook" />
               <MetaStatCard
                 label="Cuentas publicitarias activas"

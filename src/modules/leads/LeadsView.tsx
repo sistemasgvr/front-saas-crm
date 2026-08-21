@@ -3,14 +3,12 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/src/components/tables";
 import EntityCell from "@/src/components/ui/avatar/EntityCell";
 import EmptyState from "@/src/components/ui/EmptyState";
 import DynamicFilters from "@/src/components/ui/filters/DynamicFilters";
 import type { DynamicFilterFieldDef, DynamicFilterValues } from "@/src/components/ui/filters/types";
 import { Icon } from "@/src/components/ui/Icon";
-import ActionButton from "@/src/components/ui/ActionButton";
 import PageHeader from "@/src/components/ui/PageHeader";
 import Pagination from "@/src/components/ui/Pagination";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
@@ -18,7 +16,6 @@ import TableAction from "@/src/components/ui/TableAction";
 import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
 import { aplicarCascadaFiltros, CASCADA_META_LEADS } from "@/src/components/ui/filters/cascadeFilters";
-import { syncAllLeadsFromMetaAction } from "./actions";
 import {
   getAnunciosFiltro,
   getCampanasFiltro,
@@ -183,24 +180,6 @@ export default function LeadsView() {
   return (
     <div>
       <PageHeader title="Leads" description="Contactos captados desde formularios de Meta.">
-        <ActionButton
-          action={async () => {
-            const resultado = await syncAllLeadsFromMetaAction();
-            const base = `${resultado.importados} importados · ${resultado.yaExistian} ya existían · ${resultado.errores} errores (${resultado.formulariosProcesados} formularios)`;
-            if (resultado.formulariosProcesados === 0) {
-              toast.message("No hay formularios sincronizados. Ve a Configuración → Meta → Páginas.");
-            } else if (resultado.incompleto || resultado.formulariosOmitidos > 0) {
-              toast.success(`${base}. Quedan más por sincronizar; vuelve a pulsar.`);
-            } else {
-              toast.success(base);
-            }
-          }}
-          loadingText="Sincronizando…"
-          invalidateKeys={[queryKeys.leadsAll]}
-          startIcon={<Icon name="mdi:cloud-sync-outline" size={18} />}
-        >
-          Sincronizar todo
-        </ActionButton>
         <DynamicFilters
           fields={fields}
           values={values}

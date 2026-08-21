@@ -7,9 +7,15 @@ import { Icon } from "@/src/components/ui/Icon";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
+import {
+  etiquetaCampoMeta,
+  iconoCampoMeta,
+  parsearMetaLeadPayload,
+  valorCampoMeta,
+} from "./meta-lead-payload";
 import { getLead } from "./queries";
 
-function formatearFecha(iso: string | null) {
+function formatearFecha(iso: string | null | undefined) {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("es-PE", {
     timeZone: "America/Lima",
@@ -34,7 +40,7 @@ function Campo({
       </span>
       <div className="min-w-0">
         <p className="text-theme-xs text-gray-500 dark:text-gray-400">{label}</p>
-        <p className="break-all text-theme-sm text-gray-800 dark:text-white/90">{value}</p>
+        <p className="break-words text-theme-sm text-gray-800 dark:text-white/90">{value}</p>
       </div>
     </div>
   );
@@ -52,15 +58,15 @@ function Seccion({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-      <div className="mb-5 flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
-          <Icon name={icon} size={20} className="text-gray-600 dark:text-gray-300" />
+    <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] md:p-5">
+      <div className="mb-4 flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
+          <Icon name={icon} size={18} className="text-gray-600 dark:text-gray-300" />
         </span>
-        <div>
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">{title}</h2>
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-gray-800 dark:text-white/90">{title}</h2>
           {description ? (
-            <p className="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">{description}</p>
+            <p className="mt-0.5 text-theme-xs text-gray-500 dark:text-gray-400">{description}</p>
           ) : null}
         </div>
       </div>
@@ -93,12 +99,14 @@ export default function LeadDetailView({ id }: { id: string }) {
 
   const lead = leadQuery.data;
   const nombre = lead.nombre ?? "Sin nombre";
+  const meta = parsearMetaLeadPayload(lead.datosCrudos);
+  const respuestas = meta?.field_data ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader title={nombre} description={lead.email ?? undefined} backHref="/leads" backLabel="Volver a Leads" />
 
-      <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
         <Avatar name={nombre} size="xl" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-lg font-semibold text-gray-800 dark:text-white/90">{nombre}</p>
@@ -115,22 +123,33 @@ export default function LeadDetailView({ id }: { id: string }) {
             ) : null}
             <span className="inline-flex items-center gap-1.5 text-theme-sm text-gray-500 dark:text-gray-400">
               <Icon name="mdi:calendar-clock-outline" size={16} className="shrink-0" />
-              {formatearFecha(lead.fechaLead)}
+              {formatearFecha(lead.fechaLead ?? meta?.created_time)}
             </span>
           </div>
         </div>
       </div>
 
       <Seccion
-        title="Datos del contacto"
-        icon="mdi:account-details-outline"
-        description="Información capturada desde el formulario de Meta."
+        title="Respuestas del formulario"
+        icon="mdi:form-select"
+        description="Preguntas y respuestas enviadas en el Lead Ad (field_data de Meta)."
       >
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <Campo label="Email" value={lead.email ?? "—"} icon="mdi:email-outline" />
-          <Campo label="Teléfono" value={lead.telefono ?? "—"} icon="mdi:phone-outline" />
-          <Campo label="Fecha del lead" value={formatearFecha(lead.fechaLead)} icon="mdi:calendar-clock-outline" />
-        </div>
+        {respuestas.length === 0 ? (
+          <p className="text-theme-sm text-gray-500 dark:text-gray-400">
+            No hay respuestas de formulario guardadas para este lead.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {respuestas.map((campo) => (
+              <Campo
+                key={campo.name}
+                label={etiquetaCampoMeta(campo.name)}
+                value={valorCampoMeta(campo.values)}
+                icon={iconoCampoMeta(campo.name)}
+              />
+            ))}
+          </div>
+        )}
       </Seccion>
 
       <Seccion
@@ -138,7 +157,7 @@ export default function LeadDetailView({ id }: { id: string }) {
         icon="mdi:bullhorn-outline"
         description="Campaña, conjunto y anuncio asociados a este lead."
       >
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Campo label="Campaña" value={lead.campana?.nombre ?? "—"} icon="mdi:bullhorn-outline" />
           <Campo
             label="Conjunto de anuncios"
@@ -146,20 +165,15 @@ export default function LeadDetailView({ id }: { id: string }) {
             icon="mdi:layers-outline"
           />
           <Campo label="Anuncio" value={lead.anuncio?.nombre ?? "—"} icon="mdi:image-outline" />
-          <Campo label="Formulario" value={lead.formularioId ?? "—"} icon="mdi:form-select" />
+          <Campo label="Formulario" value={lead.formularioId ?? meta?.form_id ?? "—"} icon="mdi:form-select" />
           <Campo label="ID externo (Meta)" value={lead.idExterno} icon="mdi:identifier" />
+          <Campo
+            label="Creado en Meta"
+            value={formatearFecha(meta?.created_time ?? lead.fechaLead)}
+            icon="mdi:calendar-clock-outline"
+          />
           <Campo label="Recibido en CRM" value={formatearFecha(lead.fechaCreacion)} icon="mdi:inbox-arrow-down-outline" />
         </div>
-      </Seccion>
-
-      <Seccion
-        title="Datos crudos (Meta Graph API)"
-        icon="mdi:code-json"
-        description="Respuesta original de Meta; útil para depuración."
-      >
-        <pre className="max-h-96 overflow-auto rounded-xl border border-gray-100 bg-gray-50 p-4 text-xs text-gray-700 dark:border-gray-800 dark:bg-white/5 dark:text-gray-300">
-          {JSON.stringify(lead.datosCrudos, null, 2)}
-        </pre>
       </Seccion>
     </div>
   );

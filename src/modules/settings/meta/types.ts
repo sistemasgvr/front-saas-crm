@@ -140,4 +140,7 @@ export interface ResultadoBackfill {
   errores: number;
   incompleto: boolean;
   nextCursor?: string;
+  /** true si el backend recortó `desde` al límite de retención ~90 días de Meta. */
+  rangoRecortadoPorRetencion?: boolean;
+  avisoRetencion?: string;
 }

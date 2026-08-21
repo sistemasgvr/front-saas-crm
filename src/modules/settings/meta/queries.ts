@@ -64,3 +64,10 @@ export async function getMetaPageForms(pageId: string) {
   const data = await apiFetch<MetaFormulario[]>(`/meta/pages/${pageId}/forms`);
   return Array.isArray(data) ? data : [];
 }
+
+/** Totales reales en Meta por formId (POST Graph; usado al cargar y tras reimportar). */
+export async function getMetaPageFormMetaCounts(pageId: string) {
+  return apiFetch<Record<string, number>>(`/meta/pages/${pageId}/forms/meta-counts`, {
+    method: "POST",
+  });
+}

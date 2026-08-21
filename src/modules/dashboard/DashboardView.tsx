@@ -171,7 +171,7 @@ export default function DashboardView() {
         <QueryError error={kpisQuery.error} />
       ) : (
         kpisQuery.data && (
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
+          <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-3">
             <KpiCard label="Total" value={kpisQuery.data.total} icon="mdi:account-group" />
             <KpiCard label="Hoy" value={kpisQuery.data.hoy} icon="mdi:calendar-today" />
             <KpiCard label="Esta semana" value={kpisQuery.data.semana} icon="mdi:calendar-week" />
@@ -195,7 +195,7 @@ export default function DashboardView() {
             Sin métricas Meta sincronizadas en este periodo — sincroniza desde el perfil de la cuenta publicitaria.
           </p>
         ) : (
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
+          <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-3">
             <KpiCard
               label="Inversión"
               value={formatearMonto(adsKpisQuery.data.spend, adsKpisQuery.data.moneda)}
@@ -222,9 +222,9 @@ export default function DashboardView() {
         <QueryError error={seriesQuery.error} />
       ) : (
         seriesQuery.data && (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:col-span-2">
-              <h2 className="mb-4 text-theme-sm font-semibold text-gray-800 dark:text-white/90">Leads por día</h2>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <div className="rounded-xl border border-gray-200 bg-white p-3.5 dark:border-gray-800 dark:bg-white/[0.03] lg:col-span-2">
+              <h2 className="mb-2 text-theme-sm font-semibold text-gray-800 dark:text-white/90">Leads por día</h2>
               {seriesQuery.data.porDia.every((p) => p.total === 0) ? (
                 <p className="text-theme-sm text-gray-500 dark:text-gray-400">Sin leads en el rango seleccionado.</p>
               ) : (
@@ -236,8 +236,8 @@ export default function DashboardView() {
             </div>
 
             {adsSeriesQuery.data && adsSeriesQuery.data.porDia.length > 0 && (
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:col-span-2">
-                <h2 className="mb-4 text-theme-sm font-semibold text-gray-800 dark:text-white/90">
+              <div className="rounded-xl border border-gray-200 bg-white p-3.5 dark:border-gray-800 dark:bg-white/[0.03] lg:col-span-2">
+                <h2 className="mb-2 text-theme-sm font-semibold text-gray-800 dark:text-white/90">
                   {adsSeriesQuery.data.porCuenta && adsSeriesQuery.data.porCuenta.length > 1
                     ? "Inversión por día (por cuenta)"
                     : "Inversión por día"}
@@ -268,8 +268,8 @@ export default function DashboardView() {
               </div>
             )}
 
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-              <h2 className="mb-4 text-theme-sm font-semibold text-gray-800 dark:text-white/90">Leads por campaña</h2>
+            <div className="rounded-xl border border-gray-200 bg-white p-3.5 dark:border-gray-800 dark:bg-white/[0.03]">
+              <h2 className="mb-2 text-theme-sm font-semibold text-gray-800 dark:text-white/90">Leads por campaña</h2>
               {seriesQuery.data.porCampana.length === 0 ? (
                 <p className="text-theme-sm text-gray-500 dark:text-gray-400">Sin datos en el rango seleccionado.</p>
               ) : (
@@ -280,8 +280,8 @@ export default function DashboardView() {
               )}
             </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-              <h2 className="mb-4 text-theme-sm font-semibold text-gray-800 dark:text-white/90">Leads por anuncio</h2>
+            <div className="rounded-xl border border-gray-200 bg-white p-3.5 dark:border-gray-800 dark:bg-white/[0.03]">
+              <h2 className="mb-2 text-theme-sm font-semibold text-gray-800 dark:text-white/90">Leads por anuncio</h2>
               {seriesQuery.data.porAnuncio.length === 0 ? (
                 <p className="text-theme-sm text-gray-500 dark:text-gray-400">Sin datos en el rango seleccionado.</p>
               ) : (

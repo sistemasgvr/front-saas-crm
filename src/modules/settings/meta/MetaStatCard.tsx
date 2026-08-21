@@ -10,13 +10,13 @@ export default function MetaStatCard({ label, value, icon }: MetaStatCardProps) 
   const display = typeof value === "number" ? value.toLocaleString("es-PE") : value;
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
-        <Icon name={icon} size={24} className="text-gray-800 dark:text-white/90" />
-      </div>
-      <div className="mt-5">
-        <span className="text-theme-sm text-gray-500 dark:text-gray-400">{label}</span>
-        <p className="mt-2 text-title-sm font-bold text-gray-800 dark:text-white/90">{display}</p>
+    <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 dark:border-gray-800 dark:bg-white/[0.03]">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
+        <Icon name={icon} size={18} className="text-gray-700 dark:text-white/90" />
+      </span>
+      <div className="min-w-0">
+        <p className="truncate text-theme-xs text-gray-500 dark:text-gray-400">{label}</p>
+        <p className="truncate text-theme-sm font-semibold text-gray-800 dark:text-white/90">{display}</p>
       </div>
     </div>
   );

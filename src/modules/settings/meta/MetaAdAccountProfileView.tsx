@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/src/components/tables";
 import EntityCell from "@/src/components/ui/avatar/EntityCell";
 import EmptyState from "@/src/components/ui/EmptyState";
@@ -52,7 +53,7 @@ export default function MetaAdAccountProfileView({ id }: { id: string }) {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         <MetaStatCard label="Campañas sincronizadas" value={cuenta.totalCampanas} icon="mdi:bullhorn-outline" />
         <MetaStatCard label="Leads totales" value={cuenta.totalLeads} icon="mdi:account-group-outline" />
         <MetaStatCard
@@ -83,7 +84,13 @@ export default function MetaAdAccountProfileView({ id }: { id: string }) {
           </div>
           <ActionButton
             action={async () => {
-              await syncMetaAdAccountAction(cuenta.id);
+              const resultado = await syncMetaAdAccountAction(cuenta.id);
+              if (resultado.truncado) {
+                toast.warning(
+                  resultado.aviso ??
+                    "La sincronización se truncó; puede faltar jerarquía de anuncios.",
+                );
+              }
             }}
             successMessage="Estructura sincronizada"
             loadingText="Sincronizando…"

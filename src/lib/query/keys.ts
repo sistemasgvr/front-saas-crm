@@ -29,6 +29,9 @@ export const queryKeys = {
   metaAdAccountsAvailable: ["meta", "ad-accounts", "available"] as const,
   metaAdAccountProfile: (id: string) => ["meta", "ad-accounts", "perfil", id] as const,
   metaPageForms: (pageId: string) => ["meta", "pages", pageId, "forms"] as const,
+  /** Totales de leads por formId según Graph (Comparar con Meta). */
+  metaPageFormMetaCounts: (pageId: string) =>
+    ["meta", "pages", pageId, "forms", "meta-counts"] as const,
   metaFormsFiltro: (metaPaginaId?: string) => ["meta", "forms", "filtro", metaPaginaId ?? null] as const,
   metaPagesFiltro: ["meta", "pages", "filtro"] as const,
   metaAdAccountsFiltro: ["meta", "ad-accounts", "filtro"] as const,
@@ -37,7 +40,6 @@ export const queryKeys = {
   metaAds: ["meta", "ads"] as const,
   leads: (filtro: Record<string, string | number | undefined>) => ["leads", filtro] as const,
   lead: (id: string) => ["leads", id] as const,
-  leadsAll: ["leads"] as const,
   notifications: (params?: { page?: number }) => ["notifications", params ?? {}] as const,
   /** Prefijo para invalidar todas las páginas a la vez (no usar para fetch). */
   notificationsAll: ["notifications"] as const,

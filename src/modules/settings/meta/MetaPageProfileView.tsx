@@ -15,9 +15,8 @@ import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import TableAction from "@/src/components/ui/TableAction";
 import { queryKeys } from "@/src/lib/query/keys";
-import { getMetaPageForms, getMetaPageProfile } from "./queries";
+import { getMetaPageFormMetaCounts, getMetaPageForms, getMetaPageProfile } from "./queries";
 import {
-  contarLeadsMetaPaginaAction,
   healthCheckMetaPageAction,
   resyncMetaPageWebhookAction,
   syncMetaPageFormsAction,
@@ -48,7 +47,6 @@ function etiquetaEstadoFormulario(estado: string | null) {
 export default function MetaPageProfileView({ id }: { id: string }) {
   const router = useRouter();
   const [backfillFormId, setBackfillFormId] = useState<string | null>(null);
-  const [conteosMeta, setConteosMeta] = useState<Record<string, number> | null>(null);
 
   const { data: pagina, isLoading, isError, error } = useQuery({
     queryKey: queryKeys.metaPageProfile(id),
@@ -59,6 +57,14 @@ export default function MetaPageProfileView({ id }: { id: string }) {
     queryKey: queryKeys.metaPageForms(id),
     queryFn: () => getMetaPageForms(id),
   });
+
+  // Comparar con Meta al cargar (y tras invalidate post-reimport / botón manual).
+  const metaCountsQuery = useQuery({
+    queryKey: queryKeys.metaPageFormMetaCounts(id),
+    queryFn: () => getMetaPageFormMetaCounts(id),
+    staleTime: 60_000,
+  });
+  const conteosMeta = metaCountsQuery.data ?? null;
 
   if (isLoading) return <PageLoader />;
   if (isError) return <QueryError error={error} />;
@@ -85,7 +91,7 @@ export default function MetaPageProfileView({ id }: { id: string }) {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <MetaStatCard label="Leads totales" value={pagina.totalLeads} icon="mdi:account-group-outline" />
         <MetaStatCard label="Leads últimos 7 días" value={pagina.leadsUltimos7Dias} icon="mdi:calendar-week" />
         <MetaStatCard
@@ -158,8 +164,7 @@ export default function MetaPageProfileView({ id }: { id: string }) {
           <div className="flex flex-wrap gap-2">
             <ActionButton
               action={async () => {
-                const conteos = await contarLeadsMetaPaginaAction(pagina.id);
-                setConteosMeta(conteos);
+                await metaCountsQuery.refetch();
               }}
               successMessage="Conteo de Meta actualizado"
               loadingText="Consultando Meta…"
@@ -174,7 +179,10 @@ export default function MetaPageProfileView({ id }: { id: string }) {
               }}
               successMessage="Formularios sincronizados"
               loadingText="Sincronizando…"
-              invalidateKeys={[queryKeys.metaPageForms(id)]}
+              invalidateKeys={[
+                queryKeys.metaPageForms(id),
+                queryKeys.metaPageFormMetaCounts(id),
+              ]}
               startIcon={<Icon name="mdi:sync" size={18} />}
             >
               Sincronizar formularios
@@ -245,7 +253,9 @@ export default function MetaPageProfileView({ id }: { id: string }) {
                         {formulario.totalLeads}
                       </TableCell>
                       <TableCell className="px-3 py-2.5 text-theme-sm">
-                        {conteosMeta === null ? (
+                        {metaCountsQuery.isLoading || metaCountsQuery.isFetching ? (
+                          <span className="text-gray-400">…</span>
+                        ) : conteosMeta === null || metaCountsQuery.isError ? (
                           <span className="text-gray-400">—</span>
                         ) : conteosMeta[formulario.formId] === undefined ? (
                           <span className="text-gray-400" title="No se pudo consultar Meta para este formulario">
@@ -253,7 +263,8 @@ export default function MetaPageProfileView({ id }: { id: string }) {
                           </span>
                         ) : conteosMeta[formulario.formId] > formulario.totalLeads ? (
                           <span className="font-medium text-warning-500">
-                            {conteosMeta[formulario.formId]} (faltan {conteosMeta[formulario.formId] - formulario.totalLeads})
+                            {conteosMeta[formulario.formId]} (faltan{" "}
+                            {conteosMeta[formulario.formId] - formulario.totalLeads})
                           </span>
                         ) : (
                           <span className="text-success-500">{conteosMeta[formulario.formId]}</span>

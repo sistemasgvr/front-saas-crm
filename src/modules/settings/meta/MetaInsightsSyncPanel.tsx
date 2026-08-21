@@ -33,17 +33,15 @@ export default function MetaInsightsSyncPanel({ cuentaId }: { cuentaId: string }
   return (
     <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-white/[0.03]">
       <p className="mb-3 text-theme-sm font-medium text-gray-800 dark:text-white/90">Sincronizar métricas (Insights)</p>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="w-40">
           <Label htmlFor="insights-desde">Desde</Label>
           <Input id="insights-desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
         </div>
-        <div>
+        <div className="w-40">
           <Label htmlFor="insights-hasta">Hasta</Label>
           <Input id="insights-hasta" type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
         </div>
-      </div>
-      <div className="mt-3">
         <Button
           type="button"
           size="sm"
