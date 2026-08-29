@@ -65,9 +65,12 @@ export async function getMetaPageForms(pageId: string) {
   return Array.isArray(data) ? data : [];
 }
 
-/** Totales reales en Meta por formId (POST Graph; usado al cargar y tras reimportar). */
+/** Totales reales en Meta por formId (POST Graph; usado al cargar y tras reimportar).
+ * timeoutMs alto: golpea Graph API por cada formulario, puede tardar más que
+ * el default de apiFetch. */
 export async function getMetaPageFormMetaCounts(pageId: string) {
   return apiFetch<Record<string, number>>(`/meta/pages/${pageId}/forms/meta-counts`, {
     method: "POST",
+    timeoutMs: 90_000,
   });
 }

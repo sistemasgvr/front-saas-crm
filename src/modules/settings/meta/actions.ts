@@ -8,6 +8,11 @@ function fail(error: unknown, fallback: string): never {
   throw new Error(error instanceof ApiError ? error.message : fallback);
 }
 
+/** Sync/backfill contra Graph API puede tardar bastante más que una llamada
+ * normal (varios formularios/campañas, rate limiting propio de Meta) — el
+ * timeout por defecto de apiFetch (20s) las cortaría de mitad de camino. */
+const TIMEOUT_SYNC_MS = 90_000;
+
 export async function saveMetaAppCredentialsAction(appId: string, appSecret: string): Promise<MetaConnection> {
   try {
     return await apiFetch<MetaConnection>("/meta/connections/app-credentials", {
@@ -148,7 +153,10 @@ export interface ResultadoSync {
 
 export async function syncMetaAdAccountAction(id: string): Promise<ResultadoSync> {
   try {
-    return await apiFetch<ResultadoSync>(`/meta/ad-accounts/${id}/sync`, { method: "POST" });
+    return await apiFetch<ResultadoSync>(`/meta/ad-accounts/${id}/sync`, {
+      method: "POST",
+      timeoutMs: TIMEOUT_SYNC_MS,
+    });
   } catch (error) {
     fail(error, "No se pudo sincronizar la cuenta publicitaria");
   }
@@ -163,6 +171,7 @@ export async function syncMetaAdAccountInsightsAction(
     return await apiFetch<ResultadoSyncInsights>(`/meta/ad-accounts/${id}/insights/sync`, {
       method: "POST",
       body: JSON.stringify({ desde, hasta }),
+      timeoutMs: TIMEOUT_SYNC_MS,
     });
   } catch (error) {
     fail(error, "No se pudieron sincronizar las métricas");
@@ -171,7 +180,10 @@ export async function syncMetaAdAccountInsightsAction(
 
 export async function syncMetaPageFormsAction(pageId: string): Promise<ResultadoSyncFormularios> {
   try {
-    return await apiFetch<ResultadoSyncFormularios>(`/meta/pages/${pageId}/forms/sync`, { method: "POST" });
+    return await apiFetch<ResultadoSyncFormularios>(`/meta/pages/${pageId}/forms/sync`, {
+      method: "POST",
+      timeoutMs: TIMEOUT_SYNC_MS,
+    });
   } catch (error) {
     fail(error, "No se pudieron sincronizar los formularios");
   }
@@ -185,6 +197,7 @@ export async function contarLeadsMetaPaginaAction(
   try {
     return await apiFetch<Record<string, number>>(`/meta/pages/${pageId}/forms/meta-counts`, {
       method: "POST",
+      timeoutMs: TIMEOUT_SYNC_MS,
     });
   } catch (error) {
     fail(error, "No se pudo obtener el conteo de leads en Meta");
@@ -200,6 +213,7 @@ export async function backfillMetaPageFormAction(
     return await apiFetch<ResultadoBackfill>(`/meta/pages/${pageId}/forms/${formId}/backfill`, {
       method: "POST",
       body: JSON.stringify(body),
+      timeoutMs: TIMEOUT_SYNC_MS,
     });
   } catch (error) {
     fail(error, "No se pudo reimportar los leads de este formulario");

@@ -40,6 +40,12 @@ function withUpdatedCookies(
   return response;
 }
 
+/** Corre en (casi) cada navegación — ver `config.matcher` abajo. Si el
+ * refresh al backend se cuelga (backend lento, cold-start de Neon, red),
+ * SIN timeout esto congelaba la navegación entera, sin nada visible en el
+ * Network tab del navegador (corre server-side, en el proxy de Next). */
+const TIMEOUT_REFRESH_MS = 8_000;
+
 export async function proxy(request: NextRequest) {
   const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value;
   const accessToken = request.cookies.get(ACCESS_COOKIE)?.value;
@@ -54,6 +60,7 @@ export async function proxy(request: NextRequest) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
       cache: "no-store",
+      signal: AbortSignal.timeout(TIMEOUT_REFRESH_MS),
     });
 
     if (!res.ok) {
