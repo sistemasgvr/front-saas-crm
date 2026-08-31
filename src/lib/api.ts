@@ -76,12 +76,16 @@ export async function apiFetch<T>(path: string, init?: FetchOptions): Promise<T>
   }
 
   const { timeoutMs = TIMEOUT_DEFAULT_MS, signal, ...rest } = init ?? {};
+  // FormData (subida de archivos) necesita que el navegador ponga su propio
+  // Content-Type con el boundary — si lo forzamos a application/json (o
+  // incluso a multipart sin boundary) el backend no puede parsear el body.
+  const esFormData = rest.body instanceof FormData;
   let res: Response;
   try {
     res = await fetch(`${getApiUrl()}${path}`, {
       ...rest,
       headers: {
-        'Content-Type': 'application/json',
+        ...(esFormData ? {} : { 'Content-Type': 'application/json' }),
         Authorization: `Bearer ${accessToken}`,
         ...rest.headers,
       },

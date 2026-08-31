@@ -12,7 +12,8 @@ export async function enviarMensajeAction(
     texto?: string;
     plantillaNombre?: string;
     plantillaIdioma?: string;
-    parametros?: string[];
+    parametros?: { nombre: string; valor: string }[];
+    plantillaFormatoParametros?: string;
   },
 ): Promise<void> {
   try {
@@ -22,6 +23,20 @@ export async function enviarMensajeAction(
     });
   } catch (error) {
     fail(error, "No se pudo enviar el mensaje");
+  }
+}
+
+/** Sube y envía un archivo — timeout más alto que el default (documentos
+ * grandes, hasta 100MB según Meta, pueden tardar en subir con conexiones lentas). */
+export async function enviarMediaAction(conversacionId: string, formData: FormData): Promise<void> {
+  try {
+    await apiFetch(`/whatsapp/chats/${conversacionId}/media`, {
+      method: "POST",
+      body: formData,
+      timeoutMs: 120_000,
+    });
+  } catch (error) {
+    fail(error, "No se pudo enviar el archivo");
   }
 }
 

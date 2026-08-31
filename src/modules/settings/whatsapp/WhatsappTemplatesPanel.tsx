@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Badge from "@/src/components/ui/badge/Badge";
 import Button from "@/src/components/ui/button/Button";
@@ -16,10 +16,12 @@ import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { crearPlantillaWhatsAppAction, type CrearPlantillaInput } from "./actions";
 import { getPlantillasWhatsAppTodas } from "./queries";
 
+// Las 3 categorías que existen en WhatsApp Business Platform — no hay más
+// (Meta for Developers, "Aspectos básicos de las plantillas", vigente en v26).
 const CATEGORIAS = [
-  { value: "UTILITY", label: "Utilidad (seguimiento, confirmaciones)" },
-  { value: "MARKETING", label: "Marketing (promociones, ofertas)" },
-  { value: "AUTHENTICATION", label: "Autenticación (códigos OTP)" },
+  { value: "UTILITY", label: "Utilidad — seguimiento de una acción del usuario (confirmaciones, alertas)" },
+  { value: "MARKETING", label: "Marketing — promociones, ofertas, retargeting" },
+  { value: "AUTHENTICATION", label: "Autenticación — códigos de un solo uso (OTP)" },
 ];
 
 const IDIOMAS = [
@@ -51,15 +53,130 @@ const VACIO: CrearPlantillaInput = {
   pie: "",
 };
 
-function contarVariables(texto: string | undefined): number {
-  if (!texto) return 0;
-  const numeros = [...texto.matchAll(/\{\{(\d+)\}\}/g)].map((m) => Number(m[1]));
-  return numeros.length > 0 ? Math.max(...numeros) : 0;
+// Variables más comunes en un seguimiento de leads (inmobiliaria, el único
+// rubro soportado hoy) — un punto de partida con un clic; el usuario sigue
+// pudiendo escribir cualquier otro nombre a mano o con "Otra variable" abajo.
+const VARIABLES_SUGERIDAS = [
+  "nombre_cliente",
+  "nombre_proyecto",
+  "asesor",
+  "fecha_visita",
+  "direccion",
+  "numero_referencia",
+  "monto",
+  "telefono_contacto",
+];
+
+const PATRON_NOMBRE_VALIDO = /^[a-z][a-z0-9_]*$/;
+
+/** Variables con nombre {{nombre_cliente}} de un texto: minúsculas, números
+ * y guiones bajos, empezando con letra — así quien escribe la plantilla
+ * define él mismo qué representa cada variable, en vez de adivinar qué es
+ * {{1}} o {{2}} (WhatsApp Business Platform, formato "named", vigente v26). */
+function extraerVariables(texto: string | undefined): { validas: string[]; invalidas: string[] } {
+  const validas: string[] = [];
+  const invalidas: string[] = [];
+  if (!texto) return { validas, invalidas };
+  for (const m of texto.matchAll(/\{\{([^{}]+)\}\}/g)) {
+    const nombre = m[1].trim();
+    if (PATRON_NOMBRE_VALIDO.test(nombre)) {
+      if (!validas.includes(nombre)) validas.push(nombre);
+    } else if (!invalidas.includes(nombre)) {
+      invalidas.push(nombre);
+    }
+  }
+  return { validas, invalidas };
+}
+
+/** Inserta {{nombre}} en la posición del cursor (no al final) y deja el
+ * cursor justo después de lo insertado — igual que autocompletar en un
+ * editor de texto normal. */
+function insertarEnCursor(
+  el: HTMLInputElement | HTMLTextAreaElement | null,
+  valorActual: string,
+  nombreVariable: string,
+  aplicar: (nuevoValor: string) => void,
+) {
+  const token = `{{${nombreVariable}}}`;
+  if (!el) {
+    aplicar(`${valorActual}${token}`);
+    return;
+  }
+  const inicio = el.selectionStart ?? valorActual.length;
+  const fin = el.selectionEnd ?? valorActual.length;
+  const nuevoValor = valorActual.slice(0, inicio) + token + valorActual.slice(fin);
+  aplicar(nuevoValor);
+  const posicionFinal = inicio + token.length;
+  requestAnimationFrame(() => {
+    el.focus();
+    el.setSelectionRange(posicionFinal, posicionFinal);
+  });
+}
+
+/** Chips para insertar variables con un clic + un campo para una variable
+ * propia, cuando ninguna de las sugeridas encaja. */
+function SelectorDeVariables({
+  onInsertar,
+  soloUna = false,
+}: {
+  onInsertar: (nombre: string) => void;
+  /** true para el encabezado — Meta solo admite una variable ahí. */
+  soloUna?: boolean;
+}) {
+  const [personalizada, setPersonalizada] = useState("");
+  const personalizadaValida = personalizada.length === 0 || PATRON_NOMBRE_VALIDO.test(personalizada);
+
+  const agregarPersonalizada = () => {
+    if (!personalizada || !personalizadaValida) return;
+    onInsertar(personalizada);
+    setPersonalizada("");
+  };
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      {VARIABLES_SUGERIDAS.map((nombre) => (
+        <button
+          key={nombre}
+          type="button"
+          onClick={() => onInsertar(nombre)}
+          className="rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-theme-xs text-brand-600 transition hover:bg-brand-100 dark:border-brand-800 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20"
+        >
+          {`{{${nombre}}}`}
+        </button>
+      ))}
+      <div className="flex items-center gap-1">
+        <input
+          type="text"
+          value={personalizada}
+          onChange={(e) => setPersonalizada(e.target.value.toLowerCase().replace(/\s+/g, "_"))}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              agregarPersonalizada();
+            }
+          }}
+          placeholder="otra_variable"
+          className="h-7 w-32 rounded-full border border-gray-300 bg-transparent px-2.5 text-theme-xs text-gray-700 outline-none focus:border-brand-300 dark:border-gray-700 dark:text-white/80"
+        />
+        <button
+          type="button"
+          onClick={agregarPersonalizada}
+          disabled={!personalizada || !personalizadaValida}
+          className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 text-gray-500 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-white/5"
+          title={soloUna ? "Agregar variable" : "Agregar otra variable"}
+        >
+          <Icon name="mdi:plus" size={14} />
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function WhatsappTemplatesPanel() {
   const [abierto, setAbierto] = useState(false);
   const [form, setForm] = useState<CrearPlantillaInput>(VACIO);
+  const cuerpoRef = useRef<HTMLTextAreaElement>(null);
+  const encabezadoRef = useRef<HTMLInputElement>(null);
 
   const plantillasQuery = useQuery({
     queryKey: queryKeys.whatsappTemplatesAll,
@@ -73,17 +190,40 @@ export default function WhatsappTemplatesPanel() {
   });
 
   const nombreValido = /^[a-z0-9_]+$/.test(form.nombre);
-  const variablesCuerpo = contarVariables(form.cuerpo);
+  const cuerpoVars = extraerVariables(form.cuerpo);
+  const encabezadoVars = extraerVariables(form.encabezado);
   const ejemplosCuerpoCompletos =
-    variablesCuerpo === 0 || (form.ejemplosCuerpo ?? []).every((v) => v.trim().length > 0);
-  const variableEncabezado = contarVariables(form.encabezado) > 0;
+    cuerpoVars.validas.length === 0 ||
+    (form.ejemplosCuerpo ?? []).length === cuerpoVars.validas.length &&
+      (form.ejemplosCuerpo ?? []).every((v) => v.trim().length > 0);
   const ejemploEncabezadoCompleto =
-    !variableEncabezado || !!form.ejemploEncabezado?.trim();
+    encabezadoVars.validas.length === 0 || !!form.ejemploEncabezado?.trim();
   const puedeEnviar =
     nombreValido &&
     form.cuerpo.trim().length > 0 &&
+    cuerpoVars.invalidas.length === 0 &&
+    encabezadoVars.invalidas.length === 0 &&
+    encabezadoVars.validas.length <= 1 &&
     ejemplosCuerpoCompletos &&
     ejemploEncabezadoCompleto;
+
+  const aplicarNuevoCuerpo = (cuerpo: string) => {
+    const vars = extraerVariables(cuerpo);
+    setForm((f) => {
+      const previos = f.ejemplosCuerpo ?? [];
+      const ejemplosCuerpo = vars.validas.map((_, i) => previos[i] ?? "");
+      return { ...f, cuerpo, ejemplosCuerpo };
+    });
+  };
+
+  const aplicarNuevoEncabezado = (encabezado: string) => {
+    const vars = extraerVariables(encabezado);
+    setForm((f) => ({
+      ...f,
+      encabezado,
+      ejemploEncabezado: vars.validas.length > 0 ? f.ejemploEncabezado : "",
+    }));
+  };
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
@@ -156,28 +296,32 @@ export default function WhatsappTemplatesPanel() {
             <div>
               <Label htmlFor="encabezado">Encabezado (opcional)</Label>
               <Input
+                ref={encabezadoRef}
                 id="encabezado"
-                placeholder="¡Hola {{1}}!"
+                placeholder="¡Hola {{nombre_cliente}}!"
                 value={form.encabezado}
-                onChange={(e) => {
-                  const encabezado = e.target.value;
-                  setForm((f) => ({
-                    ...f,
-                    encabezado,
-                    ejemploEncabezado: contarVariables(encabezado) > 0 ? f.ejemploEncabezado : "",
-                  }));
-                }}
-                error={contarVariables(form.encabezado) > 1}
+                onChange={(e) => aplicarNuevoEncabezado(e.target.value)}
+                error={encabezadoVars.validas.length > 1 || encabezadoVars.invalidas.length > 0}
                 hint={
-                  contarVariables(form.encabezado) > 1
-                    ? "El encabezado solo admite una variable {{1}} (límite de Meta)"
-                    : undefined
+                  encabezadoVars.validas.length > 1
+                    ? "El encabezado solo admite una variable — es un límite de Meta"
+                    : encabezadoVars.invalidas.length > 0
+                      ? `{{${encabezadoVars.invalidas[0]}}} no es válido — usa minúsculas y guion bajo, ej: {{nombre_cliente}}`
+                      : undefined
                 }
               />
-              {variableEncabezado && (
+              {encabezadoVars.validas.length === 0 && (
+                <SelectorDeVariables
+                  soloUna
+                  onInsertar={(nombre) =>
+                    insertarEnCursor(encabezadoRef.current, form.encabezado ?? "", nombre, aplicarNuevoEncabezado)
+                  }
+                />
+              )}
+              {encabezadoVars.validas.length === 1 && (
                 <div className="mt-2">
                   <Input
-                    placeholder="Ejemplo para {{1}} — ej: Juan"
+                    placeholder={`Ejemplo para {{${encabezadoVars.validas[0]}}} — ej: Juan`}
                     value={form.ejemploEncabezado ?? ""}
                     onChange={(e) => setForm((f) => ({ ...f, ejemploEncabezado: e.target.value }))}
                   />
@@ -188,33 +332,37 @@ export default function WhatsappTemplatesPanel() {
           <div>
             <Label htmlFor="cuerpo">Mensaje *</Label>
             <TextArea
+              ref={cuerpoRef}
               id="cuerpo"
               rows={3}
-              placeholder="Hola {{1}}, gracias por tu interés en {{2}}. ¿En qué te podemos ayudar?"
+              placeholder="Hola {{nombre_cliente}}, gracias por tu interés en {{nombre_proyecto}}. ¿En qué te podemos ayudar?"
               value={form.cuerpo}
-              onChange={(e) => {
-                const cuerpo = e.target.value;
-                const n = contarVariables(cuerpo);
-                setForm((f) => {
-                  const previos = f.ejemplosCuerpo ?? [];
-                  const ejemplosCuerpo = Array.from({ length: n }, (_, i) => previos[i] ?? "");
-                  return { ...f, cuerpo, ejemplosCuerpo };
-                });
-              }}
-              hint="Usa {{1}}, {{2}}… para variables — Meta pide un ejemplo por cada una para aprobar la plantilla."
+              onChange={(e) => aplicarNuevoCuerpo(e.target.value)}
+              error={cuerpoVars.invalidas.length > 0}
+              hint={
+                cuerpoVars.invalidas.length > 0
+                  ? `{{${cuerpoVars.invalidas[0]}}} no es válido — usa minúsculas y guion bajo, ej: {{nombre_cliente}}`
+                  : "Toca una variable para agregarla donde esté el cursor, o escribí la tuya — minúsculas, números y " +
+                    "guion bajo. Meta pide un ejemplo por cada una para saber qué esperar y aprobar la plantilla."
+              }
             />
-            {variablesCuerpo > 0 && (
+            <SelectorDeVariables
+              onInsertar={(nombre) =>
+                insertarEnCursor(cuerpoRef.current, form.cuerpo, nombre, aplicarNuevoCuerpo)
+              }
+            />
+            {cuerpoVars.validas.length > 0 && (
               <div className="mt-2 space-y-2">
-                {(form.ejemplosCuerpo ?? []).map((valor, i) => (
+                {cuerpoVars.validas.map((nombre, i) => (
                   <Input
-                    key={i}
-                    placeholder={`Ejemplo para {{${i + 1}}}`}
-                    value={valor}
+                    key={nombre}
+                    placeholder={`Ejemplo para {{${nombre}}}`}
+                    value={(form.ejemplosCuerpo ?? [])[i] ?? ""}
                     onChange={(e) =>
                       setForm((f) => ({
                         ...f,
-                        ejemplosCuerpo: (f.ejemplosCuerpo ?? []).map((v, idx) =>
-                          idx === i ? e.target.value : v,
+                        ejemplosCuerpo: cuerpoVars.validas.map((_, idx) =>
+                          idx === i ? e.target.value : ((f.ejemplosCuerpo ?? [])[idx] ?? ""),
                         ),
                       }))
                     }
