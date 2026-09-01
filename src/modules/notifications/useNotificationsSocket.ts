@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { io, type Socket } from "socket.io-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getSocketTicket } from "./queries";
-import type { NotificacionEventoSocket } from "./types";
+import { reproducirSonidoNotificacion } from "./notification-sounds";
+import { mostrarNotificacionSistema } from "./system-notifications";
+import { resolverRutaNotificacion, type NotificacionEventoSocket } from "./types";
 
 /**
  * Un ticket nuevo se pide en cada intento de conexión (incluidas las
@@ -15,6 +18,7 @@ import type { NotificacionEventoSocket } from "./types";
  */
 export function useNotificationsSocket(enabled: boolean) {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   useEffect(() => {
     if (!enabled) return;
@@ -32,6 +36,18 @@ export function useNotificationsSocket(enabled: boolean) {
 
     socket.on("notificacion:nueva", (data: NotificacionEventoSocket) => {
       toast.info(data.titulo, { description: data.mensaje });
+      reproducirSonidoNotificacion(data.tipo);
+      // Nativa del sistema operativo — llega igual si el CRM está minimizado,
+      // en otra pestaña o en otra ventana (no requiere estar al frente).
+      // No hace nada si el usuario no dio permiso (ver Perfil).
+      mostrarNotificacionSistema(data.titulo, {
+        body: data.mensaje,
+        tag: data.id,
+        onClick: () => {
+          const ruta = resolverRutaNotificacion(data.payload);
+          if (ruta) router.push(ruta);
+        },
+      });
       void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsAll });
       void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
       // Un mensaje nuevo de WhatsApp también dispara una notificación — de
@@ -43,5 +59,5 @@ export function useNotificationsSocket(enabled: boolean) {
       socket?.disconnect();
       socket = null;
     };
-  }, [enabled, queryClient]);
+  }, [enabled, queryClient, router]);
 }

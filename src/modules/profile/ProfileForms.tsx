@@ -8,6 +8,7 @@ import PasswordInput from "@/src/components/form/input/PasswordInput";
 import Button from "@/src/components/ui/button/Button";
 import Avatar from "@/src/components/ui/avatar/Avatar";
 import { Icon } from "@/src/components/ui/Icon";
+import NotificationPermissionCard from "@/src/modules/notifications/NotificationPermissionCard";
 import { toFormData } from "@/src/lib/form-data";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
@@ -61,6 +62,8 @@ export default function ProfileForms({ email, nombre, apellido, telefono }: Prof
           <p className="truncate text-theme-sm text-gray-500">{email}</p>
         </div>
       </div>
+
+      <NotificationPermissionCard />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
