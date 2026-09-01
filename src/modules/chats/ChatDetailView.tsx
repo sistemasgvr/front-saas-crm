@@ -8,6 +8,7 @@ import Button from "@/src/components/ui/button/Button";
 import Input from "@/src/components/form/input/InputField";
 import Select from "@/src/components/form/Select";
 import { Icon } from "@/src/components/ui/Icon";
+import { Spinner } from "@/src/components/ui/Spinner";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
@@ -17,11 +18,17 @@ import type { Mensaje } from "./types";
 
 const INTERVALO_REFRESCO_MS = 10_000;
 
-const ICONO_ESTADO: Record<string, string> = {
-  enviado: "mdi:check",
-  entregado: "mdi:check-all",
-  leido: "mdi:check-all",
-  fallido: "mdi:alert-circle-outline",
+// Mismo criterio visual que WhatsApp: 1 check = enviado, 2 checks gris =
+// entregado, 2 checks AZULES = leído (si el destinatario tiene los recibos
+// de lectura desactivados, Meta nunca manda "read" y se queda en
+// "entregado" para siempre — no es un bug de acá, es una opción del usuario
+// de WhatsApp del otro lado).
+const ICONO_ESTADO: Record<string, { icon: string; className?: string }> = {
+  enviado: { icon: "mdi:check" },
+  entregado: { icon: "mdi:check-all" },
+  leido: { icon: "mdi:check-all", className: "text-sky-300" },
+  fallido: { icon: "mdi:alert-circle-outline", className: "text-error-300" },
+  eliminado: { icon: "mdi:trash-can-outline" },
 };
 
 // Mismos límites reales de la Media API de WhatsApp que valida el backend —
@@ -160,9 +167,17 @@ function Burbuja({ mensaje, conversacionId }: { mensaje: Mensaje; conversacionId
         )}
         <div className="flex items-center justify-end gap-1 text-theme-xs opacity-70">
           {formatearHora(mensaje.fechaMensaje)}
-          {esSaliente && mensaje.estadoEntrega && (
-            <Icon name={ICONO_ESTADO[mensaje.estadoEntrega] ?? "mdi:clock-outline"} size={14} />
-          )}
+          {esSaliente &&
+            (() => {
+              const estado = mensaje.estadoEntrega ? ICONO_ESTADO[mensaje.estadoEntrega] : undefined;
+              return (
+                <Icon
+                  name={estado?.icon ?? "mdi:clock-outline"}
+                  size={14}
+                  className={estado?.className}
+                />
+              );
+            })()}
         </div>
       </div>
     </div>
@@ -352,14 +367,18 @@ export default function ChatDetailView({ id }: { id: string }) {
                 rows={2}
                 className="flex-1 resize-none rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-theme-sm text-gray-800 outline-none focus:border-brand-500 dark:border-gray-700 dark:text-white/90"
               />
-              <Button
+              <button
                 type="submit"
-                size="sm"
-                loading={enviar.isPending || enviarArchivo.isPending}
-                disabled={!archivo && !texto.trim()}
+                disabled={(!archivo && !texto.trim()) || enviar.isPending || enviarArchivo.isPending}
+                aria-label="Enviar mensaje"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-brand-300 dark:disabled:bg-brand-500/40"
               >
-                Enviar
-              </Button>
+                {enviar.isPending || enviarArchivo.isPending ? (
+                  <Spinner size={18} />
+                ) : (
+                  <Icon name="mdi:send" size={19} className="-ml-0.5" />
+                )}
+              </button>
             </div>
           </form>
         ) : (
