@@ -28,6 +28,8 @@ import {
   getPaginasFiltro,
 } from "./queries";
 import type { AnuncioFiltroOpcion, CampanaFiltroOpcion, LeadResumen, ReferenciaNombrada } from "./types";
+import EstadoPipelineBadge from "./EstadoPipelineBadge";
+import { ETIQUETA_TIPO_LEAD } from "./pipeline";
 
 type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 
@@ -82,6 +84,8 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
     fechaDesde: values.fechaDesde || undefined,
     fechaHasta: values.fechaHasta || undefined,
     asignado: values.asignado || undefined,
+    tipoLead: values.tipoLead || undefined,
+    estadoGestion: values.estadoGestion || undefined,
     page,
   };
 
@@ -186,6 +190,27 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
       { key: "fechaDesde", label: "Desde", type: "date" },
       { key: "fechaHasta", label: "Hasta", type: "date" },
       {
+        key: "tipoLead",
+        label: "Tipo",
+        type: "select",
+        placeholder: "Todos",
+        options: [
+          { value: "COMPRA", label: "Compra" },
+          { value: "VENTA", label: "Venta" },
+          { value: "OTRO", label: "Otro" },
+        ],
+      },
+      {
+        key: "estadoGestion",
+        label: "Pipeline",
+        type: "select",
+        placeholder: "Todos",
+        options: [
+          { value: "ABIERTOS", label: "Abiertos" },
+          { value: "CERRADOS", label: "Cerrados" },
+        ],
+      },
+      {
         key: "asignado",
         label: "Asignación",
         type: "select",
@@ -218,7 +243,11 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
 
   return (
     <div>
-      <PageHeader title="Leads" description="Contactos captados desde formularios de Meta.">
+      <PageHeader
+        title="Leads"
+        description="Contactos captados desde formularios de Meta."
+        action={{ href: "/leads/tablero", label: "Tablero", icon: "mdi:view-column-outline" }}
+      >
         <DynamicFilters
           fields={fields}
           values={values}
@@ -265,22 +294,25 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
           <Table className="w-full table-fixed">
             <TableHeader className="border-b border-gray-100 dark:border-gray-800">
               <TableRow>
-                <TableCell isHeader className={`${thClass} w-[20%]`}>
+                <TableCell isHeader className={`${thClass} w-[18%]`}>
                   Contacto
                 </TableCell>
-                <TableCell isHeader className={`${thClass} w-[11%]`}>
+                <TableCell isHeader className={`${thClass} w-[10%]`}>
                   Teléfono
                 </TableCell>
-                <TableCell isHeader className={`${thClass} w-[16%]`}>
+                <TableCell isHeader className={`${thClass} w-[13%]`}>
                   Campaña
                 </TableCell>
-                <TableCell isHeader className={`${thClass} w-[16%]`}>
+                <TableCell isHeader className={`${thClass} w-[13%]`}>
                   Anuncio
                 </TableCell>
-                <TableCell isHeader className={`${thClass} w-[13%]`}>
+                <TableCell isHeader className={`${thClass} w-[11%]`}>
+                  Estado
+                </TableCell>
+                <TableCell isHeader className={`${thClass} w-[12%]`}>
                   Asignado
                 </TableCell>
-                <TableCell isHeader className={`${thClass} w-[10%]`}>
+                <TableCell isHeader className={`${thClass} w-[9%]`}>
                   Fecha
                 </TableCell>
                 <TableCell isHeader className={`${thClassEnd} w-[14%]`}>
@@ -291,7 +323,7 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
             <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
               {leadsQuery.data?.data.length === 0 && (
                 <EmptyState
-                  colSpan={7}
+                  colSpan={8}
                   icon="mdi:account-search-outline"
                   title="No hay leads con estos filtros"
                   description="Prueba a cambiar la búsqueda, sincronizar desde Meta o ampliar el rango de fechas."
@@ -312,6 +344,16 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
                     </TableCell>
                     <TableCell className={`${tdClass} min-w-0`}>
                       <CeldaConIcono icon="mdi:image-outline" value={lead.anuncio?.nombre} />
+                    </TableCell>
+                    <TableCell className={`${tdClass} min-w-0`}>
+                      <div className="flex flex-col gap-1">
+                        {lead.tipoLead && (
+                          <span className="text-theme-xs text-gray-400">
+                            {ETIQUETA_TIPO_LEAD[lead.tipoLead] ?? lead.tipoLead}
+                          </span>
+                        )}
+                        <EstadoPipelineBadge tipoLead={lead.tipoLead} estado={lead.estadoGestion} />
+                      </div>
                     </TableCell>
                     <TableCell className={`${tdClass} min-w-0`}>
                       {lead.asignado ? (

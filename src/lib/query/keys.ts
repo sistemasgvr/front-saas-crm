@@ -43,6 +43,10 @@ export const queryKeys = {
   leadsAll: ["leads"] as const,
   lead: (id: string) => ["leads", id] as const,
   leadsAsignables: ["leads", "asignables"] as const,
+  leadHistorial: (id: string) => ["leads", id, "historial"] as const,
+  leadPipelineMeta: (tipoLead: string | null | undefined) => ["leads", "pipeline-meta", tipoLead ?? null] as const,
+  leadsTablero: (tipoLead: string | null | undefined, asignado?: string) =>
+    ["leads", "tablero", tipoLead ?? null, asignado ?? null] as const,
   notifications: (params?: { page?: number }) => ["notifications", params ?? {}] as const,
   /** Prefijo para invalidar todas las páginas a la vez (no usar para fetch). */
   notificationsAll: ["notifications"] as const,

@@ -10,6 +10,8 @@ export type MetaConnection =
       cuentasActivas: number;
       tokenExpiraEn: string | null;
       fechaCreacion: string;
+      /** Dataset de Conversions API (Conversion Leads) — null si no se configuró. */
+      capiDatasetId: string | null;
     };
 
 export type MetaConnectionConfigured = Extract<MetaConnection, { appConfigurada: true }>;

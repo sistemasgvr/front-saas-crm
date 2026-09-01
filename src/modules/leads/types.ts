@@ -30,6 +30,8 @@ export interface LeadResumen {
   anuncio: ReferenciaNombrada | null;
   tipoLead: string | null;
   asignado: ReferenciaNombrada | null;
+  /** Código del pipeline — PLAN-PIPELINE-INMOBILIARIA.md. */
+  estadoGestion: string;
 }
 
 export interface LeadDetalle extends LeadResumen {
@@ -38,6 +40,67 @@ export interface LeadDetalle extends LeadResumen {
   idExterno: string;
   datosCrudos: unknown;
   fechaCreacion: string;
+  estadoGestionEn: string | null;
+  motivoCierre: string | null;
+  notaCierre: string | null;
+}
+
+// --- Pipeline (PLAN-PIPELINE-INMOBILIARIA.md) ---------------------------
+
+export interface EstadoPipelineMeta {
+  codigo: string;
+  etiqueta: string;
+  siguientes: readonly string[];
+}
+
+export interface MotivoMeta {
+  codigo: string;
+  etiqueta: string;
+}
+
+export interface MetaPipeline {
+  estados: EstadoPipelineMeta[];
+  motivosDescarte: MotivoMeta[];
+  motivosPerdido: MotivoMeta[];
+  motivosGanado: MotivoMeta[];
+}
+
+export interface LeadTableroRow {
+  id: string;
+  nombre: string | null;
+  telefono: string | null;
+  email: string | null;
+  asignado: ReferenciaNombrada | null;
+  estadoGestion: string;
+  fechaLead: string | null;
+}
+
+export interface ColumnaTablero {
+  codigo: string;
+  etiqueta: string;
+  leads: LeadTableroRow[];
+}
+
+export interface TableroResultado {
+  columnas: ColumnaTablero[];
+}
+
+export interface HistorialEstadoRow {
+  id: string;
+  tipoLead: string | null;
+  desde: string | null;
+  hacia: string;
+  motivoCierre: string | null;
+  nota: string | null;
+  usuario: ReferenciaNombrada | null;
+  fechaCreacion: string;
+}
+
+export interface GestionarLeadInput {
+  tipoLead?: string;
+  estadoGestion?: string;
+  motivoCierre?: string;
+  notaCierre?: string;
 }
 
 export interface ListaLeadsResultado {
@@ -59,5 +122,8 @@ export interface FiltroLeads {
   fechaHasta?: string;
   /** "mios" | "sin_asignar" | usuarioId puntual (solo admin puede pedir el de otro). */
   asignado?: string;
+  /** Código exacto, o "ABIERTOS" / "CERRADOS". */
+  estadoGestion?: string;
+  tipoLead?: string;
   page: number;
 }

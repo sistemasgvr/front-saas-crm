@@ -14,6 +14,7 @@ import ActionButton from "@/src/components/ui/ActionButton";
 import { getMetaConnection, getMetaPermissions } from "./queries";
 import { connectMetaAction, disconnectMetaAction } from "./actions";
 import MetaAppCredentialsForm from "./MetaAppCredentialsForm";
+import MetaCapiSettingsForm from "./MetaCapiSettingsForm";
 import MetaHubLayout from "./MetaHubLayout";
 import MetaPermissionsPanel from "./MetaPermissionsPanel";
 import MetaStatCard from "./MetaStatCard";
@@ -157,6 +158,8 @@ export default function MetaHubView({ metaCallback }: { metaCallback?: string })
             </div>
 
             <MetaPermissionsPanel />
+
+            <MetaCapiSettingsForm capiDatasetIdActual={connection.capiDatasetId} />
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap gap-3">

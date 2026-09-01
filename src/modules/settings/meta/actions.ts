@@ -78,6 +78,17 @@ export async function toggleMetaFeatureAction(
   }
 }
 
+export async function saveCapiDatasetAction(capiDatasetId: string): Promise<void> {
+  try {
+    await apiFetch("/meta/connections/capi-dataset", {
+      method: "PATCH",
+      body: JSON.stringify({ capiDatasetId }),
+    });
+  } catch (error) {
+    fail(error, "No se pudo guardar el dataset de Conversions API");
+  }
+}
+
 export async function disconnectMetaAction(): Promise<void> {
   try {
     await apiFetch("/meta/connections/disconnect", { method: "POST" });

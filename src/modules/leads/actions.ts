@@ -1,6 +1,7 @@
 "use server";
 
 import { apiFetch, ApiError } from "@/src/lib/api";
+import type { GestionarLeadInput } from "./types";
 
 function fail(error: unknown, fallback: string): never {
   throw new Error(error instanceof ApiError ? error.message : fallback);
@@ -33,13 +34,13 @@ export async function liberarLeadAction(id: string): Promise<void> {
   }
 }
 
-export async function actualizarTipoLeadAction(id: string, tipoLead: string): Promise<void> {
+export async function gestionarLeadAction(id: string, input: GestionarLeadInput): Promise<void> {
   try {
     await apiFetch(`/leads/${id}/gestion`, {
       method: "PATCH",
-      body: JSON.stringify({ tipoLead }),
+      body: JSON.stringify(input),
     });
   } catch (error) {
-    fail(error, "No se pudo guardar el tipo de lead");
+    fail(error, "No se pudo actualizar la gestión del lead");
   }
 }
