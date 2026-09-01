@@ -193,6 +193,7 @@ export default function ChatDetailView({ id }: { id: string }) {
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null);
   const finRef = useRef<HTMLDivElement>(null);
   const inputArchivoRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const chatQuery = useQuery({
     queryKey: queryKeys.whatsappChat(id),
@@ -298,6 +299,7 @@ export default function ChatDetailView({ id }: { id: string }) {
       <div className="border-t border-gray-100 p-3 dark:border-gray-800 sm:p-4">
         {dentroDeVentana ? (
           <form
+            ref={formRef}
             onSubmit={(event) => {
               event.preventDefault();
               if (archivo) {
@@ -352,21 +354,29 @@ export default function ChatDetailView({ id }: { id: string }) {
                 accept="image/jpeg,image/png,video/mp4,video/3gpp,audio/aac,audio/mp4,audio/mpeg,audio/amr,audio/ogg,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
                 onChange={(e) => elegirArchivo(e.target.files?.[0])}
               />
-              <button
-                type="button"
-                onClick={() => inputArchivoRef.current?.click()}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
-                aria-label="Adjuntar archivo"
-              >
-                <Icon name="mdi:paperclip" size={20} />
-              </button>
-              <textarea
-                value={texto}
-                onChange={(event) => setTexto(event.target.value)}
-                placeholder={archivo ? "Agrega un texto (opcional)…" : "Escribe un mensaje…"}
-                rows={2}
-                className="flex-1 resize-none rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-theme-sm text-gray-800 outline-none focus:border-brand-500 dark:border-gray-700 dark:text-white/90"
-              />
+              <div className="flex flex-1 items-end gap-0.5 rounded-3xl border border-gray-200 bg-white pl-1 pr-1.5 py-1 dark:border-gray-700 dark:bg-gray-900">
+                <button
+                  type="button"
+                  onClick={() => inputArchivoRef.current?.click()}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+                  aria-label="Adjuntar archivo"
+                >
+                  <Icon name="mdi:plus" size={22} />
+                </button>
+                <textarea
+                  value={texto}
+                  onChange={(event) => setTexto(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      formRef.current?.requestSubmit();
+                    }
+                  }}
+                  placeholder={archivo ? "Agrega un texto (opcional)…" : "Escribe un mensaje…"}
+                  rows={1}
+                  className="max-h-32 flex-1 resize-none bg-transparent px-1.5 py-1.5 text-theme-sm text-gray-800 outline-none dark:text-white/90"
+                />
+              </div>
               <button
                 type="submit"
                 disabled={(!archivo && !texto.trim()) || enviar.isPending || enviarArchivo.isPending}
@@ -376,7 +386,7 @@ export default function ChatDetailView({ id }: { id: string }) {
                 {enviar.isPending || enviarArchivo.isPending ? (
                   <Spinner size={18} />
                 ) : (
-                  <Icon name="mdi:send" size={19} className="-ml-0.5" />
+                  <Icon name="mdi:send" size={19} className="translate-x-px" />
                 )}
               </button>
             </div>
