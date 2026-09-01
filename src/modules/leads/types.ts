@@ -47,10 +47,20 @@ export interface LeadDetalle extends LeadResumen {
 
 // --- Pipeline (PLAN-PIPELINE-INMOBILIARIA.md) ---------------------------
 
+export interface CampoTransicionMeta {
+  codigo: string;
+  etiqueta: string;
+  tipo: "text" | "textarea" | "datetime" | "select";
+  requerido: boolean;
+  placeholder?: string;
+  opciones?: { codigo: string; etiqueta: string }[];
+}
+
 export interface EstadoPipelineMeta {
   codigo: string;
   etiqueta: string;
   siguientes: readonly string[];
+  camposAlEntrar: CampoTransicionMeta[];
 }
 
 export interface MotivoMeta {
@@ -63,6 +73,7 @@ export interface MetaPipeline {
   motivosDescarte: MotivoMeta[];
   motivosPerdido: MotivoMeta[];
   motivosGanado: MotivoMeta[];
+  camposReapertura: CampoTransicionMeta[];
 }
 
 export interface LeadTableroRow {
@@ -92,7 +103,37 @@ export interface HistorialEstadoRow {
   hacia: string;
   motivoCierre: string | null;
   nota: string | null;
+  metadata: Record<string, string> | null;
+  visita: {
+    id: string;
+    programadaEn: string;
+    referenciaInmueble: string;
+    modalidad: string;
+    estado: string;
+    resultado: string | null;
+  } | null;
+  calificacion: {
+    id: string;
+    presupuesto: string | null;
+    zona: string | null;
+    tipoInmueble: string | null;
+    tipoPropiedad: string | null;
+    precioReferencia: string | null;
+    nota: string;
+  } | null;
   usuario: ReferenciaNombrada | null;
+  fechaCreacion: string;
+}
+
+export interface LeadVisitaRow {
+  id: string;
+  programadaEn: string;
+  referenciaInmueble: string;
+  modalidad: string;
+  estado: string;
+  resultado: string | null;
+  nota: string | null;
+  feedback: string | null;
   fechaCreacion: string;
 }
 
@@ -101,6 +142,8 @@ export interface GestionarLeadInput {
   estadoGestion?: string;
   motivoCierre?: string;
   notaCierre?: string;
+  notaTransicion?: string;
+  metadata?: Record<string, string>;
 }
 
 export interface ListaLeadsResultado {

@@ -16,6 +16,8 @@ import { gestionarLeadAction } from "./actions";
 import { getHistorialLead, getMetaPipeline } from "./queries";
 import PipelineStepper from "./PipelineStepper";
 import PipelineTimeline from "./PipelineTimeline";
+import TransicionPipelineModal from "./TransicionPipelineModal";
+import { camposParaDestino } from "./pipeline-transicion";
 import { esEstadoTerminal, ETIQUETA_TIPO_LEAD, claseEstadoGestion, etiquetaEstadoGestion, iconoEstadoGestion } from "./pipeline";
 import { TIPOS_LEAD_INMOBILIARIA, type EstadoPipelineMeta, type MetaPipeline, type MotivoMeta } from "./types";
 
@@ -78,6 +80,8 @@ export default function LeadPipelinePanel({
   puedeGestionar: boolean;
 }) {
   const [destinoCierre, setDestinoCierre] = useState<string | null>(null);
+  const [destinoTransicion, setDestinoTransicion] = useState<string | null>(null);
+  const [esReapertura, setEsReapertura] = useState(false);
   const [motivoForm, setMotivoForm] = useState("");
   const [notaForm, setNotaForm] = useState("");
   const [reabrirAbierto, setReabrirAbierto] = useState(false);
@@ -97,7 +101,7 @@ export default function LeadPipelinePanel({
   const gestionar = useAppMutation({
     mutationFn: (input: Parameters<typeof gestionarLeadAction>[1]) => gestionarLeadAction(leadId, input),
     successMessage: "Gestión actualizada",
-    invalidateKeys: [queryKeys.lead(leadId), queryKeys.leadsAll, queryKeys.leadHistorial(leadId)],
+    invalidateKeys: [queryKeys.lead(leadId), queryKeys.leadsAll, queryKeys.leadHistorial(leadId), queryKeys.leadVisitas(leadId)],
   });
 
   const estadoActualMeta = metaQuery.data?.estados.find(
@@ -116,14 +120,46 @@ export default function LeadPipelinePanel({
     return [];
   };
 
-  const iniciarCambio = (destino: string) => {
+  const iniciarCambio = (destino: string, opciones?: { reapertura?: boolean }) => {
     if (esEstadoTerminal(destino)) {
       setDestinoCierre(destino);
       setMotivoForm("");
       setNotaForm("");
-    } else {
-      gestionar.mutate({ estadoGestion: destino });
+      return;
     }
+
+    const campos = metaQuery.data
+      ? camposParaDestino(metaQuery.data, destino, opciones?.reapertura)
+      : [];
+
+    if (campos.length > 0) {
+      setDestinoTransicion(destino);
+      setEsReapertura(Boolean(opciones?.reapertura));
+      return;
+    }
+
+    gestionar.mutate({ estadoGestion: destino });
+  };
+
+  const confirmarTransicion = (payload: {
+    notaTransicion?: string;
+    metadata?: Record<string, string>;
+  }) => {
+    if (!destinoTransicion) return;
+    gestionar.mutate(
+      {
+        estadoGestion: destinoTransicion,
+        notaTransicion: payload.notaTransicion,
+        metadata: payload.metadata,
+      },
+      {
+        onSuccess: () => {
+          setDestinoTransicion(null);
+          setEsReapertura(false);
+          setReabrirAbierto(false);
+        },
+      },
+    );
   };
 
   const confirmarCierre = () => {
@@ -214,9 +250,7 @@ export default function LeadPipelinePanel({
                         size="sm"
                         variant="outline"
                         disabled={gestionar.isPending}
-                        onClick={() =>
-                          gestionar.mutate({ estadoGestion: codigo }, { onSuccess: () => setReabrirAbierto(false) })
-                        }
+                        onClick={() => iniciarCambio(codigo, { reapertura: true })}
                       >
                         {etiquetaEstadoGestion(tipoLead, codigo)}
                       </Button>
@@ -334,6 +368,21 @@ export default function LeadPipelinePanel({
           </div>
         )}
       </div>
+
+      {destinoTransicion && metaQuery.data && (
+        <TransicionPipelineModal
+          open
+          titulo={`Pasar a ${etiquetaEstadoGestion(tipoLead, destinoTransicion)}`}
+          descripcion="Completa los datos de esta etapa antes de confirmar el cambio."
+          campos={camposParaDestino(metaQuery.data, destinoTransicion, esReapertura)}
+          loading={gestionar.isPending}
+          onConfirmar={confirmarTransicion}
+          onCancelar={() => {
+            setDestinoTransicion(null);
+            setEsReapertura(false);
+          }}
+        />
+      )}
 
       {/* Timeline — colapsable visualmente separado */}
       {historialCompleto.length > 0 && (

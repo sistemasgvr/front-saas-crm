@@ -14,6 +14,7 @@ import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
 import LeadAssignmentActions from "./LeadAssignmentActions";
 import LeadPipelinePanel from "./LeadPipelinePanel";
+import LeadVisitasPanel from "./LeadVisitasPanel";
 import {
   etiquetaCampoMeta,
   iconoCampoMeta,
@@ -251,6 +252,15 @@ export default function LeadDetailView({
           />
         </div>
       </SeccionFija>
+
+      <CollapsibleSection
+        title="Visitas y agenda"
+        icon="mdi:calendar-month-outline"
+        description="Citas estructuradas — alimentan la vista calendario del equipo."
+        defaultOpen
+      >
+        <LeadVisitasPanel leadId={id} />
+      </CollapsibleSection>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <CollapsibleSection

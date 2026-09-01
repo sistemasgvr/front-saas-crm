@@ -44,6 +44,7 @@ export const queryKeys = {
   lead: (id: string) => ["leads", id] as const,
   leadsAsignables: ["leads", "asignables"] as const,
   leadHistorial: (id: string) => ["leads", id, "historial"] as const,
+  leadVisitas: (id: string) => ["leads", id, "visitas"] as const,
   leadPipelineMeta: (tipoLead: string | null | undefined) => ["leads", "pipeline-meta", tipoLead ?? null] as const,
   leadsTablero: (tipoLead: string | null | undefined, asignado?: string) =>
     ["leads", "tablero", tipoLead ?? null, asignado ?? null] as const,

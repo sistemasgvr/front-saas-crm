@@ -24,13 +24,20 @@ import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
 import { gestionarLeadAction } from "./actions";
 import { getMetaPipeline, getTablero } from "./queries";
+import TransicionPipelineModal from "./TransicionPipelineModal";
+import { camposParaDestino } from "./pipeline-transicion";
 import { ETIQUETA_TIPO_LEAD, esEstadoTerminal, etiquetaEstadoGestion, puntoEstadoGestion } from "./pipeline";
 import { TIPOS_LEAD_INMOBILIARIA } from "./types";
-import type { LeadTableroRow } from "./types";
+import type { ColumnaTablero, LeadTableroRow, MetaPipeline, MotivoMeta, TableroResultado } from "./types";
 
 type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 
 interface PendingClose {
+  leadId: string;
+  destino: string;
+}
+
+interface PendingTransition {
   leadId: string;
   destino: string;
 }
@@ -138,23 +145,33 @@ export default function LeadsKanbanView({ rol, usuarioId }: { rol: Rol; usuarioI
   // real de leads entrantes quedaría escondida en otra pestaña.
   const [tipoLead, setTipoLead] = useState<string>("OTRO");
   const [pendingClose, setPendingClose] = useState<PendingClose | null>(null);
+  const [pendingTransition, setPendingTransition] = useState<PendingTransition | null>(null);
   const [motivoForm, setMotivoForm] = useState("");
   const [notaForm, setNotaForm] = useState("");
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  const tableroQuery = useQuery({
+  const tableroQuery = useQuery<TableroResultado>({
     queryKey: queryKeys.leadsTablero(tipoLead),
     queryFn: () => getTablero(tipoLead),
   });
-  const metaQuery = useQuery({
+  const metaQuery = useQuery<MetaPipeline>({
     queryKey: queryKeys.leadPipelineMeta(tipoLead),
     queryFn: () => getMetaPipeline(tipoLead),
   });
 
   const gestionar = useAppMutation({
-    mutationFn: ({ leadId, ...input }: { leadId: string; estadoGestion: string; motivoCierre?: string; notaCierre?: string }) =>
-      gestionarLeadAction(leadId, input),
+    mutationFn: ({
+      leadId,
+      ...input
+    }: {
+      leadId: string;
+      estadoGestion: string;
+      motivoCierre?: string;
+      notaCierre?: string;
+      notaTransicion?: string;
+      metadata?: Record<string, string>;
+    }) => gestionarLeadAction(leadId, input),
     successMessage: "Lead movido",
     invalidateKeys: [queryKeys.leadsTablero(tipoLead), queryKeys.leadsAll],
   });
@@ -167,7 +184,7 @@ export default function LeadsKanbanView({ rol, usuarioId }: { rol: Rol; usuarioI
     return mapa;
   }, [tableroQuery.data]);
 
-  const motivosParaDestino = (destino: string) => {
+  const motivosParaDestino = (destino: string): MotivoMeta[] => {
     if (!metaQuery.data) return [];
     if (destino === "DESCARTADO") return metaQuery.data.motivosDescarte;
     if (destino === "CERRADO_PERDIDO") return metaQuery.data.motivosPerdido;
@@ -189,6 +206,13 @@ export default function LeadsKanbanView({ rol, usuarioId }: { rol: Rol; usuarioI
       setNotaForm("");
       return;
     }
+
+    const campos = metaQuery.data ? camposParaDestino(metaQuery.data, destino) : [];
+    if (campos.length > 0) {
+      setPendingTransition({ leadId, destino });
+      return;
+    }
+
     gestionar.mutate({ leadId, estadoGestion: destino });
   };
 
@@ -201,6 +225,7 @@ export default function LeadsKanbanView({ rol, usuarioId }: { rol: Rol; usuarioI
   };
 
   const leadEnCierre = pendingClose ? leadPorId.get(pendingClose.leadId) : undefined;
+  const leadEnTransicion = pendingTransition ? leadPorId.get(pendingTransition.leadId) : undefined;
 
   return (
     <div>
@@ -242,7 +267,7 @@ export default function LeadsKanbanView({ rol, usuarioId }: { rol: Rol; usuarioI
         <PageLoader />
       ) : tableroQuery.isError ? (
         <QueryError error={tableroQuery.error} />
-      ) : !tableroQuery.data || tableroQuery.data.columnas.every((c) => c.leads.length === 0) ? (
+      ) : !tableroQuery.data || tableroQuery.data.columnas.every((c: ColumnaTablero) => c.leads.length === 0) ? (
         <EmptyState
           icon="mdi:view-column-outline"
           title="No hay leads de este tipo"
@@ -251,7 +276,7 @@ export default function LeadsKanbanView({ rol, usuarioId }: { rol: Rol; usuarioI
       ) : (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div className="flex gap-3 overflow-x-auto pb-2">
-            {tableroQuery.data.columnas.map((columna) => (
+            {tableroQuery.data.columnas.map((columna: ColumnaTablero) => (
               <KanbanColumn
                 key={columna.codigo}
                 codigo={columna.codigo}
@@ -275,7 +300,10 @@ export default function LeadsKanbanView({ rol, usuarioId }: { rol: Rol; usuarioI
             <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">Hace falta un motivo para cerrar el lead.</p>
             <div className="mt-3 space-y-2">
               <Select
-                options={motivosParaDestino(pendingClose.destino).map((m) => ({ value: m.codigo, label: m.etiqueta }))}
+                options={motivosParaDestino(pendingClose.destino).map((m: MotivoMeta) => ({
+                  value: m.codigo,
+                  label: m.etiqueta,
+                }))}
                 placeholder="Elige un motivo"
                 value={motivoForm}
                 onChange={setMotivoForm}
@@ -292,6 +320,30 @@ export default function LeadsKanbanView({ rol, usuarioId }: { rol: Rol; usuarioI
             </div>
           </div>
         </div>
+      )}
+
+      {pendingTransition && metaQuery.data && (
+        <TransicionPipelineModal
+          open
+          titulo={`Mover a ${etiquetaEstadoGestion(tipoLead, pendingTransition.destino)}${
+            leadEnTransicion?.nombre ? ` — ${leadEnTransicion.nombre}` : ""
+          }`}
+          descripcion="Completa los datos de esta etapa antes de confirmar."
+          campos={camposParaDestino(metaQuery.data, pendingTransition.destino)}
+          loading={gestionar.isPending}
+          onConfirmar={(payload) =>
+            gestionar.mutate(
+              {
+                leadId: pendingTransition.leadId,
+                estadoGestion: pendingTransition.destino,
+                notaTransicion: payload.notaTransicion,
+                metadata: payload.metadata,
+              },
+              { onSuccess: () => setPendingTransition(null) },
+            )
+          }
+          onCancelar={() => setPendingTransition(null)}
+        />
       )}
     </div>
   );

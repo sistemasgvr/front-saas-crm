@@ -5,6 +5,7 @@ import { es } from "date-fns/locale";
 import { Icon } from "@/src/components/ui/Icon";
 import EstadoPipelineBadge from "./EstadoPipelineBadge";
 import { puntoEstadoGestion } from "./pipeline";
+import { etiquetaMetadata, formatearValorMetadata } from "./pipeline-transicion";
 import type { HistorialEstadoRow } from "./types";
 
 function formatearFechaCompleta(iso: string) {
@@ -60,6 +61,36 @@ export default function PipelineTimeline({ filas }: { filas: HistorialEstadoRow[
               )}
               {fila.nota && (
                 <p className="mt-0.5 text-theme-xs italic text-gray-400 dark:text-gray-500">“{fila.nota}”</p>
+              )}
+              {fila.metadata && Object.keys(fila.metadata).length > 0 && (
+                <ul className="mt-1.5 space-y-0.5">
+                  {Object.entries(fila.metadata).map(([clave, valor]) => (
+                    <li key={clave} className="text-theme-xs text-gray-500 dark:text-gray-400">
+                      <span className="font-medium text-gray-600 dark:text-gray-300">
+                        {etiquetaMetadata(clave)}:
+                      </span>{" "}
+                      {formatearValorMetadata(clave, valor)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {fila.visita && (
+                <div className="mt-1.5 rounded-lg bg-brand-50/50 px-2.5 py-2 text-theme-xs text-gray-600 dark:bg-brand-500/5 dark:text-gray-300">
+                  <span className="font-medium">Visita:</span>{" "}
+                  {new Date(fila.visita.programadaEn).toLocaleString("es-PE", {
+                    timeZone: "America/Lima",
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}{" "}
+                  — {fila.visita.referenciaInmueble}
+                </div>
+              )}
+              {fila.calificacion && (
+                <div className="mt-1.5 rounded-lg bg-gray-50 px-2.5 py-2 text-theme-xs text-gray-600 dark:bg-white/5 dark:text-gray-300">
+                  {fila.calificacion.zona && <p>Zona: {fila.calificacion.zona}</p>}
+                  {fila.calificacion.presupuesto && <p>Presupuesto: {fila.calificacion.presupuesto}</p>}
+                  {fila.calificacion.tipoPropiedad && <p>Tipo: {fila.calificacion.tipoPropiedad}</p>}
+                </div>
               )}
               <p className="mt-1 text-theme-xs text-gray-400">
                 {fila.usuario?.nombre ?? "Sistema"} ·{" "}

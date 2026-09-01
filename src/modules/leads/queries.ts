@@ -8,6 +8,7 @@ import type {
   FiltroLeads,
   HistorialEstadoRow,
   LeadDetalle,
+  LeadVisitaRow,
   ListaLeadsResultado,
   MetaPipeline,
   ReferenciaNombrada,
@@ -40,6 +41,11 @@ export async function getLead(id: string): Promise<LeadDetalle> {
 
 export async function getHistorialLead(id: string): Promise<HistorialEstadoRow[]> {
   const data = await apiFetch<HistorialEstadoRow[]>(`/leads/${id}/historial-estados`);
+  return Array.isArray(data) ? data : [];
+}
+
+export async function getVisitasLead(id: string): Promise<LeadVisitaRow[]> {
+  const data = await apiFetch<LeadVisitaRow[]>(`/leads/${id}/visitas`);
   return Array.isArray(data) ? data : [];
 }
 
