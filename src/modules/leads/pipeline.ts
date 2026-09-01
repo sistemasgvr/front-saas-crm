@@ -66,7 +66,7 @@ export function etiquetaEstadoGestion(tipoLead: string | null | undefined, estad
  */
 const CLASE_POR_ESTADO: Record<string, string> = {
   NUEVO: 'bg-gray-100 text-gray-700 dark:bg-white/5 dark:text-white/80',
-  CONTACTADO: 'bg-blue-light-50 text-blue-light-500 dark:bg-blue-light-500/15 dark:text-blue-light-500',
+  CONTACTADO: 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400',
   CALIFICADO: 'bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400',
   VISITA_AGENDADA: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-400',
   CAPTACION: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-400',
@@ -91,7 +91,7 @@ export function claseEstadoGestion(estado: string): string {
  * indicador chico en el encabezado de una columna del tablero. */
 const PUNTO_POR_ESTADO: Record<string, string> = {
   NUEVO: 'bg-gray-400',
-  CONTACTADO: 'bg-blue-light-500',
+  CONTACTADO: 'bg-sky-500',
   CALIFICADO: 'bg-brand-500',
   VISITA_AGENDADA: 'bg-cyan-500',
   CAPTACION: 'bg-cyan-500',
@@ -111,4 +111,39 @@ export function puntoEstadoGestion(estado: string): string {
 
 export function esEstadoTerminal(estado: string): boolean {
   return (ESTADOS_TERMINALES as readonly string[]).includes(estado);
+}
+
+/** Icono MDI por etapa — da identidad visual al embudo inmobiliario. */
+const ICONO_POR_ESTADO: Record<string, string> = {
+  NUEVO: 'mdi:inbox-arrow-down-outline',
+  CONTACTADO: 'mdi:phone-outline',
+  CALIFICADO: 'mdi:account-check-outline',
+  VISITA_AGENDADA: 'mdi:calendar-clock-outline',
+  VISITA_REALIZADA: 'mdi:home-search-outline',
+  CAPTACION: 'mdi:home-plus-outline',
+  EN_COMERCIALIZACION: 'mdi:home-city-outline',
+  NEGOCIACION: 'mdi:handshake-outline',
+  SEPARACION: 'mdi:key-outline',
+  CERRADO_GANADO: 'mdi:trophy-outline',
+  CERRADO_PERDIDO: 'mdi:emoticon-sad-outline',
+  DESCARTADO: 'mdi:archive-off-outline',
+};
+
+export function iconoEstadoGestion(estado: string): string {
+  return ICONO_POR_ESTADO[estado] ?? 'mdi:circle-outline';
+}
+
+/** Porcentaje de avance en el embudo (solo estados no terminales). */
+export function progresoEmbudo(
+  estadosNoTerminales: readonly string[],
+  estadoActual: string,
+): { indice: number; total: number; porcentaje: number } {
+  const indice = estadosNoTerminales.findIndex((e) => e === estadoActual);
+  const total = estadosNoTerminales.length;
+  if (indice < 0 || total === 0) return { indice: 0, total, porcentaje: 0 };
+  return {
+    indice,
+    total,
+    porcentaje: Math.round(((indice + 1) / total) * 100),
+  };
 }

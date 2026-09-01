@@ -13,8 +13,9 @@ import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { enviarMensajeAction, enviarMediaAction } from "./actions";
+import { clearBorrador, getBorrador, setBorrador } from "./chat-borradores";
 import { getChat, getTemplates } from "./queries";
-import type { Mensaje } from "./types";
+import type { ConversacionDetalle, Mensaje, PlantillaWhatsApp } from "./types";
 
 const INTERVALO_REFRESCO_MS = 10_000;
 
@@ -187,6 +188,7 @@ function Burbuja({ mensaje, conversacionId }: { mensaje: Mensaje; conversacionId
 export default function ChatDetailView({ id }: { id: string }) {
   const queryClient = useQueryClient();
   const [texto, setTexto] = useState("");
+  const textoRef = useRef("");
   const [plantillaSeleccionada, setPlantillaSeleccionada] = useState("");
   const [valoresVariables, setValoresVariables] = useState<Record<string, string>>({});
   const [archivo, setArchivo] = useState<File | null>(null);
@@ -195,7 +197,31 @@ export default function ChatDetailView({ id }: { id: string }) {
   const inputArchivoRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const chatQuery = useQuery({
+  function actualizarTexto(valor: string) {
+    textoRef.current = valor;
+    setTexto(valor);
+    if (!valor.trim()) {
+      clearBorrador(id);
+    } else {
+      setBorrador(id, valor);
+    }
+  }
+
+  useEffect(() => {
+    const borrador = getBorrador(id) ?? "";
+    textoRef.current = borrador;
+    setTexto(borrador);
+    return () => {
+      const restante = textoRef.current;
+      if (restante.trim()) {
+        setBorrador(id, restante);
+      } else {
+        clearBorrador(id);
+      }
+    };
+  }, [id]);
+
+  const chatQuery = useQuery<ConversacionDetalle>({
     queryKey: queryKeys.whatsappChat(id),
     queryFn: () => getChat(id),
     refetchInterval: INTERVALO_REFRESCO_MS,
@@ -203,13 +229,13 @@ export default function ChatDetailView({ id }: { id: string }) {
 
   const dentroDeVentana = estaDentroDeVentana(chatQuery.data?.ventanaExpiraEn);
 
-  const templatesQuery = useQuery({
+  const templatesQuery = useQuery<PlantillaWhatsApp[]>({
     queryKey: queryKeys.whatsappTemplates,
     queryFn: getTemplates,
     enabled: !dentroDeVentana,
   });
 
-  const plantilla = templatesQuery.data?.find((p) => p.nombre === plantillaSeleccionada);
+  const plantilla = templatesQuery.data?.find((p: PlantillaWhatsApp) => p.nombre === plantillaSeleccionada);
   const variables = extraerVariables(plantilla?.cuerpoTexto);
   const parametrosCompletos = variables.every((nombre) => (valoresVariables[nombre] ?? "").trim().length > 0);
 
@@ -291,7 +317,9 @@ export default function ChatDetailView({ id }: { id: string }) {
             Todavía no hay mensajes en esta conversación.
           </p>
         ) : (
-          chat.mensajes.map((mensaje) => <Burbuja key={mensaje.id} mensaje={mensaje} conversacionId={id} />)
+          chat.mensajes.map((mensaje: Mensaje) => (
+            <Burbuja key={mensaje.id} mensaje={mensaje} conversacionId={id} />
+          ))
         )}
         <div ref={finRef} />
       </div>
@@ -306,12 +334,20 @@ export default function ChatDetailView({ id }: { id: string }) {
                 enviarArchivo.mutate(undefined, {
                   onSuccess: () => {
                     setArchivo(null);
+                    textoRef.current = "";
                     setTexto("");
+                    clearBorrador(id);
                     if (inputArchivoRef.current) inputArchivoRef.current.value = "";
                   },
                 });
               } else if (texto.trim()) {
-                enviar.mutate(undefined, { onSuccess: () => setTexto("") });
+                enviar.mutate(undefined, {
+                  onSuccess: () => {
+                    textoRef.current = "";
+                    setTexto("");
+                    clearBorrador(id);
+                  },
+                });
               }
             }}
             className="space-y-2"
@@ -365,7 +401,7 @@ export default function ChatDetailView({ id }: { id: string }) {
                 </button>
                 <textarea
                   value={texto}
-                  onChange={(event) => setTexto(event.target.value)}
+                  onChange={(event) => actualizarTexto(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" && !event.shiftKey) {
                       event.preventDefault();
@@ -400,7 +436,7 @@ export default function ChatDetailView({ id }: { id: string }) {
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Select
-                  options={(templatesQuery.data ?? []).map((t) => ({
+                  options={(templatesQuery.data ?? []).map((t: PlantillaWhatsApp) => ({
                     value: t.nombre,
                     label: `${t.nombre} (${t.idioma})`,
                   }))}

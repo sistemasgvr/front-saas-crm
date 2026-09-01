@@ -1,6 +1,7 @@
 "use client";
 
 import { Icon } from "@/src/components/ui/Icon";
+import { iconoEstadoGestion, progresoEmbudo } from "./pipeline";
 
 interface EstadoPipelineMeta {
   codigo: string;
@@ -9,17 +10,8 @@ interface EstadoPipelineMeta {
 }
 
 /**
- * Barra de pasos horizontal del pipeline — mismo patrón que "Salesforce
- * Path" / el stage-tracker de HubSpot: toda la ruta a la vista de una,
- * completados marcados, el actual resaltado, los que faltan atenuados. Solo
- * recibe los estados NO terminales (el cierre — ganado/perdido/descartado —
- * se muestra aparte, no compite por espacio en la barra).
- *
- * Un paso es clickeable si está en `siguientes` del estado actual (venga
- * antes o después en la barra — hay transiciones válidas "hacia atrás",
- * ej. Separación → Negociación). No se puede saltar pasos que no están en
- * `siguientes`: la barra es solo el mapa, la validación real sigue siendo
- * la matriz de transiciones del backend.
+ * Embudo compacto: barra segmentada + iconos (sin 7 etiquetas apretadas).
+ * En móvil permite scroll horizontal suave si hay muchas etapas.
  */
 export default function PipelineStepper({
   estados,
@@ -34,63 +26,90 @@ export default function PipelineStepper({
   disabled: boolean;
   onSelect: (codigo: string) => void;
 }) {
-  const indiceActual = estados.findIndex((e) => e.codigo === estadoActual);
+  const codigos = estados.map((estado) => estado.codigo);
+  const { indice, total, porcentaje } = progresoEmbudo(codigos, estadoActual);
+  const etiquetaActual = estados[indice]?.etiqueta ?? estadoActual;
 
   return (
-    <div className="overflow-x-auto pb-1">
-      <ol className="flex min-w-max items-center">
-        {estados.map((estado, i) => {
-          const esCompletado = indiceActual >= 0 && i < indiceActual;
-          const esActual = i === indiceActual;
-          const esClickeable = !disabled && siguientes.includes(estado.codigo);
+    <div className="space-y-3">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+        <span className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+          Progreso del embudo
+        </span>
+        <span className="text-theme-xs tabular-nums text-gray-400">
+          Etapa {indice + 1}/{total} · {porcentaje}%
+        </span>
+      </div>
 
-          return (
-            <li key={estado.codigo} className="flex items-center">
-              {i > 0 && (
-                <span
-                  className={`h-0.5 w-6 shrink-0 sm:w-10 ${
-                    esCompletado || esActual
-                      ? "bg-brand-400 dark:bg-brand-500"
-                      : "bg-gray-200 dark:bg-gray-700"
+      <div className="-mx-1 overflow-x-auto px-1 pb-1 sm:mx-0 sm:overflow-visible sm:px-0">
+        <div className="min-w-[17.5rem] space-y-2 sm:min-w-0">
+          {/* Barra segmentada */}
+          <div className="flex gap-0.5 sm:gap-1">
+            {estados.map((estado, i) => {
+              const esCompletado = indice >= 0 && i < indice;
+              const esActual = i === indice;
+              return (
+                <div
+                  key={`bar-${estado.codigo}`}
+                  className={`h-1.5 min-w-[1.25rem] flex-1 rounded-full transition-colors duration-300 ${
+                    esCompletado
+                      ? "bg-brand-500"
+                      : esActual
+                        ? "bg-brand-300 dark:bg-brand-400"
+                        : "bg-gray-200 dark:bg-gray-700"
                   }`}
+                  title={estado.etiqueta}
                 />
-              )}
-              <button
-                type="button"
-                disabled={!esClickeable}
-                onClick={() => onSelect(estado.codigo)}
-                title={esClickeable ? `Mover a ${estado.etiqueta}` : estado.etiqueta}
-                className={`group flex flex-col items-center gap-1.5 rounded-lg px-1.5 py-1 ${
-                  esClickeable ? "cursor-pointer" : "cursor-default"
-                }`}
-              >
-                <span
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-theme-xs font-semibold transition ${
-                    esActual
-                      ? "bg-brand-500 text-white ring-4 ring-brand-500/20"
-                      : esCompletado
-                        ? "bg-brand-500 text-white"
-                        : "bg-white text-gray-400 ring-1 ring-inset ring-gray-300 dark:bg-gray-900 dark:text-gray-500 dark:ring-gray-700"
-                  } ${esClickeable ? "group-hover:ring-2 group-hover:ring-brand-400" : ""}`}
+              );
+            })}
+          </div>
+
+          {/* Iconos */}
+          <div className="flex gap-0.5 sm:gap-1">
+            {estados.map((estado, i) => {
+              const esCompletado = indice >= 0 && i < indice;
+              const esActual = i === indice;
+              const esClickeable = !disabled && siguientes.includes(estado.codigo);
+              const icono = iconoEstadoGestion(estado.codigo);
+
+              return (
+                <button
+                  key={estado.codigo}
+                  type="button"
+                  disabled={!esClickeable}
+                  onClick={() => onSelect(estado.codigo)}
+                  title={esClickeable ? `Mover a ${estado.etiqueta}` : estado.etiqueta}
+                  className={`group flex min-w-[2.25rem] flex-1 flex-col items-center gap-1 rounded-lg py-1 transition sm:min-w-0 ${
+                    esClickeable
+                      ? "cursor-pointer hover:bg-brand-50/80 dark:hover:bg-brand-500/5"
+                      : "cursor-default"
+                  } ${esActual ? "bg-brand-50/60 dark:bg-brand-500/10" : ""}`}
                 >
-                  {esCompletado ? <Icon name="mdi:check" size={15} /> : i + 1}
-                </span>
-                <span
-                  className={`max-w-[5.5rem] whitespace-nowrap text-theme-xs ${
-                    esActual
-                      ? "font-semibold text-brand-500"
-                      : esCompletado
-                        ? "font-medium text-gray-700 dark:text-gray-300"
-                        : "text-gray-400 dark:text-gray-500"
-                  } ${esClickeable && !esActual ? "group-hover:text-brand-500" : ""}`}
-                >
-                  {estado.etiqueta}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
+                  <span
+                    className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all sm:h-8 sm:w-8 ${
+                      esActual
+                        ? "bg-brand-500 text-white shadow-md shadow-brand-500/20"
+                        : esCompletado
+                          ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+                          : "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+                    }`}
+                  >
+                    {esCompletado ? (
+                      <Icon name="mdi:check" size={14} />
+                    ) : (
+                      <Icon name={icono} size={15} />
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <p className="text-center text-theme-sm font-medium text-gray-800 dark:text-white/90">
+        {etiquetaActual}
+      </p>
     </div>
   );
 }
