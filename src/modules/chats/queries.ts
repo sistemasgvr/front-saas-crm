@@ -8,6 +8,10 @@ export async function getChats(): Promise<ConversacionResumen[]> {
   return Array.isArray(data) ? data : [];
 }
 
+export async function getChatsUnreadCount(): Promise<{ count: number }> {
+  return apiFetch<{ count: number }>("/whatsapp/chats/unread-count");
+}
+
 export async function getChat(id: string): Promise<ConversacionDetalle> {
   return apiFetch<ConversacionDetalle>(`/whatsapp/chats/${id}`);
 }

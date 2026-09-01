@@ -54,6 +54,7 @@ export const queryKeys = {
   whatsappConexiones: ["whatsapp", "connections"] as const,
   whatsappNumerosDisponibles: ["whatsapp", "connections", "available"] as const,
   whatsappChats: ["whatsapp", "chats"] as const,
+  whatsappChatsUnreadCount: ["whatsapp", "chats", "unread-count"] as const,
   whatsappChat: (id: string) => ["whatsapp", "chats", id] as const,
   whatsappTemplates: ["whatsapp", "templates"] as const,
   whatsappTemplatesAll: ["whatsapp", "templates", "all"] as const,

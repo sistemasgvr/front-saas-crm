@@ -34,6 +34,9 @@ export function useNotificationsSocket(enabled: boolean) {
       toast.info(data.titulo, { description: data.mensaje });
       void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsAll });
       void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
+      // Un mensaje nuevo de WhatsApp también dispara una notificación — de
+      // paso actualiza el badge de "Chats" del sidebar sin abrir otro socket.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChatsUnreadCount });
     });
 
     return () => {
