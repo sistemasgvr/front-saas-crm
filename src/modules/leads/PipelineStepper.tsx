@@ -10,7 +10,7 @@ interface EstadoPipelineMeta {
 }
 
 /**
- * Embudo compacto: barra segmentada + iconos (sin 7 etiquetas apretadas).
+ * Embudo compacto: barra segmentada + iconos con etiqueta visible en cada etapa.
  * En móvil permite scroll horizontal suave si hay muchas etapas.
  */
 export default function PipelineStepper({
@@ -28,7 +28,6 @@ export default function PipelineStepper({
 }) {
   const codigos = estados.map((estado) => estado.codigo);
   const { indice, total, porcentaje } = progresoEmbudo(codigos, estadoActual);
-  const etiquetaActual = estados[indice]?.etiqueta ?? estadoActual;
 
   return (
     <div className="space-y-3">
@@ -42,7 +41,7 @@ export default function PipelineStepper({
       </div>
 
       <div className="-mx-1 overflow-x-auto px-1 pb-1 sm:mx-0 sm:overflow-visible sm:px-0">
-        <div className="min-w-[17.5rem] space-y-2 sm:min-w-0">
+        <div className="min-w-[20rem] space-y-2 sm:min-w-0">
           {/* Barra segmentada */}
           <div className="flex gap-0.5 sm:gap-1">
             {estados.map((estado, i) => {
@@ -64,7 +63,7 @@ export default function PipelineStepper({
             })}
           </div>
 
-          {/* Iconos */}
+          {/* Iconos + etiquetas */}
           <div className="flex gap-0.5 sm:gap-1">
             {estados.map((estado, i) => {
               const esCompletado = indice >= 0 && i < indice;
@@ -79,14 +78,14 @@ export default function PipelineStepper({
                   disabled={!esClickeable}
                   onClick={() => onSelect(estado.codigo)}
                   title={esClickeable ? `Mover a ${estado.etiqueta}` : estado.etiqueta}
-                  className={`group flex min-w-[2.25rem] flex-1 flex-col items-center gap-1 rounded-lg py-1 transition sm:min-w-0 ${
+                  className={`group flex min-w-[3.25rem] flex-1 flex-col items-center gap-1 rounded-lg px-0.5 py-1 transition sm:min-w-0 ${
                     esClickeable
                       ? "cursor-pointer hover:bg-brand-50/80 dark:hover:bg-brand-500/5"
                       : "cursor-default"
                   } ${esActual ? "bg-brand-50/60 dark:bg-brand-500/10" : ""}`}
                 >
                   <span
-                    className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all sm:h-8 sm:w-8 ${
+                    className={`relative flex h-7 w-7 items-center justify-center rounded-lg transition-all sm:h-8 sm:w-8 ${
                       esActual
                         ? "bg-brand-500 text-white shadow-md shadow-brand-500/20"
                         : esCompletado
@@ -100,16 +99,23 @@ export default function PipelineStepper({
                       <Icon name={icono} size={15} />
                     )}
                   </span>
+                  <span
+                    className={`w-full text-center text-[10px] leading-tight sm:text-[11px] ${
+                      esActual
+                        ? "font-semibold text-gray-800 dark:text-white/90"
+                        : esCompletado
+                          ? "font-medium text-brand-600 dark:text-brand-400"
+                          : "text-gray-400 dark:text-gray-500"
+                    }`}
+                  >
+                    <span className="line-clamp-2">{estado.etiqueta}</span>
+                  </span>
                 </button>
               );
             })}
           </div>
         </div>
       </div>
-
-      <p className="text-center text-theme-sm font-medium text-gray-800 dark:text-white/90">
-        {etiquetaActual}
-      </p>
     </div>
   );
 }

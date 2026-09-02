@@ -7,6 +7,7 @@ import AppLogo from "@/src/components/ui/AppLogo";
 import { Icon } from "@/src/components/ui/Icon";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getChatsUnreadCount } from "@/src/modules/chats/queries";
+import { getLeadsNuevosCount } from "@/src/modules/leads/queries";
 import { useSidebar } from "./SidebarContext";
 
 export type NavItem = {
@@ -40,6 +41,15 @@ export default function Sidebar({ items, homeHref, sectionTitle = "Menú" }: Sid
   });
   const chatsNoLeidos = chatsUnreadQuery.data?.count ?? 0;
 
+  const tieneLeads = items.some((item) => item.path === "/leads");
+  const leadsNuevosQuery = useQuery({
+    queryKey: queryKeys.leadsNuevosCount,
+    queryFn: () => getLeadsNuevosCount(),
+    enabled: tieneLeads,
+    refetchInterval: 60_000,
+  });
+  const leadsNuevos = leadsNuevosQuery.data?.count ?? 0;
+
   return (
     <aside
       className={`fixed mt-16 flex flex-col lg:mt-0 top-0 left-0 h-screen px-5 bg-white text-gray-900 border-r border-gray-200 transition-all duration-300 ease-in-out z-50 dark:border-gray-800 dark:bg-gray-900
@@ -71,7 +81,12 @@ export default function Sidebar({ items, homeHref, sectionTitle = "Menú" }: Sid
               <ul className="flex flex-col gap-4">
                 {items.map((item) => {
                   const active = isActive(item.path);
-                  const badge = item.path === "/chats" ? chatsNoLeidos : 0;
+                  const badge =
+                    item.path === "/chats"
+                      ? chatsNoLeidos
+                      : item.path === "/leads"
+                        ? leadsNuevos
+                        : 0;
                   return (
                     <li key={item.path}>
                       <Link

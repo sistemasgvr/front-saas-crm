@@ -113,6 +113,35 @@ export function esEstadoTerminal(estado: string): boolean {
   return (ESTADOS_TERMINALES as readonly string[]).includes(estado);
 }
 
+/** Solo en Nuevo/Contactado se puede reclasificar sin reiniciar el embudo. */
+export function puedeCambiarTipoLead(estadoGestion: string): boolean {
+  return estadoGestion === 'NUEVO' || estadoGestion === 'CONTACTADO';
+}
+
+export function cambioTipoReiniciaEmbudo(estadoGestion: string): boolean {
+  return !puedeCambiarTipoLead(estadoGestion) && !esEstadoTerminal(estadoGestion);
+}
+
+export function tipoLeadClasificado(tipoLead: string | null | undefined): boolean {
+  return tipoLead === 'COMPRA' || tipoLead === 'VENTA' || tipoLead === 'OTRO';
+}
+
+export function requiereClasificarTipo(lead: {
+  estadoGestion: string;
+  tipoLead: string | null | undefined;
+}): boolean {
+  return lead.estadoGestion === 'NUEVO' && !tipoLeadClasificado(lead.tipoLead);
+}
+
+export function esTransicionPermitidaEnMeta(
+  meta: { estados: { codigo: string; siguientes: readonly string[] }[] },
+  estadoActual: string,
+  destino: string,
+): boolean {
+  const estado = meta.estados.find((e) => e.codigo === estadoActual);
+  return estado?.siguientes.includes(destino) ?? false;
+}
+
 /** Icono MDI por etapa — da identidad visual al embudo inmobiliario. */
 const ICONO_POR_ESTADO: Record<string, string> = {
   NUEVO: 'mdi:inbox-arrow-down-outline',

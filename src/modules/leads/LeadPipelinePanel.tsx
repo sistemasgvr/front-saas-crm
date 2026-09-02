@@ -10,6 +10,7 @@ import Select from "@/src/components/form/Select";
 import TextArea from "@/src/components/form/input/TextArea";
 import { Icon } from "@/src/components/ui/Icon";
 import { QueryError } from "@/src/components/ui/PageLoader";
+import { toast } from "sonner";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { gestionarLeadAction } from "./actions";
@@ -17,8 +18,10 @@ import { getHistorialLead, getMetaPipeline } from "./queries";
 import PipelineStepper from "./PipelineStepper";
 import PipelineTimeline from "./PipelineTimeline";
 import TransicionPipelineModal from "./TransicionPipelineModal";
+import Modal from "@/src/components/ui/modal/Modal";
+import HelpTooltip from "@/src/components/ui/HelpTooltip";
 import { camposParaDestino } from "./pipeline-transicion";
-import { esEstadoTerminal, ETIQUETA_TIPO_LEAD, claseEstadoGestion, etiquetaEstadoGestion, iconoEstadoGestion } from "./pipeline";
+import { cambioTipoReiniciaEmbudo, esEstadoTerminal, ETIQUETA_TIPO_LEAD, claseEstadoGestion, etiquetaEstadoGestion, iconoEstadoGestion, requiereClasificarTipo } from "./pipeline";
 import { TIPOS_LEAD_INMOBILIARIA, type EstadoPipelineMeta, type MetaPipeline, type MotivoMeta } from "./types";
 
 const ESTADOS_REAPERTURA = ["CONTACTADO", "CALIFICADO"];
@@ -86,6 +89,7 @@ export default function LeadPipelinePanel({
   const [notaForm, setNotaForm] = useState("");
   const [reabrirAbierto, setReabrirAbierto] = useState(false);
   const [historialExpandido, setHistorialExpandido] = useState(false);
+  const [tipoPendienteConfirmacion, setTipoPendienteConfirmacion] = useState<string | null>(null);
 
   const LIMITE_HISTORIAL = 5;
 
@@ -101,7 +105,7 @@ export default function LeadPipelinePanel({
   const gestionar = useAppMutation({
     mutationFn: (input: Parameters<typeof gestionarLeadAction>[1]) => gestionarLeadAction(leadId, input),
     successMessage: "Gestión actualizada",
-    invalidateKeys: [queryKeys.lead(leadId), queryKeys.leadsAll, queryKeys.leadHistorial(leadId), queryKeys.leadVisitas(leadId)],
+    invalidateKeys: [queryKeys.lead(leadId), queryKeys.leadsAll, queryKeys.leadHistorial(leadId), queryKeys.leadVisitas(leadId), queryKeys.leadPipelineMeta(tipoLead)],
   });
 
   const estadoActualMeta = metaQuery.data?.estados.find(
@@ -121,6 +125,11 @@ export default function LeadPipelinePanel({
   };
 
   const iniciarCambio = (destino: string, opciones?: { reapertura?: boolean }) => {
+    if (requiereClasificarTipo({ estadoGestion, tipoLead })) {
+      toast.error("Clasifica el lead (Compra, Venta u Otro) antes de avanzar desde Nuevo");
+      return;
+    }
+
     if (esEstadoTerminal(destino)) {
       setDestinoCierre(destino);
       setMotivoForm("");
@@ -170,6 +179,23 @@ export default function LeadPipelinePanel({
     );
   };
 
+  const solicitarCambioTipo = (tipo: string) => {
+    if (tipo === tipoLead) return;
+    if (cambioTipoReiniciaEmbudo(estadoGestion)) {
+      setTipoPendienteConfirmacion(tipo);
+      return;
+    }
+    gestionar.mutate({ tipoLead: tipo });
+  };
+
+  const confirmarCambioTipo = () => {
+    if (!tipoPendienteConfirmacion) return;
+    gestionar.mutate(
+      { tipoLead: tipoPendienteConfirmacion },
+      { onSuccess: () => setTipoPendienteConfirmacion(null) },
+    );
+  };
+
   const resultado = RESULTADO_CIERRE[estadoGestion];
 
   const historialCompleto = historialQuery.data ?? [];
@@ -178,29 +204,46 @@ export default function LeadPipelinePanel({
     ? historialCompleto
     : historialCompleto.slice(-LIMITE_HISTORIAL);
 
+  const reiniciaPorTipo = cambioTipoReiniciaEmbudo(estadoGestion);
+
   return (
     <div className="space-y-6 pb-2">
-      {/* Tipo de lead — selector segmentado */}
-      {puedeGestionar ? (
-        <div className="flex w-full flex-wrap gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1 sm:inline-flex sm:w-auto dark:border-gray-700 dark:bg-gray-900/50">
-          {TIPOS_LEAD_INMOBILIARIA.map((tipo) => (
-            <button
-              key={tipo}
-              type="button"
-              disabled={gestionar.isPending}
-              onClick={() => gestionar.mutate({ tipoLead: tipo })}
-              className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-theme-xs font-medium transition sm:flex-none sm:py-1.5 ${
-                tipoLead === tipo
-                  ? "bg-white text-brand-600 shadow-theme-xs dark:bg-gray-800 dark:text-brand-400"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              }`}
-            >
-              <Icon name={ICONO_TIPO_LEAD[tipo] ?? "mdi:circle-outline"} size={16} />
-              {ETIQUETA_TIPO_LEAD[tipo] ?? tipo}
-            </button>
-          ))}
+      {/* Tipo de lead — editable; con confirmación si reinicia el embudo */}
+      {puedeGestionar && !terminal ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {requiereClasificarTipo({ estadoGestion, tipoLead }) && (
+            <p className="w-full text-theme-xs font-medium text-amber-700 dark:text-amber-400">
+              Clasifica el lead (Compra, Venta u Otro) antes de moverlo en el embudo.
+            </p>
+          )}
+          <div className="flex w-full flex-wrap gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1 sm:inline-flex sm:w-auto dark:border-gray-700 dark:bg-gray-900/50">
+            {TIPOS_LEAD_INMOBILIARIA.map((tipo) => (
+              <button
+                key={tipo}
+                type="button"
+                disabled={gestionar.isPending}
+                onClick={() => solicitarCambioTipo(tipo)}
+                className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-theme-xs font-medium transition sm:flex-none sm:py-1.5 ${
+                  tipoLead === tipo
+                    ? "bg-white text-brand-600 shadow-theme-xs dark:bg-gray-800 dark:text-brand-400"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                <Icon name={ICONO_TIPO_LEAD[tipo] ?? "mdi:circle-outline"} size={16} />
+                {ETIQUETA_TIPO_LEAD[tipo] ?? tipo}
+              </button>
+            ))}
+          </div>
+          <HelpTooltip
+            content={
+              reiniciaPorTipo
+                ? "Cambiar el tipo reiniciará el embudo a Contactado y cancelará visitas programadas. El historial se conserva."
+                : "Clasifica el lead antes de avanzar más allá de Contactado."
+            }
+            label="Información sobre el tipo de lead"
+          />
         </div>
-      ) : (
+      ) : !puedeGestionar ? (
         tipoLead && (
           <div className="flex items-center gap-2">
             <span className="text-theme-sm text-gray-500 dark:text-gray-400">Tipo:</span>
@@ -209,7 +252,7 @@ export default function LeadPipelinePanel({
             </Badge>
           </div>
         )
-      )}
+      ) : null}
 
       {/* Estado del pipeline */}
       <div>
@@ -383,6 +426,39 @@ export default function LeadPipelinePanel({
           }}
         />
       )}
+
+      <Modal open={Boolean(tipoPendienteConfirmacion)} onClose={() => setTipoPendienteConfirmacion(null)}>
+        <div className="p-5 sm:p-6">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
+              <Icon name="mdi:swap-horizontal" size={22} />
+            </span>
+            <div>
+              <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
+                Cambiar a {ETIQUETA_TIPO_LEAD[tipoPendienteConfirmacion ?? ""] ?? tipoPendienteConfirmacion}
+              </h3>
+              <p className="mt-2 text-theme-sm text-gray-600 dark:text-gray-300">
+                El lead está en{" "}
+                <span className="font-medium">{etiquetaEstadoGestion(tipoLead, estadoGestion)}</span>.
+                Al cambiar el tipo se hará lo siguiente:
+              </p>
+              <ul className="mt-3 list-disc space-y-1.5 pl-5 text-theme-sm text-gray-600 dark:text-gray-300">
+                <li>El embudo volverá a <span className="font-medium">Contactado</span></li>
+                <li>Se cancelarán las visitas programadas pendientes</li>
+                <li>El historial y calificaciones anteriores se conservan como registro</li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" size="sm" variant="outline" onClick={() => setTipoPendienteConfirmacion(null)}>
+              Cancelar
+            </Button>
+            <Button type="button" size="sm" loading={gestionar.isPending} onClick={confirmarCambioTipo}>
+              Sí, cambiar tipo
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Timeline — colapsable visualmente separado */}
       {historialCompleto.length > 0 && (

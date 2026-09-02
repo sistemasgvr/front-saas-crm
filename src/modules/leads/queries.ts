@@ -62,6 +62,10 @@ export async function getTablero(tipoLead?: string | null, asignado?: string): P
   return apiFetch<TableroResultado>(`/leads/pipeline/tablero${qs ? `?${qs}` : ""}`);
 }
 
+export async function getLeadsNuevosCount(): Promise<{ count: number }> {
+  return apiFetch<{ count: number }>("/leads/nuevos/count");
+}
+
 export async function getAsignables(): Promise<ReferenciaNombrada[]> {
   const data = await apiFetch<ReferenciaNombrada[]>("/leads/asignables");
   return Array.isArray(data) ? data : [];

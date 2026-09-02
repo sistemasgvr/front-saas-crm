@@ -81,6 +81,7 @@ export interface LeadTableroRow {
   nombre: string | null;
   telefono: string | null;
   email: string | null;
+  tipoLead: string | null;
   asignado: ReferenciaNombrada | null;
   estadoGestion: string;
   fechaLead: string | null;
