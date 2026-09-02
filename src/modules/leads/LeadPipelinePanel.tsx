@@ -112,6 +112,7 @@ export default function LeadPipelinePanel({
     (estado: EstadoPipelineMeta) => estado.codigo === estadoGestion,
   );
   const siguientes = estadoActualMeta?.siguientes ?? [];
+  const necesitaClasificar = requiereClasificarTipo({ estadoGestion, tipoLead });
   const terminal = esEstadoTerminal(estadoGestion);
   const estadosNoTerminales =
     metaQuery.data?.estados.filter((estado: EstadoPipelineMeta) => !esEstadoTerminal(estado.codigo)) ?? [];
@@ -125,7 +126,7 @@ export default function LeadPipelinePanel({
   };
 
   const iniciarCambio = (destino: string, opciones?: { reapertura?: boolean }) => {
-    if (requiereClasificarTipo({ estadoGestion, tipoLead })) {
+    if (necesitaClasificar) {
       toast.error("Clasifica el lead (Compra, Venta u Otro) antes de avanzar desde Nuevo");
       return;
     }
@@ -211,7 +212,7 @@ export default function LeadPipelinePanel({
       {/* Tipo de lead — editable; con confirmación si reinicia el embudo */}
       {puedeGestionar && !terminal ? (
         <div className="flex flex-wrap items-center gap-2">
-          {requiereClasificarTipo({ estadoGestion, tipoLead }) && (
+          {necesitaClasificar && (
             <p className="w-full text-theme-xs font-medium text-amber-700 dark:text-amber-400">
               Clasifica el lead (Compra, Venta u Otro) antes de moverlo en el embudo.
             </p>
@@ -336,13 +337,13 @@ export default function LeadPipelinePanel({
               <PipelineStepper
                 estados={estadosNoTerminales}
                 estadoActual={estadoGestion}
-                siguientes={puedeGestionar ? siguientes : []}
+                siguientes={puedeGestionar && !necesitaClasificar ? siguientes : []}
                 disabled={!puedeGestionar || gestionar.isPending}
                 onSelect={iniciarCambio}
               />
             </div>
 
-            {puedeGestionar && siguientes.length > 0 && (
+            {puedeGestionar && !necesitaClasificar && siguientes.length > 0 && (
               <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4 sm:p-5 dark:border-gray-800 dark:bg-white/[0.02]">
                 <p className="mb-3 text-theme-xs font-medium text-gray-500 dark:text-gray-400">
                   Mover a otra etapa
