@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   DndContext,
@@ -23,9 +23,11 @@ import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
 import { toast } from "sonner";
-import { gestionarLeadAction } from "./actions";
+import { iniciarChatDesdeLeadAction } from "@/src/modules/chats/actions";
+import { gestionarLeadAction, tomarLeadAction } from "./actions";
 import { getMetaPipeline, getTablero } from "./queries";
 import ClasificarTipoLeadModal from "./ClasificarTipoLeadModal";
+import LeadDetailModal from "./LeadDetailModal";
 import TransicionPipelineModal from "./TransicionPipelineModal";
 import { camposParaDestino } from "./pipeline-transicion";
 import {
@@ -55,21 +57,72 @@ interface PendingTransition {
 
 interface PendingClassify {
   leadId: string;
-  destino: string;
+  /** Sin destino: solo clasifica el tipo, no intenta mover de etapa (acción
+   * directa desde la card, fuera de un drag). */
+  destino?: string;
+}
+
+function AccionCard({
+  icon,
+  label,
+  variant = "default",
+  loading,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  variant?: "default" | "brand";
+  loading?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={onClick}
+      disabled={loading}
+      title={label}
+      aria-label={label}
+      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition disabled:opacity-50 ${
+        variant === "brand"
+          ? "text-success-600 hover:bg-success-50 dark:text-success-500 dark:hover:bg-success-500/10"
+          : "text-gray-400 hover:bg-gray-100 hover:text-brand-500 dark:hover:bg-white/5"
+      }`}
+    >
+      <Icon name={loading ? "mdi:loading" : icon} size={15} className={loading ? "animate-spin" : ""} />
+    </button>
+  );
 }
 
 function LeadCard({
   lead,
   puedeArrastrar,
   mostrarTipo,
+  whatsappHabilitado,
+  onVerDetalle,
+  onClasificar,
 }: {
   lead: LeadTableroRow;
   puedeArrastrar: boolean;
   mostrarTipo: boolean;
+  whatsappHabilitado: boolean;
+  onVerDetalle: (leadId: string) => void;
+  onClasificar: (leadId: string) => void;
 }) {
+  const router = useRouter();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
     disabled: !puedeArrastrar,
+  });
+  const sinClasificar = !tipoLeadClasificado(lead.tipoLead);
+
+  const tomar = useAppMutation({
+    mutationFn: () => tomarLeadAction(lead.id),
+    successMessage: "Lead tomado",
+    invalidateKeys: [queryKeys.leadsAll],
+  });
+  const iniciarChat = useAppMutation({
+    mutationFn: () => iniciarChatDesdeLeadAction(lead.id),
   });
 
   const style = transform
@@ -89,21 +142,22 @@ function LeadCard({
         <p className="min-w-0 truncate text-theme-sm font-medium text-gray-800 dark:text-white/90">
           {lead.nombre ?? "Sin nombre"}
         </p>
-        <div className="flex shrink-0 items-center gap-1">
-          {mostrarTipo && (
-            <span className="rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-white/10 dark:text-gray-400">
+        {mostrarTipo &&
+          (sinClasificar ? (
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onClasificar(lead.id)}
+              title="Clasificar tipo de lead"
+              className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 hover:bg-amber-100 dark:bg-amber-500/15 dark:text-amber-400 dark:hover:bg-amber-500/25"
+            >
+              Sin clasificar
+            </button>
+          ) : (
+            <span className="shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-white/10 dark:text-gray-400">
               {ETIQUETA_TIPO_LEAD[lead.tipoLead ?? "OTRO"] ?? "Otro"}
             </span>
-          )}
-          <Link
-          href={`/leads/${lead.id}`}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="shrink-0 text-gray-400 hover:text-brand-500"
-          title="Ver lead"
-        >
-          <Icon name="mdi:open-in-new" size={16} />
-        </Link>
-        </div>
+          ))}
       </div>
       {lead.telefono && (
         <p className="mt-1 flex items-center gap-1 text-theme-xs text-gray-500 dark:text-gray-400">
@@ -111,10 +165,37 @@ function LeadCard({
           {lead.telefono}
         </p>
       )}
-      <p className="mt-1.5 flex items-center gap-1 text-theme-xs text-gray-400">
-        <Icon name={lead.asignado ? "mdi:account-check-outline" : "mdi:account-question-outline"} size={13} />
-        {lead.asignado?.nombre ?? "Sin asignar"}
-      </p>
+
+      <div className="mt-2 flex items-center justify-between gap-2 border-t border-gray-50 pt-2 dark:border-gray-800">
+        <p className="flex min-w-0 items-center gap-1 text-theme-xs text-gray-400">
+          <Icon name={lead.asignado ? "mdi:account-check-outline" : "mdi:account-question-outline"} size={13} className="shrink-0" />
+          <span className="truncate">{lead.asignado?.nombre ?? "Sin asignar"}</span>
+        </p>
+        <div className="flex shrink-0 items-center gap-0.5">
+          {!lead.asignado && (
+            <AccionCard
+              icon="mdi:hand-front-left-outline"
+              label="Tomar lead"
+              variant="brand"
+              loading={tomar.isPending}
+              onClick={() => tomar.mutate()}
+            />
+          )}
+          {whatsappHabilitado && lead.telefono && (
+            <AccionCard
+              icon="mdi:whatsapp"
+              label="Iniciar chat"
+              loading={iniciarChat.isPending}
+              onClick={() =>
+                iniciarChat.mutate(undefined, {
+                  onSuccess: (resultado) => router.push(`/chats/${resultado.conversacionId}`),
+                })
+              }
+            />
+          )}
+          <AccionCard icon="mdi:eye-outline" label="Ver detalle" onClick={() => onVerDetalle(lead.id)} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -126,6 +207,9 @@ function KanbanColumn({
   usuarioId,
   esAdmin,
   mostrarTipo,
+  whatsappHabilitado,
+  onVerDetalle,
+  onClasificar,
 }: {
   codigo: string;
   etiqueta: string;
@@ -133,6 +217,9 @@ function KanbanColumn({
   usuarioId: string;
   esAdmin: boolean;
   mostrarTipo: boolean;
+  whatsappHabilitado: boolean;
+  onVerDetalle: (leadId: string) => void;
+  onClasificar: (leadId: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: codigo });
 
@@ -152,7 +239,10 @@ function KanbanColumn({
           {leads.length}
         </span>
       </div>
-      <div className="flex-1 space-y-2 overflow-y-auto p-2" style={{ maxHeight: "calc(100vh - 320px)", minHeight: 120 }}>
+      <div
+        className="thin-scrollbar flex-1 space-y-2 overflow-y-auto p-2"
+        style={{ maxHeight: "calc(100vh - 320px)", minHeight: 120 }}
+      >
         {leads.length === 0 && (
           <p className="px-2 py-6 text-center text-theme-xs text-gray-400">Sin leads</p>
         )}
@@ -162,6 +252,9 @@ function KanbanColumn({
             lead={lead}
             puedeArrastrar={esAdmin || lead.asignado?.id === usuarioId}
             mostrarTipo={mostrarTipo}
+            whatsappHabilitado={whatsappHabilitado}
+            onVerDetalle={onVerDetalle}
+            onClasificar={onClasificar}
           />
         ))}
       </div>
@@ -169,7 +262,15 @@ function KanbanColumn({
   );
 }
 
-export default function LeadsKanbanView({ rol, usuarioId }: { rol: Rol; usuarioId: string }) {
+export default function LeadsKanbanView({
+  rol,
+  usuarioId,
+  whatsappHabilitado,
+}: {
+  rol: Rol;
+  usuarioId: string;
+  whatsappHabilitado: boolean;
+}) {
   const esAdmin = canManageOrganization(rol);
   const [tipoFiltro, setTipoFiltro] = useState<string | null>(null);
   const [pendingClose, setPendingClose] = useState<PendingClose | null>(null);
@@ -177,6 +278,7 @@ export default function LeadsKanbanView({ rol, usuarioId }: { rol: Rol; usuarioI
   const [pendingClassify, setPendingClassify] = useState<PendingClassify | null>(null);
   const [motivoForm, setMotivoForm] = useState("");
   const [notaForm, setNotaForm] = useState("");
+  const [leadDetalleId, setLeadDetalleId] = useState<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -218,7 +320,9 @@ export default function LeadsKanbanView({ rol, usuarioId }: { rol: Rol; usuarioI
       ...input
     }: {
       leadId: string;
-      estadoGestion: string;
+      /** Opcional: al clasificar sin mover de etapa (ver confirmarClasificacion)
+       * se manda solo tipoLead, sin estadoGestion. */
+      estadoGestion?: string;
       tipoLead?: string;
       motivoCierre?: string;
       notaCierre?: string;
@@ -296,6 +400,14 @@ export default function LeadsKanbanView({ rol, usuarioId }: { rol: Rol; usuarioI
     if (!lead) return;
     const destino = pendingClassify.destino;
     setPendingClassify(null);
+    if (!destino) {
+      // Clasificar directo desde la card, sin mandar estadoGestion — el
+      // backend interpreta "solo cambió el tipo" y conserva el estado
+      // actual (estadoAlCambiarTipo), en vez de intentar validarlo como una
+      // transición X→X (que fallaría, ninguna transición se apunta a sí misma).
+      gestionar.mutate({ leadId: lead.id, tipoLead: tipo });
+      return;
+    }
     procesarAvance({ ...lead, tipoLead: tipo }, destino, tipo);
   };
 
@@ -371,7 +483,7 @@ export default function LeadsKanbanView({ rol, usuarioId }: { rol: Rol; usuarioI
         />
       ) : (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div className="flex gap-3 overflow-x-auto pb-2">
+          <div className="thin-scrollbar flex gap-3 overflow-x-auto pb-2">
             {tableroQuery.data.columnas.map((columna: ColumnaTablero) => (
               <KanbanColumn
                 key={columna.codigo}
@@ -381,6 +493,9 @@ export default function LeadsKanbanView({ rol, usuarioId }: { rol: Rol; usuarioI
                 usuarioId={usuarioId}
                 esAdmin={esAdmin}
                 mostrarTipo={tipoFiltro === null}
+                whatsappHabilitado={whatsappHabilitado}
+                onVerDetalle={setLeadDetalleId}
+                onClasificar={(leadId) => setPendingClassify({ leadId })}
               />
             ))}
           </div>
@@ -448,13 +563,22 @@ export default function LeadsKanbanView({ rol, usuarioId }: { rol: Rol; usuarioI
         open={Boolean(pendingClassify)}
         nombreLead={pendingClassify ? leadPorId.get(pendingClassify.leadId)?.nombre : undefined}
         destinoEtiqueta={
-          pendingClassify
+          pendingClassify?.destino
             ? etiquetaEstadoGestion(tipoFiltro, pendingClassify.destino)
             : undefined
         }
         loading={gestionar.isPending}
         onElegir={confirmarClasificacion}
         onCancelar={() => setPendingClassify(null)}
+      />
+
+      <LeadDetailModal
+        leadId={leadDetalleId}
+        open={Boolean(leadDetalleId)}
+        onClose={() => setLeadDetalleId(null)}
+        rol={rol}
+        usuarioId={usuarioId}
+        whatsappHabilitado={whatsappHabilitado}
       />
     </div>
   );

@@ -8,6 +8,10 @@ interface ModalProps {
   open: boolean;
   onClose: () => void;
   children: ReactNode;
+  /** Franja fija arriba (título, avatar, etc.) — no se mueve al scrollear el contenido. */
+  header?: ReactNode;
+  /** Franja fija abajo (botones de acción) — no se mueve al scrollear el contenido. */
+  footer?: ReactNode;
   className?: string;
   showCloseButton?: boolean;
 }
@@ -15,11 +19,19 @@ interface ModalProps {
 /**
  * Overlay a nivel viewport — z-99999 para quedar sobre sidebar/header (z-50 / z-99999).
  * Renderiza en document.body vía portal.
+ *
+ * Layout fijo en 3 franjas: `header` y `footer` (opcionales) quedan quietos,
+ * solo `children` scrollea — así un modal con contenido largo (formularios,
+ * paneles completos) nunca esconde el título ni los botones de acción.
+ * Quien llama solo llena children (y header/footer si los necesita); no
+ * arma su propio contenedor de scroll.
  */
 export default function Modal({
   open,
   onClose,
   children,
+  header,
+  footer,
   className = "",
   showCloseButton = true,
 }: ModalProps) {
@@ -55,7 +67,7 @@ export default function Modal({
       />
       <div
         ref={panelRef}
-        className={`relative z-10 w-full max-w-lg max-h-[min(90vh,720px)] overflow-y-auto rounded-t-2xl border border-gray-200 bg-white shadow-theme-lg sm:rounded-2xl dark:border-gray-800 dark:bg-gray-900 ${className}`}
+        className={`relative z-10 flex max-h-[min(90vh,720px)] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-white shadow-theme-lg sm:rounded-2xl dark:border-gray-800 dark:bg-gray-900 ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {showCloseButton && (
@@ -68,7 +80,16 @@ export default function Modal({
             <Icon name="mdi:close" size={20} />
           </button>
         )}
-        {children}
+
+        {header && (
+          <div className="shrink-0 border-b border-gray-100 dark:border-gray-800">{header}</div>
+        )}
+
+        <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto">{children}</div>
+
+        {footer && (
+          <div className="shrink-0 border-t border-gray-100 dark:border-gray-800">{footer}</div>
+        )}
       </div>
     </div>,
     document.body,

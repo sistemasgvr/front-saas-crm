@@ -126,11 +126,18 @@ export function tipoLeadClasificado(tipoLead: string | null | undefined): boolea
   return tipoLead === 'COMPRA' || tipoLead === 'VENTA' || tipoLead === 'OTRO';
 }
 
+/**
+ * Antes solo pedía clasificar en NUEVO — un lead que ya avanzó a Contactado
+ * (u otro estado donde puedeCambiarTipoLead sigue siendo true) sin tipo
+ * definido no mostraba ningún aviso, y al intentar arrastrarlo más lejos
+ * tiraba un error genérico de "transición inválida" en vez de explicar qué
+ * falta. Ahora pide clasificar en cualquier estado no terminal mientras
+ * siga sin tipoLead, sea NUEVO o CONTACTADO. */
 export function requiereClasificarTipo(lead: {
   estadoGestion: string;
   tipoLead: string | null | undefined;
 }): boolean {
-  return lead.estadoGestion === 'NUEVO' && !tipoLeadClasificado(lead.tipoLead);
+  return !esEstadoTerminal(lead.estadoGestion) && !tipoLeadClasificado(lead.tipoLead);
 }
 
 export function esTransicionPermitidaEnMeta(

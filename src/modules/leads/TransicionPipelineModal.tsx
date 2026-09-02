@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import Button from "@/src/components/ui/button/Button";
 import Modal from "@/src/components/ui/modal/Modal";
 import Select from "@/src/components/form/Select";
@@ -33,11 +33,11 @@ export default function TransicionPipelineModal({
   onCancelar: () => void;
 }) {
   const baseId = useId();
+  // Sin useEffect de reset: el padre siempre desmonta este modal al cerrar
+  // (render condicional `destinoTransicion && <TransicionPipelineModal/>`),
+  // así que cada apertura ya es un mount fresco con `valores` vacío — no
+  // hace falta sincronizar nada cuando cambian `titulo`/`campos`.
   const [valores, setValores] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    setValores({});
-  }, [titulo, campos]);
 
   const setValor = (codigo: string, valor: string) => {
     setValores((prev) => ({ ...prev, [codigo]: valor }));
@@ -51,14 +51,38 @@ export default function TransicionPipelineModal({
   };
 
   return (
-    <Modal open={open} onClose={onCancelar}>
-      <div className="p-5 pt-6 sm:p-6">
-        <p className="pr-10 text-theme-sm font-semibold text-gray-800 dark:text-white/90">{titulo}</p>
-        {descripcion ? (
-          <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">{descripcion}</p>
-        ) : null}
-
-        <div className="mt-4 space-y-3">
+    <Modal
+      open={open}
+      onClose={onCancelar}
+      header={
+        <div className="p-5 pb-4 pr-14 sm:p-6 sm:pb-4 sm:pr-16">
+          <p className="text-theme-sm font-semibold text-gray-800 dark:text-white/90">{titulo}</p>
+          {descripcion ? (
+            <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">{descripcion}</p>
+          ) : null}
+        </div>
+      }
+      footer={
+        <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:p-5">
+          <Button type="button" size="sm" variant="outline" className="w-full sm:w-auto" onClick={onCancelar}>
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="primary"
+            className="w-full sm:w-auto"
+            loading={loading}
+            disabled={!puedeConfirmar}
+            onClick={handleConfirmar}
+          >
+            Confirmar
+          </Button>
+        </div>
+      }
+    >
+      <div className="p-5 pt-4 sm:p-6 sm:pt-4">
+        <div className="space-y-3">
           {campos.map((campo, index) => {
             const inputId = `${baseId}-${campo.codigo}-${index}`;
             if (campo.tipo === "textarea" || campo.codigo === "notaTransicion") {
@@ -136,23 +160,6 @@ export default function TransicionPipelineModal({
         {!puedeConfirmar && (
           <p className="mt-3 text-theme-xs text-gray-400">Completa los campos obligatorios (*) para continuar.</p>
         )}
-
-        <div className="mt-5 flex flex-col-reverse gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:justify-end dark:border-gray-800">
-          <Button type="button" size="sm" variant="outline" className="w-full sm:w-auto" onClick={onCancelar}>
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="primary"
-            className="w-full sm:w-auto"
-            loading={loading}
-            disabled={!puedeConfirmar}
-            onClick={handleConfirmar}
-          >
-            Confirmar
-          </Button>
-        </div>
       </div>
     </Modal>
   );

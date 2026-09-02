@@ -12,5 +12,11 @@ export default async function LeadsTableroPage() {
     redirect(getDefaultClientRoute(me));
   }
 
-  return <LeadsKanbanView rol={me.rol} usuarioId={me.usuario.id} />;
+  return (
+    <LeadsKanbanView
+      rol={me.rol}
+      usuarioId={me.usuario.id}
+      whatsappHabilitado={isModuloHabilitado(me.modulos, "WHATSAPP")}
+    />
+  );
 }
