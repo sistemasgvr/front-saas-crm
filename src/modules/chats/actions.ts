@@ -26,6 +26,18 @@ export async function enviarMensajeAction(
   }
 }
 
+/** emoji vacío ("") saca la reacción que ya estuviera puesta — mismo endpoint para poner y sacar. */
+export async function enviarReaccionAction(conversacionId: string, mensajeId: string, emoji: string): Promise<void> {
+  try {
+    await apiFetch(`/whatsapp/chats/${conversacionId}/messages/${mensajeId}/reaction`, {
+      method: "POST",
+      body: JSON.stringify({ emoji }),
+    });
+  } catch (error) {
+    fail(error, "No se pudo reaccionar al mensaje");
+  }
+}
+
 /** Sube y envía un archivo — timeout más alto que el default (documentos
  * grandes, hasta 100MB según Meta, pueden tardar en subir con conexiones lentas). */
 export async function enviarMediaAction(conversacionId: string, formData: FormData): Promise<void> {

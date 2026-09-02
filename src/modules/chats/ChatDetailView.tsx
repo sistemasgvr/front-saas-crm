@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import EmojiPicker, { Theme as TemaEmojiPicker, type EmojiClickData } from "emoji-picker-react";
 import Avatar from "@/src/components/ui/avatar/Avatar";
 import Button from "@/src/components/ui/button/Button";
 import Input from "@/src/components/form/input/InputField";
@@ -12,7 +14,8 @@ import { Spinner } from "@/src/components/ui/Spinner";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { enviarMensajeAction, enviarMediaAction } from "./actions";
+import { useTheme } from "@/src/context/ThemeContext";
+import { enviarMensajeAction, enviarMediaAction, enviarReaccionAction } from "./actions";
 import { clearBorrador, getBorrador, setBorrador } from "./chat-borradores";
 import { getChat, getTemplates } from "./queries";
 import type { ConversacionDetalle, Mensaje, PlantillaWhatsApp } from "./types";
@@ -142,16 +145,168 @@ function ContenidoMedia({ mensaje, conversacionId }: { mensaje: Mensaje; convers
   );
 }
 
+// Mismo puñado de 6 que ofrece WhatsApp real al mantener apretado un mensaje.
+const EMOJIS_RAPIDOS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+const ANCHO_PICKER = 320;
+const ALTO_PICKER = 380;
+const ANCHO_BARRA_RAPIDA = EMOJIS_RAPIDOS.length * 36 + 40;
+const ALTO_BARRA_RAPIDA = 44;
+const MARGEN_VIEWPORT = 8;
+
+/**
+ * Portal a document.body, posicionado con coordenadas reales de pantalla
+ * (no CSS `absolute` anidado) — la lista de mensajes tiene su propio scroll
+ * (`overflow-y-auto`), así que cualquier popover posicionado adentro se
+ * recorta ahí sin importar el z-index. Con un portal + `position: fixed`
+ * esto no pasa, sea cual sea la fila donde esté el mensaje.
+ *
+ * La barra rápida de 6 emojis es propia (no de la librería) — la propia
+ * barra "reactions" de emoji-picker-react no está pintando sus botones acá
+ * (probablemente un choque con los estilos globales del proyecto), así que
+ * se arma a mano y la librería solo se usa para el picker completo detrás
+ * del "+", su modo de uso más simple y más probado.
+ */
+function SelectorReacciones({
+  anchorRef,
+  onElegir,
+  onCerrar,
+}: {
+  anchorRef: React.RefObject<HTMLElement | null>;
+  onElegir: (emoji: string) => void;
+  onCerrar: () => void;
+}) {
+  const [pickerCompleto, setPickerCompleto] = useState(false);
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
+
+  // useLayoutEffect, no useEffect — corre ANTES de pintar. Con useEffect el
+  // primer pintado usaba la posición calculada para el tamaño anterior
+  // (barra chica) y recién después se recalculaba para el picker completo,
+  // provocando un salto visible al abrir "+". Así se calcula antes de que
+  // el usuario vea nada.
+  useLayoutEffect(() => {
+    const anchor = anchorRef.current;
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    const alto = pickerCompleto ? ALTO_PICKER : ALTO_BARRA_RAPIDA;
+    const ancho = pickerCompleto ? ANCHO_PICKER : ANCHO_BARRA_RAPIDA;
+    const hayEspacioArriba = rect.top - alto - MARGEN_VIEWPORT > 0;
+    const left = Math.min(
+      Math.max(rect.left, MARGEN_VIEWPORT),
+      window.innerWidth - ancho - MARGEN_VIEWPORT,
+    );
+    setPos(
+      hayEspacioArriba
+        ? { bottom: window.innerHeight - rect.top + MARGEN_VIEWPORT, left }
+        : { top: rect.bottom + MARGEN_VIEWPORT, left },
+    );
+  }, [anchorRef, pickerCompleto]);
+
+  useEffect(() => {
+    function onClickFuera(e: MouseEvent) {
+      const objetivo = e.target as Node;
+      if (panelRef.current?.contains(objetivo)) return;
+      if (anchorRef.current?.contains(objetivo)) return;
+      onCerrar();
+    }
+    function onScroll(e: Event) {
+      // Con capture:true este handler también ve el scroll INTERNO del
+      // propio picker (navegar sus categorías de emoji) — eso no debe
+      // cerrarlo, solo el scroll de la lista de mensajes por afuera.
+      const objetivo = e.target as Node;
+      if (panelRef.current?.contains(objetivo)) return;
+      onCerrar();
+    }
+    // capture:true — la lista de mensajes puede scrollear el mensaje ancla
+    // lejos de donde calculamos la posición; más simple cerrar que
+    // perseguirlo con un recálculo en cada scroll.
+    document.addEventListener("mousedown", onClickFuera);
+    document.addEventListener("scroll", onScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", onClickFuera);
+      document.removeEventListener("scroll", onScroll, true);
+    };
+  }, [onCerrar, anchorRef]);
+
+  if (!pos || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div ref={panelRef} className="fixed z-99999" style={{ top: pos.top, bottom: pos.bottom, left: pos.left }}>
+      {pickerCompleto ? (
+        <EmojiPicker
+          theme={theme === "dark" ? TemaEmojiPicker.DARK : TemaEmojiPicker.LIGHT}
+          onEmojiClick={(data: EmojiClickData) => onElegir(data.emoji)}
+          autoFocusSearch={false}
+          searchPlaceholder="Busca un emoji"
+          width={ANCHO_PICKER}
+          height={ALTO_PICKER}
+        />
+      ) : (
+        <div className="flex items-center gap-0.5 rounded-full border border-gray-200 bg-white p-1 shadow-theme-lg dark:border-gray-700 dark:bg-gray-800">
+          {EMOJIS_RAPIDOS.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => onElegir(emoji)}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-lg transition hover:scale-125 hover:bg-gray-100 dark:hover:bg-white/10"
+            >
+              {emoji}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setPickerCompleto(true)}
+            title="Más emojis"
+            aria-label="Ver más emojis"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-white/10"
+          >
+            <Icon name="mdi:plus" size={18} />
+          </button>
+        </div>
+      )}
+    </div>,
+    document.body,
+  );
+}
+
 function Burbuja({ mensaje, conversacionId }: { mensaje: Mensaje; conversacionId: string }) {
+  const [selectorAbierto, setSelectorAbierto] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const esSaliente = mensaje.direccion === "saliente";
+  const tieneReaccion = Boolean(mensaje.reaccionAgente || mensaje.reaccionCliente);
+
+  const reaccionar = useAppMutation({
+    mutationFn: (emoji: string) => enviarReaccionAction(conversacionId, mensaje.id, emoji),
+    invalidateKeys: [queryKeys.whatsappChat(conversacionId)],
+    // Reaccionar es chiquito e instantáneo — tapar toda la pantalla con el
+    // overlay de "Procesando…" se siente exagerado. El loading vive local,
+    // en la propia burbujita de la reacción (más abajo).
+    silent: true,
+  });
+
+  const trigger = (
+    <button
+      ref={triggerRef}
+      type="button"
+      onClick={() => setSelectorAbierto((v) => !v)}
+      className="flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-full text-gray-400 opacity-0 transition hover:bg-gray-100 group-hover:opacity-100 dark:text-gray-500 dark:hover:bg-white/10"
+      aria-label="Reaccionar"
+      title="Reaccionar"
+    >
+      <Icon name="mdi:emoticon-outline" size={17} />
+    </button>
+  );
+
   return (
-    <div className={`flex ${esSaliente ? "justify-end" : "justify-start"}`}>
+    <div className={`group flex items-center gap-1 ${esSaliente ? "justify-end" : "justify-start"}`}>
+      {esSaliente && trigger}
       <div
-        className={`max-w-[75%] space-y-1.5 rounded-2xl px-4 py-2.5 text-theme-sm ${
+        className={`relative max-w-[75%] space-y-1.5 rounded-2xl px-4 py-2.5 text-theme-sm ${
           esSaliente
             ? "bg-brand-500 text-white"
             : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
-        }`}
+        } ${tieneReaccion || reaccionar.isPending ? "mb-2.5" : ""}`}
       >
         {mensaje.tipo === "template" && mensaje.plantillaNombre ? (
           <p className="flex items-center gap-1 text-theme-xs opacity-80">
@@ -180,7 +335,49 @@ function Burbuja({ mensaje, conversacionId }: { mensaje: Mensaje; conversacionId
               );
             })()}
         </div>
+
+        {(tieneReaccion || reaccionar.isPending) && (
+          <div className={`absolute -bottom-2.5 flex items-center gap-0.5 ${esSaliente ? "right-2" : "left-2"}`}>
+            {mensaje.reaccionCliente && (
+              <span className="flex h-5 items-center rounded-full border border-gray-100 bg-white px-1 text-xs shadow-theme-xs dark:border-gray-700 dark:bg-gray-900">
+                {mensaje.reaccionCliente}
+              </span>
+            )}
+            {reaccionar.isPending ? (
+              // Loading local, solo acá — nada de tapar la pantalla entera
+              // por reaccionar a un mensaje.
+              <span className="flex h-5 w-5 items-center justify-center rounded-full border border-gray-100 bg-white shadow-theme-xs dark:border-gray-700 dark:bg-gray-900">
+                <Spinner size={11} />
+              </span>
+            ) : (
+              mensaje.reaccionAgente && (
+                <button
+                  type="button"
+                  onClick={() => reaccionar.mutate("")}
+                  title="Sacar tu reacción"
+                  className="flex h-5 items-center rounded-full border border-gray-100 bg-white px-1 text-xs shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+                >
+                  {mensaje.reaccionAgente}
+                </button>
+              )
+            )}
+          </div>
+        )}
+
+        {selectorAbierto && (
+          <SelectorReacciones
+            anchorRef={triggerRef}
+            onElegir={(emoji) => {
+              // Elegir el mismo emoji que ya tenías puesto lo saca — mismo
+              // criterio que tocar de nuevo la burbujita de la reacción.
+              reaccionar.mutate(emoji === mensaje.reaccionAgente ? "" : emoji);
+              setSelectorAbierto(false);
+            }}
+            onCerrar={() => setSelectorAbierto(false)}
+          />
+        )}
       </div>
+      {!esSaliente && trigger}
     </div>
   );
 }

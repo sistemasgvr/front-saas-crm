@@ -4,7 +4,12 @@ import { useIsMutating } from "@tanstack/react-query";
 import { Spinner } from "@/src/components/ui/Spinner";
 
 export function ActionLoader() {
-  const mutating = useIsMutating();
+  // Cuenta todas las mutations EXCEPTO las marcadas silent:true (ver
+  // useAppMutation) — acciones chiquitas que no deben tapar la pantalla
+  // entera, tienen su propio loading local.
+  const mutating = useIsMutating({
+    predicate: (mutation) => mutation.options.meta?.silent !== true,
+  });
 
   if (mutating === 0) return null;
 

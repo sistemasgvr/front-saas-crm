@@ -30,6 +30,10 @@ export interface Mensaje {
   mediaCaption: string | null;
   mediaEsVoz: boolean | null;
   mediaTamanoBytes: number | null;
+  /** Emoji que pusimos nosotros sobre este mensaje — null si ninguno. */
+  reaccionAgente: string | null;
+  /** Emoji que puso el contacto sobre este mensaje — null si ninguno. */
+  reaccionCliente: string | null;
 }
 
 export interface ConversacionDetalle extends ConversacionResumen {

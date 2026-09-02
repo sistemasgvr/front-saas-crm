@@ -10,6 +10,12 @@ interface UseAppMutationOptions<TData, TVariables> {
   invalidateKeys?: QueryKey[];
   redirectTo?: string;
   refresh?: boolean;
+  /** true = no dispara el overlay global de "Procesando…" (ver
+   * ActionLoader). Para acciones chiquitas e instantáneas (reaccionar a un
+   * mensaje, tildar un checkbox) donde tapar toda la pantalla se siente
+   * exagerado — el propio componente que llama se encarga de mostrar su
+   * loading local (un spinner en el botón, por ejemplo). */
+  silent?: boolean;
 }
 
 export function useAppMutation<TData, TVariables = void>(options: UseAppMutationOptions<TData, TVariables>) {
@@ -18,6 +24,7 @@ export function useAppMutation<TData, TVariables = void>(options: UseAppMutation
 
   return useMutation({
     mutationFn: options.mutationFn,
+    meta: { silent: options.silent ?? false },
     onSuccess: async () => {
       if (options.successMessage) toast.success(options.successMessage);
       if (options.invalidateKeys?.length) {
