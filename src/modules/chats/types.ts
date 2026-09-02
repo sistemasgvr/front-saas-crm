@@ -34,6 +34,18 @@ export interface Mensaje {
   reaccionAgente: string | null;
   /** Emoji que puso el contacto sobre este mensaje — null si ninguno. */
   reaccionCliente: string | null;
+  /** Mensaje citado (respuesta contextual) — null si este mensaje no responde a nada. */
+  respondeA: MensajeCitado | null;
+}
+
+/** Vista chica del mensaje citado — lo justo para pintar la burbujita de cita. */
+export interface MensajeCitado {
+  id: string;
+  direccion: "entrante" | "saliente";
+  tipo: string;
+  texto: string | null;
+  tieneMedia: boolean;
+  mediaCaption: string | null;
 }
 
 export interface ConversacionDetalle extends ConversacionResumen {

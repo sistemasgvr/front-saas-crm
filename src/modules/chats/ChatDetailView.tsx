@@ -105,6 +105,30 @@ function urlMedia(conversacionId: string, mensajeId: string) {
   return `/api/whatsapp/media/${conversacionId}/${mensajeId}`;
 }
 
+const ETIQUETA_TIPO_MEDIA: Record<string, string> = {
+  image: "📷 Foto",
+  video: "🎥 Video",
+  audio: "🎵 Audio",
+  document: "📄 Documento",
+  sticker: "Sticker",
+};
+
+/** Texto corto para la burbujita de cita — mismo criterio que WhatsApp: el
+ * texto si lo tiene, si no el caption del archivo, si no una etiqueta según
+ * el tipo ("📷 Foto"…). Sirve tanto para un Mensaje completo como para el
+ * MensajeCitado chico que ya viene resuelto del backend. */
+function resumenCitado(citado: {
+  texto: string | null;
+  mediaCaption: string | null;
+  tieneMedia: boolean;
+  tipo: string;
+}): string {
+  if (citado.texto) return citado.texto;
+  if (citado.mediaCaption) return citado.mediaCaption;
+  if (citado.tieneMedia) return ETIQUETA_TIPO_MEDIA[citado.tipo] ?? "📎 Archivo adjunto";
+  return "(sin texto)";
+}
+
 function ContenidoMedia({ mensaje, conversacionId }: { mensaje: Mensaje; conversacionId: string }) {
   if (!mensaje.tieneMedia) return null;
   const src = urlMedia(conversacionId, mensaje.id);
@@ -270,9 +294,99 @@ function SelectorReacciones({
   );
 }
 
-function Burbuja({ mensaje, conversacionId }: { mensaje: Mensaje; conversacionId: string }) {
+const ANCHO_MENU_ACCIONES = 170;
+const ALTO_MENU_ACCIONES = 42;
+
+/** El desplegable de "más acciones" del hover — mismo mecanismo de posición
+ * (portal + coordenadas reales) que SelectorReacciones, mismo motivo: la
+ * lista de mensajes tiene su propio scroll y recorta cualquier popover
+ * posicionado con `absolute` adentro. Por ahora solo trae "Responder" — el
+ * resto del menú real de WhatsApp (Copiar, Reenviar, Fijar…) queda para
+ * después, a propósito. */
+function MenuAcciones({
+  anchorRef,
+  onResponder,
+  onCerrar,
+}: {
+  anchorRef: React.RefObject<HTMLElement | null>;
+  onResponder: () => void;
+  onCerrar: () => void;
+}) {
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const anchor = anchorRef.current;
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    const hayEspacioArriba = rect.top - ALTO_MENU_ACCIONES - MARGEN_VIEWPORT > 0;
+    const left = Math.min(
+      Math.max(rect.right - ANCHO_MENU_ACCIONES, MARGEN_VIEWPORT),
+      window.innerWidth - ANCHO_MENU_ACCIONES - MARGEN_VIEWPORT,
+    );
+    setPos(
+      hayEspacioArriba
+        ? { bottom: window.innerHeight - rect.top + MARGEN_VIEWPORT, left }
+        : { top: rect.bottom + MARGEN_VIEWPORT, left },
+    );
+  }, [anchorRef]);
+
+  useEffect(() => {
+    function onClickFuera(e: MouseEvent) {
+      const objetivo = e.target as Node;
+      if (panelRef.current?.contains(objetivo)) return;
+      if (anchorRef.current?.contains(objetivo)) return;
+      onCerrar();
+    }
+    function onScroll(e: Event) {
+      const objetivo = e.target as Node;
+      if (panelRef.current?.contains(objetivo)) return;
+      onCerrar();
+    }
+    document.addEventListener("mousedown", onClickFuera);
+    document.addEventListener("scroll", onScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", onClickFuera);
+      document.removeEventListener("scroll", onScroll, true);
+    };
+  }, [onCerrar, anchorRef]);
+
+  if (!pos || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      ref={panelRef}
+      className="fixed z-99999 w-[170px] overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-theme-lg dark:border-gray-700 dark:bg-gray-800"
+      style={{ top: pos.top, bottom: pos.bottom, left: pos.left }}
+    >
+      <button
+        type="button"
+        onClick={onResponder}
+        className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-theme-sm text-gray-700 transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/5"
+      >
+        <Icon name="mdi:reply-outline" size={17} />
+        Responder
+      </button>
+    </div>,
+    document.body,
+  );
+}
+
+function Burbuja({
+  mensaje,
+  conversacionId,
+  nombreContacto,
+  onResponder,
+}: {
+  mensaje: Mensaje;
+  conversacionId: string;
+  nombreContacto: string;
+  onResponder: (mensaje: Mensaje) => void;
+}) {
   const [selectorAbierto, setSelectorAbierto] = useState(false);
+  const [menuAbierto, setMenuAbierto] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const chevronRef = useRef<HTMLButtonElement>(null);
   const esSaliente = mensaje.direccion === "saliente";
   const tieneReaccion = Boolean(mensaje.reaccionAgente || mensaje.reaccionCliente);
 
@@ -298,9 +412,40 @@ function Burbuja({ mensaje, conversacionId }: { mensaje: Mensaje; conversacionId
     </button>
   );
 
+  const chevron = (
+    <button
+      ref={chevronRef}
+      type="button"
+      onClick={() => setMenuAbierto((v) => !v)}
+      className="flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-full text-gray-400 opacity-0 transition hover:bg-gray-100 group-hover:opacity-100 dark:text-gray-500 dark:hover:bg-white/10"
+      aria-label="Más acciones"
+      title="Más acciones"
+    >
+      <Icon name="mdi:chevron-down" size={17} />
+    </button>
+  );
+
+  // Mismo orden que WhatsApp real: el desplegable pegado al lado de afuera
+  // de la burbuja, la carita de reaccionar entre el desplegable y la burbuja.
+  const grupoAcciones = (
+    <div className="flex shrink-0 items-center gap-0.5">
+      {esSaliente ? (
+        <>
+          {chevron}
+          {trigger}
+        </>
+      ) : (
+        <>
+          {trigger}
+          {chevron}
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div className={`group flex items-center gap-1 ${esSaliente ? "justify-end" : "justify-start"}`}>
-      {esSaliente && trigger}
+      {esSaliente && grupoAcciones}
       <div
         className={`relative max-w-[75%] space-y-1.5 rounded-2xl px-4 py-2.5 text-theme-sm ${
           esSaliente
@@ -314,6 +459,20 @@ function Burbuja({ mensaje, conversacionId }: { mensaje: Mensaje; conversacionId
             Plantilla: {mensaje.plantillaNombre}
           </p>
         ) : null}
+        {mensaje.respondeA && (
+          <div
+            className={`rounded-md border-l-4 px-2 py-1 text-theme-xs ${
+              esSaliente ? "border-white/50 bg-white/10" : "border-brand-500 bg-black/5 dark:bg-white/5"
+            }`}
+          >
+            <p className={`font-medium ${esSaliente ? "text-white/90" : "text-brand-500"}`}>
+              {mensaje.respondeA.direccion === "saliente" ? "Tú" : nombreContacto}
+            </p>
+            <p className={`truncate ${esSaliente ? "text-white/70" : "text-gray-500 dark:text-gray-400"}`}>
+              {resumenCitado(mensaje.respondeA)}
+            </p>
+          </div>
+        )}
         <ContenidoMedia mensaje={mensaje} conversacionId={conversacionId} />
         {(mensaje.texto || mensaje.mediaCaption) && (
           <p className="whitespace-pre-wrap break-words">{mensaje.texto ?? mensaje.mediaCaption}</p>
@@ -376,8 +535,19 @@ function Burbuja({ mensaje, conversacionId }: { mensaje: Mensaje; conversacionId
             onCerrar={() => setSelectorAbierto(false)}
           />
         )}
+
+        {menuAbierto && (
+          <MenuAcciones
+            anchorRef={chevronRef}
+            onResponder={() => {
+              onResponder(mensaje);
+              setMenuAbierto(false);
+            }}
+            onCerrar={() => setMenuAbierto(false)}
+          />
+        )}
       </div>
-      {!esSaliente && trigger}
+      {!esSaliente && grupoAcciones}
     </div>
   );
 }
@@ -390,6 +560,7 @@ export default function ChatDetailView({ id }: { id: string }) {
   const [valoresVariables, setValoresVariables] = useState<Record<string, string>>({});
   const [archivo, setArchivo] = useState<File | null>(null);
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null);
+  const [respondiendoA, setRespondiendoA] = useState<Mensaje | null>(null);
   const finRef = useRef<HTMLDivElement>(null);
   const inputArchivoRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -439,7 +610,9 @@ export default function ChatDetailView({ id }: { id: string }) {
   const enviar = useAppMutation({
     mutationFn: async () => {
       if (dentroDeVentana) {
-        await enviarMensajeAction(id, { texto });
+        // El "responder a" solo aplica al texto de sesión — Meta no admite
+        // context en el envío de plantillas.
+        await enviarMensajeAction(id, { texto, respondeAMensajeId: respondiendoA?.id });
       } else {
         if (!plantilla) throw new Error("Elige una plantilla aprobada");
         await enviarMensajeAction(id, {
@@ -462,6 +635,7 @@ export default function ChatDetailView({ id }: { id: string }) {
       const formData = new FormData();
       formData.append("archivo", archivo);
       if (texto.trim()) formData.append("caption", texto.trim());
+      if (respondiendoA) formData.append("respondeAMensajeId", respondiendoA.id);
       await enviarMediaAction(id, formData);
     },
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
@@ -515,7 +689,13 @@ export default function ChatDetailView({ id }: { id: string }) {
           </p>
         ) : (
           chat.mensajes.map((mensaje: Mensaje) => (
-            <Burbuja key={mensaje.id} mensaje={mensaje} conversacionId={id} />
+            <Burbuja
+              key={mensaje.id}
+              mensaje={mensaje}
+              conversacionId={id}
+              nombreContacto={nombre}
+              onResponder={setRespondiendoA}
+            />
           ))
         )}
         <div ref={finRef} />
@@ -534,6 +714,7 @@ export default function ChatDetailView({ id }: { id: string }) {
                     textoRef.current = "";
                     setTexto("");
                     clearBorrador(id);
+                    setRespondiendoA(null);
                     if (inputArchivoRef.current) inputArchivoRef.current.value = "";
                   },
                 });
@@ -543,12 +724,33 @@ export default function ChatDetailView({ id }: { id: string }) {
                     textoRef.current = "";
                     setTexto("");
                     clearBorrador(id);
+                    setRespondiendoA(null);
                   },
                 });
               }
             }}
             className="space-y-2"
           >
+            {respondiendoA && (
+              <div className="flex items-center gap-2 rounded-lg border-l-4 border-brand-500 bg-gray-50 px-3 py-2 dark:bg-white/[0.03]">
+                <div className="min-w-0 flex-1">
+                  <p className="text-theme-xs font-medium text-brand-500">
+                    {respondiendoA.direccion === "saliente" ? "Tú" : nombre}
+                  </p>
+                  <p className="truncate text-theme-xs text-gray-500 dark:text-gray-400">
+                    {resumenCitado(respondiendoA)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRespondiendoA(null)}
+                  aria-label="Cancelar respuesta"
+                  className="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  <Icon name="mdi:close" size={16} />
+                </button>
+              </div>
+            )}
             {archivo && (
               <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-theme-xs text-gray-600 dark:bg-white/[0.03] dark:text-gray-300">
                 <Icon

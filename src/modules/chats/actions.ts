@@ -14,6 +14,8 @@ export async function enviarMensajeAction(
     plantillaIdioma?: string;
     parametros?: { nombre: string; valor: string }[];
     plantillaFormatoParametros?: string;
+    /** Id propio del mensaje al que se responde — "Responder" del chat. */
+    respondeAMensajeId?: string;
   },
 ): Promise<void> {
   try {
