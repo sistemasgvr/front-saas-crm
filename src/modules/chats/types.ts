@@ -18,7 +18,7 @@ export interface Mensaje {
   id: string;
   wamid: string;
   direccion: "entrante" | "saliente";
-  /** text | template | image | document | audio | video | sticker */
+  /** text | template | image | document | audio | video | sticker | location | contacts */
   tipo: string;
   texto: string | null;
   plantillaNombre: string | null;
@@ -36,6 +36,59 @@ export interface Mensaje {
   reaccionCliente: string | null;
   /** Mensaje citado (respuesta contextual) — null si este mensaje no responde a nada. */
   respondeA: MensajeCitado | null;
+  /** Solo si tipo === "location". */
+  ubicacion: UbicacionMensaje | null;
+  /** Solo si tipo === "contacts" — puede traer varios. */
+  contactos: ContactoMensaje[] | null;
+  /** Cuándo el contacto editó este mensaje por última vez — null si nunca. */
+  fechaEdicion: string | null;
+  /** Solo si tipo === "interactive" — lo que NOSOTROS mandamos. La
+   * respuesta del contacto (qué tocó) llega como mensaje normal, con
+   * tipo "button_reply" | "list_reply" y el título elegido en `texto`. */
+  interactivo: Interactivo | null;
+}
+
+export interface BotonInteractivo {
+  id: string;
+  titulo: string;
+}
+
+export interface FilaLista {
+  id: string;
+  titulo: string;
+  descripcion?: string;
+}
+
+export interface SeccionLista {
+  titulo?: string;
+  filas: FilaLista[];
+}
+
+export interface Interactivo {
+  subtipo: "button" | "list" | "cta_url" | "location_request";
+  cuerpo: string;
+  pie?: string;
+  /** Solo subtipo "button" — hasta 3. */
+  botones?: BotonInteractivo[];
+  /** Solo subtipo "list". */
+  botonLista?: string;
+  secciones?: SeccionLista[];
+  /** Solo subtipo "cta_url". */
+  textoBoton?: string;
+  url?: string;
+}
+
+export interface UbicacionMensaje {
+  latitud: number;
+  longitud: number;
+  nombre: string | null;
+  direccion: string | null;
+}
+
+export interface ContactoMensaje {
+  nombre: string;
+  telefonos: { numero: string; tipo?: string }[];
+  organizacion?: string;
 }
 
 /** Vista chica del mensaje citado — lo justo para pintar la burbujita de cita. */

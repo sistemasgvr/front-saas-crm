@@ -9,18 +9,38 @@ import Avatar from "@/src/components/ui/avatar/Avatar";
 import Button from "@/src/components/ui/button/Button";
 import Input from "@/src/components/form/input/InputField";
 import Select from "@/src/components/form/Select";
+import Modal from "@/src/components/ui/modal/Modal";
 import { Icon } from "@/src/components/ui/Icon";
 import { Spinner } from "@/src/components/ui/Spinner";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { useTheme } from "@/src/context/ThemeContext";
-import { enviarMensajeAction, enviarMediaAction, enviarReaccionAction } from "./actions";
+import {
+  enviarMensajeAction,
+  enviarMediaAction,
+  enviarReaccionAction,
+  enviarUbicacionAction,
+  enviarContactoAction,
+  enviarInteractivoAction,
+  notificarEscribiendoAction,
+} from "./actions";
 import { clearBorrador, getBorrador, setBorrador } from "./chat-borradores";
 import { getChat, getTemplates } from "./queries";
-import type { ConversacionDetalle, Mensaje, PlantillaWhatsApp } from "./types";
+import type {
+  ConversacionDetalle,
+  ContactoMensaje,
+  Interactivo,
+  Mensaje,
+  PlantillaWhatsApp,
+  UbicacionMensaje,
+} from "./types";
 
 const INTERVALO_REFRESCO_MS = 10_000;
+// El indicador de "escribiendo…" de Meta dura hasta 25s en el WhatsApp del
+// contacto — refrescarlo cada 10s lo mantiene vivo sin gaps mientras el
+// usuario sigue escribiendo, sin mandar una llamada por cada tecla.
+const THROTTLE_ESCRIBIENDO_MS = 10_000;
 
 // Mismo criterio visual que WhatsApp: 1 check = enviado, 2 checks gris =
 // entregado, 2 checks AZULES = leído (si el destinatario tiene los recibos
@@ -125,8 +145,116 @@ function resumenCitado(citado: {
 }): string {
   if (citado.texto) return citado.texto;
   if (citado.mediaCaption) return citado.mediaCaption;
+  if (citado.tipo === "location") return "📍 Ubicación";
+  if (citado.tipo === "contacts") return "👤 Contacto";
   if (citado.tieneMedia) return ETIQUETA_TIPO_MEDIA[citado.tipo] ?? "📎 Archivo adjunto";
   return "(sin texto)";
+}
+
+function ContenidoUbicacion({ ubicacion }: { ubicacion: UbicacionMensaje }) {
+  const urlMapa = `https://www.google.com/maps?q=${ubicacion.latitud},${ubicacion.longitud}`;
+  return (
+    <a
+      href={urlMapa}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2.5 rounded-lg bg-black/5 px-3 py-2.5 transition hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/15"
+    >
+      <Icon name="mdi:map-marker" size={26} className="shrink-0 text-error-500" />
+      <div className="min-w-0">
+        <p className="truncate text-theme-sm font-medium">{ubicacion.nombre ?? "Ubicación compartida"}</p>
+        {ubicacion.direccion && <p className="truncate text-theme-xs opacity-70">{ubicacion.direccion}</p>}
+        <p className="text-theme-xs opacity-70">Ver en el mapa</p>
+      </div>
+    </a>
+  );
+}
+
+function ContenidoContactos({ contactos }: { contactos: ContactoMensaje[] }) {
+  return (
+    <div className="space-y-1.5">
+      {contactos.map((contacto, i) => (
+        <div
+          key={i}
+          className="flex items-center gap-2.5 rounded-lg bg-black/5 px-3 py-2.5 dark:bg-white/10"
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-300 text-gray-600 dark:bg-gray-600 dark:text-gray-200">
+            <Icon name="mdi:account" size={20} />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-theme-sm font-medium">{contacto.nombre}</p>
+            {contacto.telefonos[0] && (
+              <p className="truncate text-theme-xs opacity-70">{contacto.telefonos[0].numero}</p>
+            )}
+            {contacto.organizacion && (
+              <p className="truncate text-theme-xs opacity-70">{contacto.organizacion}</p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Los 4 subtipos de "interactive" — siempre SALIENTES (solo el negocio
+ * puede mandarlos, la Cloud API no tiene forma de mandarlos desde el lado
+ * del contacto), así que no hace falta variar colores según dirección: la
+ * burbuja siempre es bg-brand-500/texto blanco acá. El cuerpo del mensaje ya
+ * se pinta con el bloque de texto normal (mensaje.texto = interactivo.cuerpo) —
+ * esto solo agrega la parte visual de abajo (botones/lista/link/aviso). */
+function ContenidoInteractivo({ interactivo }: { interactivo: Interactivo }) {
+  if (interactivo.subtipo === "button") {
+    return (
+      <div className="flex flex-wrap gap-1.5 border-t border-white/20 pt-2">
+        {(interactivo.botones ?? []).map((b) => (
+          <span
+            key={b.id}
+            className="rounded-full border border-white/40 bg-white/10 px-3 py-1 text-theme-xs font-medium"
+          >
+            {b.titulo}
+          </span>
+        ))}
+      </div>
+    );
+  }
+  if (interactivo.subtipo === "list") {
+    return (
+      <div className="space-y-1.5 border-t border-white/20 pt-2">
+        <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-theme-xs font-medium">
+          <Icon name="mdi:format-list-bulleted" size={14} />
+          {interactivo.botonLista}
+        </span>
+        <div className="space-y-0.5">
+          {(interactivo.secciones ?? [])
+            .flatMap((s) => s.filas)
+            .map((f) => (
+              <p key={f.id} className="text-theme-xs opacity-80">
+                • {f.titulo}
+              </p>
+            ))}
+        </div>
+      </div>
+    );
+  }
+  if (interactivo.subtipo === "cta_url") {
+    return (
+      <a
+        href={interactivo.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-1 flex items-center justify-center gap-1.5 rounded-lg border border-white/40 bg-white/10 px-3 py-1.5 text-theme-xs font-medium transition hover:bg-white/20"
+      >
+        <Icon name="mdi:open-in-new" size={14} />
+        {interactivo.textoBoton}
+      </a>
+    );
+  }
+  return (
+    <p className="mt-1 flex items-center gap-1.5 text-theme-xs opacity-90">
+      <Icon name="mdi:map-marker-radius-outline" size={14} />
+      Botón para pedir ubicación
+    </p>
+  );
 }
 
 function ContenidoMedia({ mensaje, conversacionId }: { mensaje: Mensaje; conversacionId: string }) {
@@ -372,6 +500,67 @@ function MenuAcciones({
   );
 }
 
+/** El menú del "+" del composer — vive en el footer fijo, no en la lista con
+ * scroll, así que un simple `absolute` (sin portal) alcanza: no hay ningún
+ * ancestro con overflow recortando el popover. Abre hacia ARRIBA
+ * (`bottom-full`), no hacia abajo como el `Dropdown` genérico del proyecto,
+ * porque el botón vive pegado al borde inferior de la pantalla. */
+function MenuAdjuntar({
+  abierto,
+  onCerrar,
+  onArchivo,
+  onUbicacion,
+  onContacto,
+  onInteractivo,
+}: {
+  abierto: boolean;
+  onCerrar: () => void;
+  onArchivo: () => void;
+  onUbicacion: () => void;
+  onContacto: () => void;
+  onInteractivo: () => void;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!abierto) return;
+    function onClickFuera(e: MouseEvent) {
+      if (panelRef.current?.contains(e.target as Node)) return;
+      onCerrar();
+    }
+    document.addEventListener("mousedown", onClickFuera);
+    return () => document.removeEventListener("mousedown", onClickFuera);
+  }, [abierto, onCerrar]);
+
+  if (!abierto) return null;
+
+  const opciones = [
+    { icon: "mdi:file-document-outline", label: "Documento o archivo", onClick: onArchivo },
+    { icon: "mdi:map-marker-outline", label: "Ubicación", onClick: onUbicacion },
+    { icon: "mdi:account-outline", label: "Contacto", onClick: onContacto },
+    { icon: "mdi:gesture-tap-button", label: "Mensaje interactivo", onClick: onInteractivo },
+  ];
+
+  return (
+    <div
+      ref={panelRef}
+      className="absolute bottom-full left-0 z-30 mb-2 w-56 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-theme-lg dark:border-gray-700 dark:bg-gray-800"
+    >
+      {opciones.map((opcion) => (
+        <button
+          key={opcion.label}
+          type="button"
+          onClick={opcion.onClick}
+          className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-theme-sm text-gray-700 transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/5"
+        >
+          <Icon name={opcion.icon} size={18} />
+          {opcion.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function Burbuja({
   mensaje,
   conversacionId,
@@ -459,6 +648,12 @@ function Burbuja({
             Plantilla: {mensaje.plantillaNombre}
           </p>
         ) : null}
+        {(mensaje.tipo === "button_reply" || mensaje.tipo === "list_reply") && (
+          <p className="flex items-center gap-1 text-theme-xs opacity-80">
+            <Icon name={mensaje.tipo === "button_reply" ? "mdi:gesture-tap-button" : "mdi:format-list-bulleted"} size={14} />
+            {mensaje.tipo === "button_reply" ? "Tocó un botón" : "Eligió de la lista"}
+          </p>
+        )}
         {mensaje.respondeA && (
           <div
             className={`rounded-md border-l-4 px-2 py-1 text-theme-xs ${
@@ -474,13 +669,21 @@ function Burbuja({
           </div>
         )}
         <ContenidoMedia mensaje={mensaje} conversacionId={conversacionId} />
+        {mensaje.ubicacion && <ContenidoUbicacion ubicacion={mensaje.ubicacion} />}
+        {mensaje.contactos && mensaje.contactos.length > 0 && (
+          <ContenidoContactos contactos={mensaje.contactos} />
+        )}
         {(mensaje.texto || mensaje.mediaCaption) && (
           <p className="whitespace-pre-wrap break-words">{mensaje.texto ?? mensaje.mediaCaption}</p>
         )}
-        {!mensaje.tieneMedia && !mensaje.texto && (
-          <p className="whitespace-pre-wrap break-words opacity-70">(sin texto)</p>
-        )}
+        {mensaje.interactivo && <ContenidoInteractivo interactivo={mensaje.interactivo} />}
+        {!mensaje.tieneMedia &&
+          !mensaje.texto &&
+          !mensaje.ubicacion &&
+          !mensaje.contactos?.length &&
+          !mensaje.interactivo && <p className="whitespace-pre-wrap break-words opacity-70">(sin texto)</p>}
         <div className="flex items-center justify-end gap-1 text-theme-xs opacity-70">
+          {mensaje.fechaEdicion && <span title={`Editado ${formatearHora(mensaje.fechaEdicion)}`}>editado</span>}
           {formatearHora(mensaje.fechaMensaje)}
           {esSaliente &&
             (() => {
@@ -561,13 +764,44 @@ export default function ChatDetailView({ id }: { id: string }) {
   const [archivo, setArchivo] = useState<File | null>(null);
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null);
   const [respondiendoA, setRespondiendoA] = useState<Mensaje | null>(null);
+  const [menuAdjuntarAbierto, setMenuAdjuntarAbierto] = useState(false);
+  const [modalUbicacionAbierto, setModalUbicacionAbierto] = useState(false);
+  const [ubicLat, setUbicLat] = useState("");
+  const [ubicLng, setUbicLng] = useState("");
+  const [ubicNombre, setUbicNombre] = useState("");
+  const [ubicDireccion, setUbicDireccion] = useState("");
+  const [ubicGeoError, setUbicGeoError] = useState<string | null>(null);
+  const [obteniendoUbicacion, setObteniendoUbicacion] = useState(false);
+  const [modalContactoAbierto, setModalContactoAbierto] = useState(false);
+  const [contactoNombre, setContactoNombre] = useState("");
+  const [contactoTelefono, setContactoTelefono] = useState("");
+  const [contactoOrganizacion, setContactoOrganizacion] = useState("");
+  const [modalInteractivoAbierto, setModalInteractivoAbierto] = useState(false);
+  const [interSubtipo, setInterSubtipo] = useState<Interactivo["subtipo"]>("button");
+  const [interCuerpo, setInterCuerpo] = useState("");
+  const [interPie, setInterPie] = useState("");
+  const [interBotones, setInterBotones] = useState<string[]>([""]);
+  const [interBotonLista, setInterBotonLista] = useState("");
+  const [interFilas, setInterFilas] = useState<{ titulo: string; descripcion: string }[]>([
+    { titulo: "", descripcion: "" },
+  ]);
+  const [interTextoBoton, setInterTextoBoton] = useState("");
+  const [interUrl, setInterUrl] = useState("");
   const finRef = useRef<HTMLDivElement>(null);
   const inputArchivoRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const ultimoEscribiendoRef = useRef(0);
 
   function actualizarTexto(valor: string) {
     textoRef.current = valor;
     setTexto(valor);
+    // Best-effort: si falla (sin conexión, rate limit de Meta) no debe
+    // interrumpir para nada al usuario mientras escribe — por eso no se
+    // espera ni se muestra ningún error acá.
+    if (valor.trim() && Date.now() - ultimoEscribiendoRef.current > THROTTLE_ESCRIBIENDO_MS) {
+      ultimoEscribiendoRef.current = Date.now();
+      notificarEscribiendoAction(id).catch(() => undefined);
+    }
     if (!valor.trim()) {
       clearBorrador(id);
     } else {
@@ -637,6 +871,136 @@ export default function ChatDetailView({ id }: { id: string }) {
       if (texto.trim()) formData.append("caption", texto.trim());
       if (respondiendoA) formData.append("respondeAMensajeId", respondiendoA.id);
       await enviarMediaAction(id, formData);
+    },
+    invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
+  });
+
+  function cerrarModalUbicacion() {
+    setModalUbicacionAbierto(false);
+    setUbicLat("");
+    setUbicLng("");
+    setUbicNombre("");
+    setUbicDireccion("");
+    setUbicGeoError(null);
+  }
+
+  function usarUbicacionActual() {
+    if (!navigator.geolocation) {
+      setUbicGeoError("Tu navegador no soporta geolocalización");
+      return;
+    }
+    setObteniendoUbicacion(true);
+    setUbicGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUbicLat(String(pos.coords.latitude));
+        setUbicLng(String(pos.coords.longitude));
+        setObteniendoUbicacion(false);
+      },
+      () => {
+        setUbicGeoError("No se pudo obtener tu ubicación — revisa los permisos del navegador");
+        setObteniendoUbicacion(false);
+      },
+    );
+  }
+
+  const enviarUbicacion = useAppMutation({
+    mutationFn: () =>
+      enviarUbicacionAction(id, {
+        latitud: Number(ubicLat),
+        longitud: Number(ubicLng),
+        nombre: ubicNombre.trim() || undefined,
+        direccion: ubicDireccion.trim() || undefined,
+        respondeAMensajeId: respondiendoA?.id,
+      }),
+    invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
+  });
+
+  function cerrarModalContacto() {
+    setModalContactoAbierto(false);
+    setContactoNombre("");
+    setContactoTelefono("");
+    setContactoOrganizacion("");
+  }
+
+  const enviarContacto = useAppMutation({
+    mutationFn: () =>
+      enviarContactoAction(id, {
+        contactos: [
+          {
+            nombre: contactoNombre.trim(),
+            telefonos: [{ numero: contactoTelefono.trim() }],
+            organizacion: contactoOrganizacion.trim() || undefined,
+          },
+        ],
+        respondeAMensajeId: respondiendoA?.id,
+      }),
+    invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
+  });
+
+  function cerrarModalInteractivo() {
+    setModalInteractivoAbierto(false);
+    setInterSubtipo("button");
+    setInterCuerpo("");
+    setInterPie("");
+    setInterBotones([""]);
+    setInterBotonLista("");
+    setInterFilas([{ titulo: "", descripcion: "" }]);
+    setInterTextoBoton("");
+    setInterUrl("");
+  }
+
+  const interactivoValido =
+    interCuerpo.trim().length > 0 &&
+    (interSubtipo === "button"
+      ? interBotones.some((t) => t.trim())
+      : interSubtipo === "list"
+        ? interBotonLista.trim().length > 0 && interFilas.some((f) => f.titulo.trim())
+        : interSubtipo === "cta_url"
+          ? interTextoBoton.trim().length > 0 && interUrl.trim().length > 0
+          : true);
+
+  const enviarInteractivo = useAppMutation({
+    mutationFn: () => {
+      const base = {
+        subtipo: interSubtipo,
+        cuerpo: interCuerpo.trim(),
+        pie: interPie.trim() || undefined,
+        respondeAMensajeId: respondiendoA?.id,
+      };
+      if (interSubtipo === "button") {
+        return enviarInteractivoAction(id, {
+          ...base,
+          botones: interBotones
+            .filter((t) => t.trim())
+            .map((titulo, i) => ({ id: `boton_${i + 1}`, titulo: titulo.trim() })),
+        });
+      }
+      if (interSubtipo === "list") {
+        return enviarInteractivoAction(id, {
+          ...base,
+          botonLista: interBotonLista.trim(),
+          secciones: [
+            {
+              filas: interFilas
+                .filter((f) => f.titulo.trim())
+                .map((f, i) => ({
+                  id: `fila_${i + 1}`,
+                  titulo: f.titulo.trim(),
+                  descripcion: f.descripcion.trim() || undefined,
+                })),
+            },
+          ],
+        });
+      }
+      if (interSubtipo === "cta_url") {
+        return enviarInteractivoAction(id, {
+          ...base,
+          textoBoton: interTextoBoton.trim(),
+          url: interUrl.trim(),
+        });
+      }
+      return enviarInteractivoAction(id, base);
     },
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
   });
@@ -790,14 +1154,36 @@ export default function ChatDetailView({ id }: { id: string }) {
                 onChange={(e) => elegirArchivo(e.target.files?.[0])}
               />
               <div className="flex flex-1 items-end gap-0.5 rounded-3xl border border-gray-200 bg-white pl-1 pr-1.5 py-1 dark:border-gray-700 dark:bg-gray-900">
-                <button
-                  type="button"
-                  onClick={() => inputArchivoRef.current?.click()}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
-                  aria-label="Adjuntar archivo"
-                >
-                  <Icon name="mdi:plus" size={22} />
-                </button>
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setMenuAdjuntarAbierto((v) => !v)}
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+                    aria-label="Adjuntar"
+                  >
+                    <Icon name="mdi:plus" size={22} />
+                  </button>
+                  <MenuAdjuntar
+                    abierto={menuAdjuntarAbierto}
+                    onCerrar={() => setMenuAdjuntarAbierto(false)}
+                    onArchivo={() => {
+                      setMenuAdjuntarAbierto(false);
+                      inputArchivoRef.current?.click();
+                    }}
+                    onUbicacion={() => {
+                      setMenuAdjuntarAbierto(false);
+                      setModalUbicacionAbierto(true);
+                    }}
+                    onContacto={() => {
+                      setMenuAdjuntarAbierto(false);
+                      setModalContactoAbierto(true);
+                    }}
+                    onInteractivo={() => {
+                      setMenuAdjuntarAbierto(false);
+                      setModalInteractivoAbierto(true);
+                    }}
+                  />
+                </div>
                 <textarea
                   value={texto}
                   onChange={(event) => actualizarTexto(event.target.value)}
@@ -911,6 +1297,319 @@ export default function ChatDetailView({ id }: { id: string }) {
           </div>
         )}
       </div>
+
+      <Modal
+        open={modalUbicacionAbierto}
+        onClose={cerrarModalUbicacion}
+        header={
+          <div className="px-5 py-4">
+            <h3 className="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+              Enviar ubicación
+            </h3>
+          </div>
+        }
+        footer={
+          <div className="flex items-center justify-end gap-2 px-5 py-3">
+            <Button type="button" variant="outline" size="sm" onClick={cerrarModalUbicacion}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              loading={enviarUbicacion.isPending}
+              disabled={!ubicLat.trim() || !ubicLng.trim()}
+              onClick={() =>
+                enviarUbicacion.mutate(undefined, {
+                  onSuccess: () => {
+                    cerrarModalUbicacion();
+                    setRespondiendoA(null);
+                  },
+                })
+              }
+            >
+              Enviar
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-3 px-5 py-4">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            loading={obteniendoUbicacion}
+            startIcon={<Icon name="mdi:crosshairs-gps" size={16} />}
+            onClick={usarUbicacionActual}
+          >
+            Usar mi ubicación actual
+          </Button>
+          {ubicGeoError && <p className="text-theme-xs text-error-500">{ubicGeoError}</p>}
+          <div className="grid grid-cols-2 gap-2">
+            <Input placeholder="Latitud" value={ubicLat} onChange={(e) => setUbicLat(e.target.value)} />
+            <Input placeholder="Longitud" value={ubicLng} onChange={(e) => setUbicLng(e.target.value)} />
+          </div>
+          <Input
+            placeholder="Nombre del lugar (opcional)"
+            value={ubicNombre}
+            onChange={(e) => setUbicNombre(e.target.value)}
+          />
+          <Input
+            placeholder="Dirección (opcional)"
+            value={ubicDireccion}
+            onChange={(e) => setUbicDireccion(e.target.value)}
+          />
+        </div>
+      </Modal>
+
+      <Modal
+        open={modalContactoAbierto}
+        onClose={cerrarModalContacto}
+        header={
+          <div className="px-5 py-4">
+            <h3 className="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+              Enviar contacto
+            </h3>
+          </div>
+        }
+        footer={
+          <div className="flex items-center justify-end gap-2 px-5 py-3">
+            <Button type="button" variant="outline" size="sm" onClick={cerrarModalContacto}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              loading={enviarContacto.isPending}
+              disabled={!contactoNombre.trim() || !contactoTelefono.trim()}
+              onClick={() =>
+                enviarContacto.mutate(undefined, {
+                  onSuccess: () => {
+                    cerrarModalContacto();
+                    setRespondiendoA(null);
+                  },
+                })
+              }
+            >
+              Enviar
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-3 px-5 py-4">
+          <Input
+            placeholder="Nombre del contacto"
+            value={contactoNombre}
+            onChange={(e) => setContactoNombre(e.target.value)}
+          />
+          <Input
+            placeholder="Teléfono (ej. +51987654321)"
+            value={contactoTelefono}
+            onChange={(e) => setContactoTelefono(e.target.value)}
+          />
+          <Input
+            placeholder="Empresa (opcional)"
+            value={contactoOrganizacion}
+            onChange={(e) => setContactoOrganizacion(e.target.value)}
+          />
+        </div>
+      </Modal>
+
+      <Modal
+        open={modalInteractivoAbierto}
+        onClose={cerrarModalInteractivo}
+        header={
+          <div className="px-5 py-4">
+            <h3 className="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+              Enviar mensaje interactivo
+            </h3>
+          </div>
+        }
+        footer={
+          <div className="flex items-center justify-end gap-2 px-5 py-3">
+            <Button type="button" variant="outline" size="sm" onClick={cerrarModalInteractivo}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              loading={enviarInteractivo.isPending}
+              disabled={!interactivoValido}
+              onClick={() =>
+                enviarInteractivo.mutate(undefined, {
+                  onSuccess: () => {
+                    cerrarModalInteractivo();
+                    setRespondiendoA(null);
+                  },
+                })
+              }
+            >
+              Enviar
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-3 px-5 py-4">
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+            {(
+              [
+                { valor: "button", icon: "mdi:gesture-tap-button", label: "Botones" },
+                { valor: "list", icon: "mdi:format-list-bulleted", label: "Lista" },
+                { valor: "cta_url", icon: "mdi:link-variant", label: "Link" },
+                { valor: "location_request", icon: "mdi:map-marker-radius-outline", label: "Ubicación" },
+              ] as const
+            ).map((op) => (
+              <button
+                key={op.valor}
+                type="button"
+                onClick={() => setInterSubtipo(op.valor)}
+                className={`flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-theme-xs transition ${
+                  interSubtipo === op.valor
+                    ? "border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400"
+                    : "border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5"
+                }`}
+              >
+                <Icon name={op.icon} size={18} />
+                {op.label}
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            value={interCuerpo}
+            onChange={(e) => setInterCuerpo(e.target.value)}
+            placeholder="Texto del mensaje"
+            rows={3}
+            maxLength={1024}
+            className="w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-theme-sm text-gray-800 outline-none focus:border-brand-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+          />
+
+          {interSubtipo !== "location_request" && (
+            <Input
+              placeholder="Pie de página (opcional)"
+              value={interPie}
+              onChange={(e) => setInterPie(e.target.value)}
+            />
+          )}
+
+          {interSubtipo === "button" && (
+            <div className="space-y-2">
+              <p className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                Botones (hasta 3)
+              </p>
+              {interBotones.map((titulo, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Input
+                    placeholder={`Botón ${i + 1}`}
+                    value={titulo}
+                    onChange={(e) =>
+                      setInterBotones((prev) => prev.map((t, j) => (j === i ? e.target.value : t)))
+                    }
+                  />
+                  {interBotones.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setInterBotones((prev) => prev.filter((_, j) => j !== i))}
+                      className="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                      aria-label="Quitar botón"
+                    >
+                      <Icon name="mdi:close" size={16} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              {interBotones.length < 3 && (
+                <button
+                  type="button"
+                  onClick={() => setInterBotones((prev) => [...prev, ""])}
+                  className="flex items-center gap-1 text-theme-xs font-medium text-brand-500 hover:text-brand-600"
+                >
+                  <Icon name="mdi:plus" size={14} />
+                  Agregar botón
+                </button>
+              )}
+            </div>
+          )}
+
+          {interSubtipo === "list" && (
+            <div className="space-y-2">
+              <Input
+                placeholder="Texto del botón que abre la lista (ej. Ver opciones)"
+                value={interBotonLista}
+                onChange={(e) => setInterBotonLista(e.target.value)}
+              />
+              <p className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                Opciones (hasta 10)
+              </p>
+              {interFilas.map((fila, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <div className="flex-1 space-y-1.5">
+                    <Input
+                      placeholder={`Opción ${i + 1}`}
+                      value={fila.titulo}
+                      onChange={(e) =>
+                        setInterFilas((prev) =>
+                          prev.map((f, j) => (j === i ? { ...f, titulo: e.target.value } : f)),
+                        )
+                      }
+                    />
+                    <Input
+                      placeholder="Descripción (opcional)"
+                      value={fila.descripcion}
+                      onChange={(e) =>
+                        setInterFilas((prev) =>
+                          prev.map((f, j) => (j === i ? { ...f, descripcion: e.target.value } : f)),
+                        )
+                      }
+                    />
+                  </div>
+                  {interFilas.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setInterFilas((prev) => prev.filter((_, j) => j !== i))}
+                      className="mt-2 shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                      aria-label="Quitar opción"
+                    >
+                      <Icon name="mdi:close" size={16} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              {interFilas.length < 10 && (
+                <button
+                  type="button"
+                  onClick={() => setInterFilas((prev) => [...prev, { titulo: "", descripcion: "" }])}
+                  className="flex items-center gap-1 text-theme-xs font-medium text-brand-500 hover:text-brand-600"
+                >
+                  <Icon name="mdi:plus" size={14} />
+                  Agregar opción
+                </button>
+              )}
+            </div>
+          )}
+
+          {interSubtipo === "cta_url" && (
+            <div className="space-y-2">
+              <Input
+                placeholder="Texto del botón (ej. Ver catálogo)"
+                value={interTextoBoton}
+                onChange={(e) => setInterTextoBoton(e.target.value)}
+              />
+              <Input
+                placeholder="https://…"
+                value={interUrl}
+                onChange={(e) => setInterUrl(e.target.value)}
+              />
+            </div>
+          )}
+
+          {interSubtipo === "location_request" && (
+            <p className="flex items-center gap-1.5 text-theme-xs text-gray-500 dark:text-gray-400">
+              <Icon name="mdi:information-outline" size={14} />
+              Le aparece un botón &quot;Enviar ubicación&quot; que abre el selector de mapa del contacto.
+            </p>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
