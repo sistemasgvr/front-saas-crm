@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/src/components/ui/Icon";
 
 interface Option {
@@ -30,6 +30,13 @@ export default function MultiSelect({
 }: MultiSelectProps) {
   const [selectedOptions, setSelectedOptions] = useState<string[]>(defaultSelected);
   const [isOpen, setIsOpen] = useState(false);
+
+  // Sincroniza la selección cuando el parent cambia `defaultSelected`.
+  // Esto evita inconsistencias cuando la selección se setea desde un toggle
+  // o desde datos cargados.
+  useEffect(() => {
+    setSelectedOptions(defaultSelected);
+  }, [defaultSelected.join("|")]);
 
   const toggleDropdown = () => {
     if (disabled) return;

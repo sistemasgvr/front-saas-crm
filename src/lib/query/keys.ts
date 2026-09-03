@@ -49,6 +49,7 @@ export const queryKeys = {
   leadPipelineMeta: (tipoLead: string | null | undefined) => ["leads", "pipeline-meta", tipoLead ?? null] as const,
   leadsTablero: (tipoLead: string | null | undefined, asignado?: string) =>
     ["leads", "tablero", tipoLead ?? null, asignado ?? null] as const,
+  leadAutoAsignacionConfig: ["leads", "auto-asignacion", "config"] as const,
   notifications: (params?: { page?: number }) => ["notifications", params ?? {}] as const,
   /** Prefijo para invalidar todas las páginas a la vez (no usar para fetch). */
   notificationsAll: ["notifications"] as const,
