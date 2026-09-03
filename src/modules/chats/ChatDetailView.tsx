@@ -496,6 +496,90 @@ function SelectorReacciones({
   );
 }
 
+/**
+ * Picker del composer — inserta emojis en el texto (no es reacción).
+ * Queda abierto al elegir para poder meter varios seguidos, como WhatsApp Web.
+ */
+function SelectorEmojiComposer({
+  abierto,
+  anchorRef,
+  onElegir,
+  onCerrar,
+}: {
+  abierto: boolean;
+  anchorRef: React.RefObject<HTMLElement | null>;
+  onElegir: (emoji: string) => void;
+  onCerrar: () => void;
+}) {
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
+
+  useLayoutEffect(() => {
+    if (!abierto) {
+      setPos(null);
+      return;
+    }
+    const anchor = anchorRef.current;
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    const hayEspacioArriba = rect.top - ALTO_PICKER - MARGEN_VIEWPORT > 0;
+    const left = Math.min(
+      Math.max(rect.left, MARGEN_VIEWPORT),
+      window.innerWidth - ANCHO_PICKER - MARGEN_VIEWPORT,
+    );
+    setPos(
+      hayEspacioArriba
+        ? { bottom: window.innerHeight - rect.top + MARGEN_VIEWPORT, left }
+        : { top: rect.bottom + MARGEN_VIEWPORT, left },
+    );
+  }, [abierto, anchorRef]);
+
+  useEffect(() => {
+    if (!abierto) return;
+    function onClickFuera(e: Event) {
+      const objetivo = e.target as Node;
+      if (panelRef.current?.contains(objetivo)) return;
+      if (anchorRef.current?.contains(objetivo)) return;
+      onCerrar();
+    }
+    function onScroll(e: Event) {
+      const objetivo = e.target as Node;
+      if (panelRef.current?.contains(objetivo)) return;
+      onCerrar();
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onCerrar();
+    }
+    document.addEventListener("mousedown", onClickFuera);
+    document.addEventListener("touchstart", onClickFuera, { passive: true });
+    document.addEventListener("scroll", onScroll, true);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClickFuera);
+      document.removeEventListener("touchstart", onClickFuera);
+      document.removeEventListener("scroll", onScroll, true);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [abierto, onCerrar, anchorRef]);
+
+  if (!abierto || !pos || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div ref={panelRef} className="fixed z-99999" style={{ top: pos.top, bottom: pos.bottom, left: pos.left }}>
+      <EmojiPicker
+        theme={theme === "dark" ? TemaEmojiPicker.DARK : TemaEmojiPicker.LIGHT}
+        onEmojiClick={(data: EmojiClickData) => onElegir(data.emoji)}
+        autoFocusSearch={false}
+        searchPlaceholder="Busca un emoji"
+        width={ANCHO_PICKER}
+        height={ALTO_PICKER}
+      />
+    </div>,
+    document.body,
+  );
+}
+
 const ANCHO_MENU_ACCIONES = 170;
 const ALTO_MENU_ACCIONES = 42;
 
@@ -852,6 +936,7 @@ export default function ChatDetailView({ id }: { id: string }) {
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null);
   const [respondiendoA, setRespondiendoA] = useState<Mensaje | null>(null);
   const [menuAdjuntarAbierto, setMenuAdjuntarAbierto] = useState(false);
+  const [pickerEmojiAbierto, setPickerEmojiAbierto] = useState(false);
   const [modalUbicacionAbierto, setModalUbicacionAbierto] = useState(false);
   const [ubicLat, setUbicLat] = useState("");
   const [ubicLng, setUbicLng] = useState("");
@@ -876,6 +961,8 @@ export default function ChatDetailView({ id }: { id: string }) {
   const [interUrl, setInterUrl] = useState("");
   const finRef = useRef<HTMLDivElement>(null);
   const inputArchivoRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const botonEmojiRef = useRef<HTMLButtonElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const ultimoEscribiendoRef = useRef(0);
 
@@ -902,6 +989,7 @@ export default function ChatDetailView({ id }: { id: string }) {
     setArchivo(null);
     setErrorArchivo(null);
     setMenuAdjuntarAbierto(false);
+    setPickerEmojiAbierto(false);
     return () => {
       const restante = textoRef.current.trim();
       if (restante) {
@@ -911,6 +999,21 @@ export default function ChatDetailView({ id }: { id: string }) {
       }
     };
   }, [id]);
+
+  function insertarEmojiEnTexto(emoji: string) {
+    const el = textareaRef.current;
+    const actual = textoRef.current;
+    const inicio = el?.selectionStart ?? actual.length;
+    const fin = el?.selectionEnd ?? actual.length;
+    const siguiente = actual.slice(0, inicio) + emoji + actual.slice(fin);
+    actualizarTexto(siguiente);
+    // Restaurar el cursor justo después del emoji insertado.
+    requestAnimationFrame(() => {
+      const cursor = inicio + emoji.length;
+      el?.focus();
+      el?.setSelectionRange(cursor, cursor);
+    });
+  }
 
   const chatQuery = useQuery<ConversacionDetalle>({
     queryKey: queryKeys.whatsappChat(id),
@@ -1186,6 +1289,7 @@ export default function ChatDetailView({ id }: { id: string }) {
                     setTexto("");
                     clearBorrador(id);
                     setRespondiendoA(null);
+                    setPickerEmojiAbierto(false);
                     if (inputArchivoRef.current) inputArchivoRef.current.value = "";
                   },
                 });
@@ -1196,6 +1300,7 @@ export default function ChatDetailView({ id }: { id: string }) {
                     setTexto("");
                     clearBorrador(id);
                     setRespondiendoA(null);
+                    setPickerEmojiAbierto(false);
                   },
                 });
               }
@@ -1264,7 +1369,10 @@ export default function ChatDetailView({ id }: { id: string }) {
                 <div className="relative shrink-0">
                   <button
                     type="button"
-                    onClick={() => setMenuAdjuntarAbierto((v) => !v)}
+                    onClick={() => {
+                      setPickerEmojiAbierto(false);
+                      setMenuAdjuntarAbierto((v) => !v);
+                    }}
                     className="flex h-11 w-11 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
                     aria-label="Adjuntar"
                   >
@@ -1292,6 +1400,7 @@ export default function ChatDetailView({ id }: { id: string }) {
                   />
                 </div>
                 <textarea
+                  ref={textareaRef}
                   value={texto}
                   onChange={(event) => actualizarTexto(event.target.value)}
                   onKeyDown={(event) => {
@@ -1305,6 +1414,31 @@ export default function ChatDetailView({ id }: { id: string }) {
                   enterKeyHint="send"
                   className="max-h-32 min-h-11 flex-1 resize-none bg-transparent px-1.5 py-2.5 text-base text-gray-800 outline-none sm:text-theme-sm dark:text-white/90"
                 />
+                <div className="relative shrink-0">
+                  <button
+                    ref={botonEmojiRef}
+                    type="button"
+                    onClick={() => {
+                      setMenuAdjuntarAbierto(false);
+                      setPickerEmojiAbierto((v) => !v);
+                    }}
+                    className={`flex h-11 w-11 items-center justify-center rounded-full transition hover:bg-gray-100 dark:hover:bg-white/5 ${
+                      pickerEmojiAbierto
+                        ? "text-brand-500"
+                        : "text-gray-500 dark:text-gray-400"
+                    }`}
+                    aria-label="Emojis"
+                    aria-expanded={pickerEmojiAbierto}
+                  >
+                    <Icon name="mdi:emoticon-outline" size={24} />
+                  </button>
+                  <SelectorEmojiComposer
+                    abierto={pickerEmojiAbierto}
+                    anchorRef={botonEmojiRef}
+                    onElegir={insertarEmojiEnTexto}
+                    onCerrar={() => setPickerEmojiAbierto(false)}
+                  />
+                </div>
               </div>
               <button
                 type="submit"
