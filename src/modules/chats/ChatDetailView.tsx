@@ -204,6 +204,8 @@ function ContenidoContactos({ contactos }: { contactos: ContactoMensaje[] }) {
  * se pinta con el bloque de texto normal (mensaje.texto = interactivo.cuerpo) —
  * esto solo agrega la parte visual de abajo (botones/lista/link/aviso). */
 function ContenidoInteractivo({ interactivo }: { interactivo: Interactivo }) {
+  const [listaAbierta, setListaAbierta] = useState(false);
+
   if (interactivo.subtipo === "button") {
     return (
       <div className="flex flex-wrap gap-1.5 border-t border-white/20 pt-2">
@@ -219,22 +221,60 @@ function ContenidoInteractivo({ interactivo }: { interactivo: Interactivo }) {
     );
   }
   if (interactivo.subtipo === "list") {
+    const secciones = interactivo.secciones ?? [];
     return (
-      <div className="space-y-1.5 border-t border-white/20 pt-2">
-        <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-theme-xs font-medium">
-          <Icon name="mdi:format-list-bulleted" size={14} />
-          {interactivo.botonLista}
-        </span>
-        <div className="space-y-0.5">
-          {(interactivo.secciones ?? [])
-            .flatMap((s) => s.filas)
-            .map((f) => (
-              <p key={f.id} className="text-theme-xs opacity-80">
-                • {f.titulo}
-              </p>
-            ))}
+      <>
+        <div className="border-t border-white/20 pt-2">
+          <button
+            type="button"
+            onClick={() => setListaAbierta(true)}
+            className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-theme-xs font-medium transition hover:bg-white/20"
+          >
+            <Icon name="mdi:format-list-bulleted" size={14} />
+            {interactivo.botonLista ?? "Ver opciones"}
+          </button>
         </div>
-      </div>
+        <Modal
+          open={listaAbierta}
+          onClose={() => setListaAbierta(false)}
+          header={
+            <div className="px-5 py-4">
+              <h3 className="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+                {interactivo.botonLista ?? "Opciones"}
+              </h3>
+              {interactivo.cuerpo && (
+                <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">{interactivo.cuerpo}</p>
+              )}
+            </div>
+          }
+        >
+          <div className="space-y-4 px-5 py-4">
+            {secciones.length === 0 ? (
+              <p className="text-theme-sm text-gray-500 dark:text-gray-400">Sin opciones</p>
+            ) : (
+              secciones.map((seccion, i) => (
+                <div key={i} className="space-y-1.5">
+                  {seccion.titulo && (
+                    <p className="text-theme-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      {seccion.titulo}
+                    </p>
+                  )}
+                  <ul className="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 dark:divide-gray-800 dark:border-gray-700">
+                    {seccion.filas.map((f) => (
+                      <li key={f.id} className="px-3.5 py-2.5">
+                        <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">{f.titulo}</p>
+                        {f.descripcion && (
+                          <p className="mt-0.5 text-theme-xs text-gray-500 dark:text-gray-400">{f.descripcion}</p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))
+            )}
+          </div>
+        </Modal>
+      </>
     );
   }
   if (interactivo.subtipo === "cta_url") {
@@ -258,20 +298,51 @@ function ContenidoInteractivo({ interactivo }: { interactivo: Interactivo }) {
   );
 }
 
+const TIPOS_MEDIA = new Set(["image", "video", "audio", "document", "sticker"]);
+
 function ContenidoMedia({ mensaje, conversacionId }: { mensaje: Mensaje; conversacionId: string }) {
-  if (!mensaje.tieneMedia) return null;
+  if (!mensaje.tieneMedia) {
+    // Media que no se pudo descargar (caducó el media_id de Meta, etc.) —
+    // no dejar "(sin texto)": mostrar etiqueta del tipo.
+    if (TIPOS_MEDIA.has(mensaje.tipo)) {
+      return (
+        <p className="flex items-center gap-1.5 text-theme-sm opacity-80">
+          <Icon name="mdi:image-off-outline" size={18} />
+          {ETIQUETA_TIPO_MEDIA[mensaje.tipo] ?? "Archivo adjunto"}
+          <span className="text-theme-xs opacity-70">(no disponible)</span>
+        </p>
+      );
+    }
+    return null;
+  }
   const src = urlMedia(conversacionId, mensaje.id);
 
-  if (mensaje.tipo === "image" || mensaje.tipo === "sticker") {
+  if (mensaje.tipo === "sticker") {
     return (
-      <a href={src} target="_blank" rel="noopener noreferrer" className="block">
+      <a href={src} target="_blank" rel="noopener noreferrer" className="block w-fit">
         {/* eslint-disable-next-line @next/next/no-img-element -- viene de un proxy propio, no de un dominio remoto configurable */}
-        <img src={src} alt={mensaje.mediaCaption ?? "Imagen"} className="max-h-72 rounded-lg object-contain" />
+        <img
+          src={src}
+          alt="Sticker"
+          className="max-h-28 max-w-28 rounded-lg object-contain"
+        />
+      </a>
+    );
+  }
+  if (mensaje.tipo === "image") {
+    return (
+      <a href={src} target="_blank" rel="noopener noreferrer" className="block w-fit max-w-full">
+        {/* eslint-disable-next-line @next/next/no-img-element -- viene de un proxy propio, no de un dominio remoto configurable */}
+        <img
+          src={src}
+          alt={mensaje.mediaCaption ?? "Imagen"}
+          className="max-h-48 max-w-[min(100%,280px)] rounded-lg object-contain"
+        />
       </a>
     );
   }
   if (mensaje.tipo === "video") {
-    return <video src={src} controls className="max-h-72 max-w-full rounded-lg" />;
+    return <video src={src} controls className="max-h-48 max-w-[min(100%,280px)] rounded-lg" />;
   }
   if (mensaje.tipo === "audio") {
     return (
@@ -693,6 +764,7 @@ function Burbuja({
         )}
         {mensaje.interactivo && <ContenidoInteractivo interactivo={mensaje.interactivo} />}
         {!mensaje.tieneMedia &&
+          !TIPOS_MEDIA.has(mensaje.tipo) &&
           !mensaje.texto &&
           !mensaje.ubicacion &&
           !mensaje.contactos?.length &&
