@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import Badge from "@/src/components/ui/badge/Badge";
 import Button from "@/src/components/ui/button/Button";
+import CollapsibleSection from "@/src/components/ui/CollapsibleSection";
 import { Icon } from "@/src/components/ui/Icon";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
@@ -17,17 +18,17 @@ export default function MetaSettingsEntryCard() {
 
   if (connectionQuery.isLoading) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+      <CollapsibleSection title="Meta Lead Ads" icon="mdi:facebook">
         <PageLoader label="Cargando Meta…" />
-      </div>
+      </CollapsibleSection>
     );
   }
 
   if (connectionQuery.isError) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+      <CollapsibleSection title="Meta Lead Ads" icon="mdi:facebook">
         <QueryError error={connectionQuery.error} />
-      </div>
+      </CollapsibleSection>
     );
   }
 
@@ -36,36 +37,32 @@ export default function MetaSettingsEntryCard() {
 
   const conectado = connection.appConfigurada && connection.conectado;
   const configurado = connection.appConfigurada;
+  const estado = conectado ? "Conectado" : configurado ? "Sin conectar" : "Sin configurar";
+  const preview = conectado
+    ? `${connection.metaUserNombre} · ${connection.paginasActivas} páginas · ${connection.cuentasActivas} cuentas`
+    : configurado
+      ? "App registrada. Completa la conexión OAuth."
+      : "Configura tu Meta App y conecta páginas.";
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex gap-4">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-light-50 text-blue-light-500 dark:bg-blue-light-500/15">
-            <Icon name="mdi:facebook" size={24} />
-          </span>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Meta Lead Ads</h2>
-              <Badge color={conectado ? "success" : configurado ? "warning" : "light"} size="sm">
-                {conectado ? "Conectado" : configurado ? "Sin conectar" : "Sin configurar"}
-              </Badge>
-            </div>
-            <p className="mt-1 max-w-xl text-theme-sm text-gray-500 dark:text-gray-400">
-              {conectado
-                ? `${connection.metaUserNombre} · ${connection.paginasActivas} páginas · ${connection.cuentasActivas} cuentas publicitarias`
-                : configurado
-                  ? "App registrada. Completa la conexión OAuth y vincula páginas y cuentas."
-                  : "Configura tu Meta App y conecta páginas para recibir leads."}
-            </p>
-          </div>
-        </div>
+    <CollapsibleSection
+      title="Meta Lead Ads"
+      icon="mdi:facebook"
+      help="Conecta Facebook/Instagram Lead Ads para recibir leads nuevos en el CRM."
+      preview={preview}
+      badge={estado}
+      badgeColor={conectado ? "success" : configurado ? "warning" : "light"}
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <Badge color={conectado ? "success" : configurado ? "warning" : "light"} size="sm">
+          {estado}
+        </Badge>
         <Link href="/settings/meta" className="shrink-0">
           <Button type="button" size="sm" variant="outline" startIcon={<Icon name="mdi:cog-outline" size={18} />}>
             Gestionar Meta
           </Button>
         </Link>
       </div>
-    </div>
+    </CollapsibleSection>
   );
 }

@@ -5,10 +5,12 @@ import { queryKeys } from "@/src/lib/query/keys";
 import { getMeQuery } from "@/src/modules/auth/queries";
 import { getCurrentOrganization } from "./queries";
 import { canManageOrganization } from "@/src/lib/roles";
+import type { ModuloEstado } from "@/src/lib/auth";
 import OrganizationSettingsForm from "./OrganizationSettingsForm";
 import MetaSettingsEntryCard from "./meta/MetaSettingsEntryCard";
 import WhatsappSettingsEntryCard from "./whatsapp/WhatsappSettingsEntryCard";
 import LeadAutoAssignmentSettingsCard from "./leads/LeadAutoAssignmentSettingsCard";
+import CollapsibleSection from "@/src/components/ui/CollapsibleSection";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 
@@ -33,8 +35,8 @@ export default function SettingsView() {
   }
 
   const me = meQuery.data;
-  const metaLeadsHabilitado = me.modulos.some((m) => m.codigo === "META_LEADS" && m.habilitado);
-  const whatsappHabilitado = me.modulos.some((m) => m.codigo === "WHATSAPP" && m.habilitado);
+  const metaLeadsHabilitado = me.modulos.some((m: ModuloEstado) => m.codigo === "META_LEADS" && m.habilitado);
+  const whatsappHabilitado = me.modulos.some((m: ModuloEstado) => m.codigo === "WHATSAPP" && m.habilitado);
 
   return (
     <div className="space-y-6">
@@ -44,10 +46,15 @@ export default function SettingsView() {
       ) : orgQuery.isError ? (
         <QueryError error={orgQuery.error} />
       ) : orgQuery.data ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-          <h2 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90">Datos de la empresa</h2>
+        <CollapsibleSection
+          title="Datos de la empresa"
+          icon="mdi:office-building-outline"
+          help="Nombre, contacto, país y zona horaria de esta organización."
+          preview={orgQuery.data.nombre}
+          defaultOpen
+        >
           <OrganizationSettingsForm org={orgQuery.data} />
-        </div>
+        </CollapsibleSection>
       ) : (
         <p className="text-theme-sm text-gray-500 dark:text-gray-400">
           No se pudieron cargar los datos de la empresa.

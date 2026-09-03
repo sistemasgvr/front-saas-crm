@@ -9,6 +9,8 @@ interface HelpTooltipProps {
   className?: string;
   iconSize?: number;
   placement?: "top" | "bottom";
+  /** Alinea el globo al icono. `end` evita que se corte en el borde derecho. */
+  align?: "center" | "end";
 }
 
 /**
@@ -20,16 +22,18 @@ export default function HelpTooltip({
   className = "",
   iconSize = 16,
   placement = "top",
+  align = "center",
 }: HelpTooltipProps) {
-  const placementClasses =
-    placement === "bottom"
-      ? "top-full left-1/2 mt-2 -translate-x-1/2"
-      : "bottom-full left-1/2 mb-2 -translate-x-1/2";
+  const verticalClasses =
+    placement === "bottom" ? "top-full mt-2" : "bottom-full mb-2";
+  const horizontalClasses =
+    align === "end" ? "right-0" : "left-1/2 -translate-x-1/2";
 
-  const arrowClasses =
+  const arrowVertical =
     placement === "bottom"
-      ? "bottom-full left-1/2 -mb-px -translate-x-1/2 border-x-transparent border-b-gray-800 dark:border-b-gray-700"
-      : "top-full left-1/2 -mt-px -translate-x-1/2 border-x-transparent border-t-gray-800 dark:border-t-gray-700";
+      ? "bottom-full -mb-px border-x-transparent border-b-gray-800 dark:border-b-gray-700"
+      : "top-full -mt-px border-x-transparent border-t-gray-800 dark:border-t-gray-700";
+  const arrowHorizontal = align === "end" ? "right-2" : "left-1/2 -translate-x-1/2";
 
   return (
     <span className={`group/help relative inline-flex align-middle ${className}`}>
@@ -45,11 +49,11 @@ export default function HelpTooltip({
 
       <span
         role="tooltip"
-        className={`pointer-events-none invisible absolute z-50 w-max max-w-[16rem] rounded-lg border border-gray-800 bg-gray-800 px-3 py-2 text-left text-theme-xs leading-snug text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover/help:visible group-hover/help:opacity-100 group-focus-within/help:visible group-focus-within/help:opacity-100 dark:border-gray-700 dark:bg-gray-900 ${placementClasses}`}
+        className={`pointer-events-none invisible absolute z-[80] w-max max-w-[16rem] rounded-lg border border-gray-800 bg-gray-800 px-3 py-2 text-left text-theme-xs leading-snug text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover/help:visible group-hover/help:opacity-100 group-focus-within/help:visible group-focus-within/help:opacity-100 dark:border-gray-700 dark:bg-gray-900 ${verticalClasses} ${horizontalClasses}`}
       >
         {content}
         <span
-          className={`absolute h-0 w-0 border-4 border-transparent ${arrowClasses}`}
+          className={`absolute h-0 w-0 border-4 border-transparent ${arrowVertical} ${arrowHorizontal}`}
           aria-hidden
         />
       </span>
