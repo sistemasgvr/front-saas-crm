@@ -152,15 +152,20 @@ export default function AgendaView({ rol, usuarioId }: { rol: Rol; usuarioId: st
   const [rango, setRango] = useState(rangoInicial);
   const [asignadoFiltro, setAsignadoFiltro] = useState(esAdmin ? "todos" : "mios");
   const [vistaInicial, setVistaInicial] = useState("timeGridWeek");
+  const [esMovil, setEsMovil] = useState(false);
   const [calendarioListo, setCalendarioListo] = useState(false);
   const [itemSeleccionado, setItemSeleccionado] = useState<AgendaItemRow | null>(null);
   const [crearAbierto, setCrearAbierto] = useState(false);
   const [slotInicial, setSlotInicial] = useState<string | null>(null);
 
   useEffect(() => {
-    const movil = window.matchMedia("(max-width: 640px)").matches;
-    setVistaInicial(movil ? "listWeek" : "timeGridWeek");
+    const mq = window.matchMedia("(max-width: 639px)");
+    const sync = () => setEsMovil(mq.matches);
+    setEsMovil(mq.matches);
+    setVistaInicial(mq.matches ? "listWeek" : "timeGridWeek");
     setCalendarioListo(true);
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
   }, []);
 
   const asignablesQuery = useQuery({
@@ -257,7 +262,7 @@ export default function AgendaView({ rol, usuarioId }: { rol: Rol; usuarioId: st
       >
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           {esAdmin ? (
-            <div className="w-full min-w-[12rem] sm:w-64">
+            <div className="w-full min-w-0 sm:w-64">
               <Select
                 options={opcionesAsignado}
                 value={asignadoFiltro}
@@ -282,42 +287,59 @@ export default function AgendaView({ rol, usuarioId }: { rol: Rol; usuarioId: st
         </div>
       </PageHeader>
 
-      <div className="flex flex-wrap gap-3 text-theme-xs text-gray-500 dark:text-gray-400">
+      <div className="flex flex-wrap gap-x-3 gap-y-2 text-theme-xs text-gray-500 dark:text-gray-400">
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-brand-500" /> Programada
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-brand-500" /> Programada
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-success-500" /> Completada / realizada
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-success-500" /> Completada
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-warning-500" /> No show
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-warning-500" /> No show
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-gray-400" /> Cancelada
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-gray-400" /> Cancelada
         </span>
       </div>
 
       {agendaQuery.isError ? <QueryError error={agendaQuery.error} /> : null}
 
-      <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-white/[0.03] sm:p-4">
+      <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white p-2 dark:border-gray-800 dark:bg-white/[0.03] sm:p-4">
         {agendaQuery.isLoading || !calendarioListo ? (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 dark:bg-gray-900/70">
             <PageLoader label="Cargando agenda…" />
           </div>
         ) : null}
-        <div className="agenda-calendar min-h-[32rem] text-theme-sm text-gray-800 dark:text-gray-200">
+        <div className="agenda-calendar min-h-[28rem] text-theme-sm text-gray-800 sm:min-h-[32rem] dark:text-gray-200">
           {calendarioListo ? (
             <FullCalendar
+              key={esMovil ? "agenda-movil" : "agenda-desktop"}
               plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
               locale={esLocale}
               timeZone="America/Lima"
               initialView={vistaInicial}
-              headerToolbar={{
-                left: "prev,next today",
-                center: "title",
-                right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
-              }}
+              headerToolbar={
+                esMovil
+                  ? {
+                      left: "prev,next",
+                      center: "title",
+                      right: "today",
+                    }
+                  : {
+                      left: "prev,next today",
+                      center: "title",
+                      right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
+                    }
+              }
+              footerToolbar={
+                esMovil
+                  ? {
+                      center: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
+                    }
+                  : false
+              }
               height="auto"
+              contentHeight="auto"
               slotMinTime="07:00:00"
               slotMaxTime="21:00:00"
               slotDuration="00:30:00"
@@ -327,6 +349,8 @@ export default function AgendaView({ rol, usuarioId }: { rol: Rol; usuarioId: st
               editable={false}
               selectable
               selectMirror
+              stickyHeaderDates={!esMovil}
+              dayMaxEvents={esMovil ? 2 : true}
               events={events}
               datesSet={onDatesSet}
               eventClick={onEventClick}

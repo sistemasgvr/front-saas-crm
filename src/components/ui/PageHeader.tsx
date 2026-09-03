@@ -38,8 +38,10 @@ export default function PageHeader({
             {backLabel}
           </Link>
         )}
-        <h1 className="text-title-sm font-semibold text-gray-800 dark:text-white/90">{title}</h1>
-        {description && <p className="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">{description}</p>}
+        <h1 className="text-xl font-semibold text-gray-800 sm:text-title-sm dark:text-white/90">{title}</h1>
+        {description && (
+          <p className="mt-1 text-theme-xs text-gray-500 sm:text-theme-sm dark:text-gray-400">{description}</p>
+        )}
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         {children}
