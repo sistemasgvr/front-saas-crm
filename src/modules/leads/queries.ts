@@ -11,6 +11,7 @@ import type {
   LeadVisitaRow,
   ListaLeadsResultado,
   MetaPipeline,
+  AgendaItemRow,
   ReferenciaNombrada,
   TableroResultado,
 } from "./types";
@@ -46,6 +47,20 @@ export async function getHistorialLead(id: string): Promise<HistorialEstadoRow[]
 
 export async function getVisitasLead(id: string): Promise<LeadVisitaRow[]> {
   const data = await apiFetch<LeadVisitaRow[]>(`/leads/${id}/visitas`);
+  return Array.isArray(data) ? data : [];
+}
+
+export async function getAgendaVisitas(filtro: {
+  desde: string;
+  hasta: string;
+  asignado?: string;
+}): Promise<AgendaItemRow[]> {
+  const params = new URLSearchParams({
+    desde: filtro.desde,
+    hasta: filtro.hasta,
+  });
+  if (filtro.asignado) params.set("asignado", filtro.asignado);
+  const data = await apiFetch<AgendaItemRow[]>(`/leads/visitas/agenda?${params}`);
   return Array.isArray(data) ? data : [];
 }
 

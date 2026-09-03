@@ -92,7 +92,13 @@ function VisitaCard({ visita, destacada }: { visita: LeadVisitaRow; destacada?: 
             {visita.modalidad === "VIRTUAL" ? "Virtual" : "Presencial"}
             {" · "}
             {ETIQUETA_ESTADO[visita.estado] ?? visita.estado}
+            {visita.duracionMinutos != null ? ` · ${visita.duracionMinutos} min` : null}
           </p>
+          {visita.nota ? (
+            <p className="mt-1 text-theme-xs italic text-gray-500 dark:text-gray-400">
+              “{visita.nota}”
+            </p>
+          ) : null}
         </div>
       </div>
       {visita.feedback && (

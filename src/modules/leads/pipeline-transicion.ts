@@ -7,6 +7,7 @@ const ETIQUETAS_METADATA: Record<string, string> = {
   zona: "Zona",
   tipoInmueble: "Tipo de inmueble",
   visitaProgramadaEn: "Visita programada",
+  duracionMinutos: "Duración",
   referenciaInmueble: "Inmueble",
   modalidadVisita: "Modalidad",
   resultadoVisita: "Resultado",
@@ -34,6 +35,13 @@ const ETIQUETAS_SELECT: Record<string, Record<string, string>> = {
     NO_SHOW: "No se presentó",
     CANCELADA: "Cancelada",
   },
+  duracionMinutos: {
+    "30": "30 minutos",
+    "60": "60 minutos",
+    "90": "90 minutos",
+    "120": "2 horas",
+    "180": "3 horas",
+  },
 };
 
 export function etiquetaMetadata(codigo: string): string {
@@ -52,7 +60,23 @@ export function formatearValorMetadata(codigo: string, valor: string): string {
       return valor;
     }
   }
+  if (codigo === "duracionMinutos") {
+    return ETIQUETAS_SELECT.duracionMinutos?.[valor] ?? `${valor} min`;
+  }
   return ETIQUETAS_SELECT[codigo]?.[valor] ?? valor;
+}
+
+/** Valores iniciales del modal de transición (p. ej. duración por defecto 60). */
+export function valoresInicialesTransicion(
+  campos: CampoTransicionMeta[],
+): Record<string, string> {
+  const iniciales: Record<string, string> = {};
+  for (const campo of campos) {
+    if (campo.codigo === "duracionMinutos") {
+      iniciales[campo.codigo] = "60";
+    }
+  }
+  return iniciales;
 }
 
 export function camposParaDestino(

@@ -9,6 +9,7 @@ import Input from "@/src/components/form/input/InputField";
 import {
   construirPayloadTransicion,
   formularioTransicionValido,
+  valoresInicialesTransicion,
 } from "./pipeline-transicion";
 import type { CampoTransicionMeta } from "./types";
 
@@ -37,7 +38,9 @@ export default function TransicionPipelineModal({
   // (render condicional `destinoTransicion && <TransicionPipelineModal/>`),
   // así que cada apertura ya es un mount fresco con `valores` vacío — no
   // hace falta sincronizar nada cuando cambian `titulo`/`campos`.
-  const [valores, setValores] = useState<Record<string, string>>({});
+  const [valores, setValores] = useState<Record<string, string>>(() =>
+    valoresInicialesTransicion(campos),
+  );
 
   const setValor = (codigo: string, valor: string) => {
     setValores((prev) => ({ ...prev, [codigo]: valor }));
@@ -160,6 +163,11 @@ export default function TransicionPipelineModal({
         {!puedeConfirmar && (
           <p className="mt-3 text-theme-xs text-gray-400">Completa los campos obligatorios (*) para continuar.</p>
         )}
+        {campos.some((c) => c.codigo === "visitaProgramadaEn") ? (
+          <p className="mt-3 text-theme-xs text-gray-500 dark:text-gray-400">
+            Horario laboral: lun–sáb 08:00–20:00 (Lima). No se puede solapar con otra visita del mismo asesor.
+          </p>
+        ) : null}
       </div>
     </Modal>
   );

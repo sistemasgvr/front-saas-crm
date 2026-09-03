@@ -376,7 +376,7 @@ export default function LeadsKanbanView({
       metadata?: Record<string, string>;
     }) => gestionarLeadAction(leadId, input),
     successMessage: "Lead movido",
-    invalidateKeys: [queryKeys.leadsAll, queryKeys.leadsNuevosCount],
+    invalidateKeys: [queryKeys.leadsAll, queryKeys.leadsNuevosCount, queryKeys.leadsAgendaAll],
   });
 
   const leadPorId = useMemo(() => {

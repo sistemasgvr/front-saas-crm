@@ -75,14 +75,38 @@ export default function PipelineTimeline({ filas }: { filas: HistorialEstadoRow[
                 </ul>
               )}
               {fila.visita && (
-                <div className="mt-1.5 rounded-lg bg-brand-50/50 px-2.5 py-2 text-theme-xs text-gray-600 dark:bg-brand-500/5 dark:text-gray-300">
-                  <span className="font-medium">Visita:</span>{" "}
-                  {new Date(fila.visita.programadaEn).toLocaleString("es-PE", {
-                    timeZone: "America/Lima",
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}{" "}
-                  — {fila.visita.referenciaInmueble}
+                <div className="mt-1.5 space-y-1 rounded-lg bg-brand-50/50 px-2.5 py-2 text-theme-xs text-gray-600 dark:bg-brand-500/5 dark:text-gray-300">
+                  <p>
+                    <span className="font-medium">Visita:</span>{" "}
+                    {new Date(fila.visita.programadaEn).toLocaleString("es-PE", {
+                      timeZone: "America/Lima",
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                    {fila.visita.duracionMinutos != null
+                      ? ` · ${fila.visita.duracionMinutos} min`
+                      : null}
+                  </p>
+                  <p>
+                    <span className="font-medium">Inmueble:</span> {fila.visita.referenciaInmueble}
+                  </p>
+                  <p>
+                    {fila.visita.modalidad === "VIRTUAL" ? "Virtual" : "Presencial"}
+                    {" · "}
+                    {fila.visita.estado === "PROGRAMADA"
+                      ? "Programada"
+                      : fila.visita.estado === "REALIZADA"
+                        ? "Realizada"
+                        : fila.visita.estado === "NO_SHOW"
+                          ? "No show"
+                          : fila.visita.estado === "CANCELADA"
+                            ? "Cancelada"
+                            : fila.visita.estado}
+                    {fila.visita.resultado ? ` · Resultado: ${fila.visita.resultado}` : null}
+                  </p>
+                  {fila.visita.nota ? (
+                    <p className="italic text-gray-500 dark:text-gray-400">“{fila.visita.nota}”</p>
+                  ) : null}
                 </div>
               )}
               {fila.calificacion && (

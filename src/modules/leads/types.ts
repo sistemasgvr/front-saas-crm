@@ -108,10 +108,13 @@ export interface HistorialEstadoRow {
   visita: {
     id: string;
     programadaEn: string;
+    programadaFin?: string;
+    duracionMinutos?: number;
     referenciaInmueble: string;
     modalidad: string;
     estado: string;
     resultado: string | null;
+    nota?: string | null;
   } | null;
   calificacion: {
     id: string;
@@ -129,6 +132,8 @@ export interface HistorialEstadoRow {
 export interface LeadVisitaRow {
   id: string;
   programadaEn: string;
+  programadaFin?: string;
+  duracionMinutos?: number;
   referenciaInmueble: string;
   modalidad: string;
   estado: string;
@@ -136,6 +141,71 @@ export interface LeadVisitaRow {
   nota: string | null;
   feedback: string | null;
   fechaCreacion: string;
+}
+
+export interface AgendaItemRow {
+  id: string;
+  origen: "visita" | "actividad";
+  tipo: string;
+  titulo: string;
+  leadId: string;
+  leadNombre: string | null;
+  leadTelefono: string | null;
+  programadaEn: string;
+  programadaFin: string;
+  duracionMinutos: number;
+  referenciaInmueble: string | null;
+  modalidad: string | null;
+  estado: string;
+  nota?: string | null;
+  asignado: ReferenciaNombrada | null;
+}
+
+/** @deprecated usar AgendaItemRow */
+export type VisitaAgendaRow = AgendaItemRow;
+
+export interface CrearActividadAgendaInput {
+  leadId: string;
+  tipo: string;
+  titulo?: string;
+  programadaEn: string;
+  duracionMinutos?: number;
+  referenciaInmueble?: string;
+  modalidad?: string;
+  nota?: string;
+  asignadoUsuarioId?: string;
+}
+
+export interface ActualizarActividadAgendaInput {
+  tipo?: string;
+  titulo?: string;
+  programadaEn?: string;
+  duracionMinutos?: number;
+  referenciaInmueble?: string;
+  modalidad?: string;
+  estado?: string;
+  nota?: string;
+}
+
+export interface CrearVisitaAgendaInput {
+  leadId: string;
+  programadaEn: string;
+  duracionMinutos?: number;
+  referenciaInmueble: string;
+  modalidad?: string;
+  nota?: string;
+  asignadoUsuarioId?: string;
+}
+
+export interface ActualizarVisitaAgendaInput {
+  programadaEn?: string;
+  duracionMinutos?: number;
+  referenciaInmueble?: string;
+  modalidad?: string;
+  estado?: string;
+  resultado?: string;
+  feedback?: string;
+  nota?: string;
 }
 
 export interface GestionarLeadInput {

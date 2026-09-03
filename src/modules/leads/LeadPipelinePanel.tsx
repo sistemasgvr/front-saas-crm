@@ -105,7 +105,7 @@ export default function LeadPipelinePanel({
   const gestionar = useAppMutation({
     mutationFn: (input: Parameters<typeof gestionarLeadAction>[1]) => gestionarLeadAction(leadId, input),
     successMessage: "Gestión actualizada",
-    invalidateKeys: [queryKeys.lead(leadId), queryKeys.leadsAll, queryKeys.leadHistorial(leadId), queryKeys.leadVisitas(leadId), queryKeys.leadPipelineMeta(tipoLead)],
+    invalidateKeys: [queryKeys.lead(leadId), queryKeys.leadsAll, queryKeys.leadHistorial(leadId), queryKeys.leadVisitas(leadId), queryKeys.leadPipelineMeta(tipoLead), queryKeys.leadsAgendaAll],
   });
 
   const estadoActualMeta = metaQuery.data?.estados.find(

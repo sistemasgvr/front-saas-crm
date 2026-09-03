@@ -45,6 +45,10 @@ export const queryKeys = {
   leadsAsignables: ["leads", "asignables"] as const,
   leadHistorial: (id: string) => ["leads", id, "historial"] as const,
   leadVisitas: (id: string) => ["leads", id, "visitas"] as const,
+  leadsAgenda: (params: { desde: string; hasta: string; asignado?: string }) =>
+    ["leads", "visitas", "agenda", params] as const,
+  /** Prefijo para invalidar todas las ventanas de agenda. */
+  leadsAgendaAll: ["leads", "visitas", "agenda"] as const,
   leadsNuevosCount: ["leads", "nuevos-count"] as const,
   leadPipelineMeta: (tipoLead: string | null | undefined) => ["leads", "pipeline-meta", tipoLead ?? null] as const,
   leadsTablero: (tipoLead: string | null | undefined, asignado?: string) =>
