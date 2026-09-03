@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { motion, useReducedMotion } from "motion/react";
 import EmojiPicker, { Theme as TemaEmojiPicker, type EmojiClickData } from "emoji-picker-react";
 import type { Gif } from "gif-picker-react";
 import Avatar from "@/src/components/ui/avatar/Avatar";
@@ -32,6 +33,13 @@ import {
 } from "./actions";
 import { clearBorrador, getBorrador, setBorrador } from "./chat-borradores";
 import { ComposerMediaPicker, type StickerPackItem } from "./ComposerMediaPicker";
+import { desbloquearAudioChat, feedbackMensajeEnviado } from "./chat-feedback";
+import { GrabadorNotaVoz } from "./grabar-nota-voz";
+import {
+  esFavorito,
+  favoritoDesdeMensaje,
+  quitarFavorito,
+} from "./sticker-favoritos";
 import { getChat, getTemplates, getChats } from "./queries";
 import type {
   ConversacionDetalle,
@@ -565,7 +573,7 @@ function SelectorComposerMedia({
 }
 
 const ANCHO_MENU_ACCIONES = 200;
-const ALTO_MENU_ACCIONES = 168;
+const ALTO_MENU_ACCIONES = 200;
 
 /** El desplegable de "más acciones" del hover — mismo mecanismo de posición
  * (portal + coordenadas reales) que SelectorReacciones. */
@@ -575,6 +583,8 @@ function MenuAcciones({
   onCopiar,
   onReenviar,
   onEliminar,
+  onFavorito,
+  esFavoritoSticker,
   onCerrar,
 }: {
   anchorRef: React.RefObject<HTMLElement | null>;
@@ -582,6 +592,8 @@ function MenuAcciones({
   onCopiar: () => void;
   onReenviar: () => void;
   onEliminar: () => void;
+  onFavorito?: () => void;
+  esFavoritoSticker?: boolean;
   onCerrar: () => void;
 }) {
   const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
@@ -591,7 +603,8 @@ function MenuAcciones({
     const anchor = anchorRef.current;
     if (!anchor) return;
     const rect = anchor.getBoundingClientRect();
-    const hayEspacioArriba = rect.top - ALTO_MENU_ACCIONES - MARGEN_VIEWPORT > 0;
+    const alto = onFavorito ? ALTO_MENU_ACCIONES + 36 : ALTO_MENU_ACCIONES;
+    const hayEspacioArriba = rect.top - alto - MARGEN_VIEWPORT > 0;
     const left = Math.min(
       Math.max(rect.right - ANCHO_MENU_ACCIONES, MARGEN_VIEWPORT),
       window.innerWidth - ANCHO_MENU_ACCIONES - MARGEN_VIEWPORT,
@@ -601,7 +614,7 @@ function MenuAcciones({
         ? { bottom: window.innerHeight - rect.top + MARGEN_VIEWPORT, left }
         : { top: rect.bottom + MARGEN_VIEWPORT, left },
     );
-  }, [anchorRef]);
+  }, [anchorRef, onFavorito]);
 
   useEffect(() => {
     function onClickFuera(e: Event) {
@@ -627,12 +640,29 @@ function MenuAcciones({
 
   if (!pos || typeof document === "undefined") return null;
 
-  const items = [
+  const items: {
+    icon: string;
+    label: string;
+    onClick: () => void;
+    danger?: boolean;
+  }[] = [
     { icon: "mdi:reply-outline", label: "Responder", onClick: onResponder },
     { icon: "mdi:content-copy", label: "Copiar", onClick: onCopiar },
     { icon: "mdi:share-outline", label: "Reenviar", onClick: onReenviar },
-    { icon: "mdi:trash-can-outline", label: "Eliminar del CRM", onClick: onEliminar, danger: true },
   ];
+  if (onFavorito) {
+    items.push({
+      icon: esFavoritoSticker ? "mdi:star" : "mdi:star-outline",
+      label: esFavoritoSticker ? "Quitar de favoritos" : "Añadir a favoritos",
+      onClick: onFavorito,
+    });
+  }
+  items.push({
+    icon: "mdi:trash-can-outline",
+    label: "Eliminar del CRM",
+    onClick: onEliminar,
+    danger: true,
+  });
 
   return createPortal(
     <div
@@ -727,6 +757,7 @@ function Burbuja({
   mensaje,
   conversacionId,
   nombreContacto,
+  animarEntrada,
   onResponder,
   onReenviar,
   onEliminar,
@@ -734,17 +765,34 @@ function Burbuja({
   mensaje: Mensaje;
   conversacionId: string;
   nombreContacto: string;
+  animarEntrada?: boolean;
   onResponder: (mensaje: Mensaje) => void;
   onReenviar: (mensaje: Mensaje) => void;
   onEliminar: (mensaje: Mensaje) => void;
 }) {
   const [selectorAbierto, setSelectorAbierto] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [esFavoritoSticker, setEsFavoritoSticker] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const chevronRef = useRef<HTMLButtonElement>(null);
   const esSaliente = mensaje.direccion === "saliente";
   const eliminado = mensaje.estadoEntrega === "eliminado";
   const tieneReaccion = Boolean(mensaje.reaccionAgente || mensaje.reaccionCliente);
+  const puedeFavorito = !eliminado && mensaje.tipo === "sticker" && mensaje.tieneMedia;
+
+  useEffect(() => {
+    if (!puedeFavorito) {
+      setEsFavoritoSticker(false);
+      return;
+    }
+    let cancelado = false;
+    void esFavorito(mensaje.id).then((v) => {
+      if (!cancelado) setEsFavoritoSticker(v);
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, [puedeFavorito, mensaje.id]);
 
   const reaccionar = useAppMutation({
     mutationFn: (emoji: string) => enviarReaccionAction(conversacionId, mensaje.id, emoji),
@@ -816,9 +864,24 @@ function Burbuja({
   );
 
   const esSticker = !eliminado && mensaje.tipo === "sticker" && mensaje.tieneMedia;
+  const preferirMenosMovimiento = useReducedMotion();
 
   return (
-    <div className={`group flex items-center gap-1 ${esSaliente ? "justify-end" : "justify-start"}`}>
+    <motion.div
+      className={`group flex items-center gap-1 ${esSaliente ? "justify-end" : "justify-start"}`}
+      style={{ transformOrigin: esSaliente ? "bottom right" : "bottom left" }}
+      initial={
+        animarEntrada && !preferirMenosMovimiento
+          ? { opacity: 0, y: 14, scale: 0.88, x: esSaliente ? 18 : -12 }
+          : false
+      }
+      animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
+      transition={
+        preferirMenosMovimiento
+          ? { duration: 0 }
+          : { type: "spring", stiffness: 520, damping: 28, mass: 0.65 }
+      }
+    >
       {esSaliente && grupoAcciones}
       <div
         className={`relative max-w-[85%] space-y-1.5 text-theme-sm sm:max-w-[75%] ${
@@ -955,6 +1018,32 @@ function Burbuja({
               onReenviar(mensaje);
               setMenuAbierto(false);
             }}
+            esFavoritoSticker={esFavoritoSticker}
+            onFavorito={
+              puedeFavorito
+                ? () => {
+                    void (async () => {
+                      try {
+                        if (esFavoritoSticker) {
+                          await quitarFavorito(mensaje.id);
+                          setEsFavoritoSticker(false);
+                        } else {
+                          await favoritoDesdeMensaje({
+                            mensajeId: mensaje.id,
+                            conversacionId,
+                            nombre: "Sticker",
+                          });
+                          setEsFavoritoSticker(true);
+                        }
+                        window.dispatchEvent(new Event("crm-sticker-favoritos-changed"));
+                      } catch {
+                        // Silencioso: el menú ya se cierra; el usuario puede reintentar.
+                      }
+                      setMenuAbierto(false);
+                    })();
+                  }
+                : undefined
+            }
             onEliminar={() => {
               onEliminar(mensaje);
               setMenuAbierto(false);
@@ -964,7 +1053,7 @@ function Burbuja({
         )}
       </div>
       {!esSaliente && grupoAcciones}
-    </div>
+    </motion.div>
   );
 }
 
@@ -981,6 +1070,14 @@ export default function ChatDetailView({ id }: { id: string }) {
   const [destinoReenvio, setDestinoReenvio] = useState("");
   const [menuAdjuntarAbierto, setMenuAdjuntarAbierto] = useState(false);
   const [pickerEmojiAbierto, setPickerEmojiAbierto] = useState(false);
+  const [idsAnimarEntrada, setIdsAnimarEntrada] = useState<Set<string>>(() => new Set());
+  const [pulsarEnviar, setPulsarEnviar] = useState(false);
+  const [grabandoVoz, setGrabandoVoz] = useState(false);
+  const [segundosVoz, setSegundosVoz] = useState(0);
+  const grabadorVozRef = useRef<GrabadorNotaVoz | null>(null);
+  const timerVozRef = useRef<number | null>(null);
+  const mensajesVistosRef = useRef<Set<string>>(new Set());
+  const conversacionAnimRef = useRef<string | null>(null);
   const [modalUbicacionAbierto, setModalUbicacionAbierto] = useState(false);
   const [ubicLat, setUbicLat] = useState("");
   const [ubicLng, setUbicLng] = useState("");
@@ -1112,6 +1209,8 @@ export default function ChatDetailView({ id }: { id: string }) {
       }
     },
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
+    // Loading solo en el botón enviar — no el overlay global "Procesando…".
+    silent: true,
   });
 
   const enviarArchivo = useAppMutation({
@@ -1124,18 +1223,95 @@ export default function ChatDetailView({ id }: { id: string }) {
       await enviarMediaAction(id, formData);
     },
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
+    silent: true,
   });
 
-  /** Envío inmediato de GIF/sticker del picker (sin pasar por el draft del composer). */
+  /** Envío inmediato de GIF/sticker/nota de voz (sin pasar por el draft del composer). */
   const enviarMediaDirecto = useAppMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async (input: File | { file: File; esVoz?: boolean }) => {
+      const file = input instanceof File ? input : input.file;
+      const esVoz = input instanceof File ? false : Boolean(input.esVoz);
       const formData = new FormData();
       formData.append("archivo", file);
       if (respondiendoA) formData.append("respondeAMensajeId", respondiendoA.id);
+      if (esVoz) formData.append("esVoz", "1");
       await enviarMediaAction(id, formData);
     },
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
+    silent: true,
   });
+
+  function detenerTimerVoz() {
+    if (timerVozRef.current !== null) {
+      window.clearInterval(timerVozRef.current);
+      timerVozRef.current = null;
+    }
+  }
+
+  async function iniciarGrabacionVoz() {
+    setErrorArchivo(null);
+    setPickerEmojiAbierto(false);
+    setMenuAdjuntarAbierto(false);
+    desbloquearAudioChat();
+    try {
+      const grabador = new GrabadorNotaVoz();
+      grabadorVozRef.current = grabador;
+      await grabador.iniciar();
+      setGrabandoVoz(true);
+      setSegundosVoz(0);
+      detenerTimerVoz();
+      timerVozRef.current = window.setInterval(() => {
+        setSegundosVoz((s) => s + 1);
+      }, 1000);
+    } catch {
+      grabadorVozRef.current = null;
+      setErrorArchivo("No se pudo acceder al micrófono. Revisa los permisos del navegador.");
+    }
+  }
+
+  function cancelarGrabacionVoz() {
+    grabadorVozRef.current?.cancelar();
+    grabadorVozRef.current = null;
+    detenerTimerVoz();
+    setGrabandoVoz(false);
+    setSegundosVoz(0);
+  }
+
+  async function enviarGrabacionVoz() {
+    const grabador = grabadorVozRef.current;
+    if (!grabador) return;
+    setErrorArchivo(null);
+    try {
+      const resultado = await grabador.detener();
+      grabadorVozRef.current = null;
+      detenerTimerVoz();
+      setGrabandoVoz(false);
+      setSegundosVoz(0);
+      const error = validarArchivo(resultado.file);
+      if (error) {
+        setErrorArchivo(error);
+        return;
+      }
+      await enviarMediaDirecto.mutateAsync({ file: resultado.file, esVoz: resultado.esVoz });
+      feedbackMensajeEnviado();
+      setPulsarEnviar(true);
+      window.setTimeout(() => setPulsarEnviar(false), 220);
+      setRespondiendoA(null);
+    } catch (e) {
+      grabadorVozRef.current = null;
+      detenerTimerVoz();
+      setGrabandoVoz(false);
+      setSegundosVoz(0);
+      setErrorArchivo(e instanceof Error ? e.message : "No se pudo enviar la nota de voz");
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      grabadorVozRef.current?.cancelar();
+      detenerTimerVoz();
+    };
+  }, []);
 
   async function enviarGifElegido(gif: Gif) {
     setErrorArchivo(null);
@@ -1154,6 +1330,9 @@ export default function ChatDetailView({ id }: { id: string }) {
         return;
       }
       await enviarMediaDirecto.mutateAsync(file);
+      feedbackMensajeEnviado();
+      setPulsarEnviar(true);
+      window.setTimeout(() => setPulsarEnviar(false), 220);
       setRespondiendoA(null);
     } catch (e) {
       setErrorArchivo(e instanceof Error ? e.message : "No se pudo enviar el GIF");
@@ -1163,13 +1342,18 @@ export default function ChatDetailView({ id }: { id: string }) {
   async function enviarStickerPack(sticker: StickerPackItem) {
     setErrorArchivo(null);
     try {
-      const file = await descargarComoArchivo(sticker.src, `${sticker.id}.webp`, "image/webp");
+      const file = sticker.blob
+        ? new File([sticker.blob], `${sticker.id}.webp`, { type: "image/webp" })
+        : await descargarComoArchivo(sticker.src, `${sticker.id}.webp`, "image/webp");
       const error = validarArchivo(file);
       if (error) {
         setErrorArchivo(error);
         return;
       }
       await enviarMediaDirecto.mutateAsync(file);
+      feedbackMensajeEnviado();
+      setPulsarEnviar(true);
+      window.setTimeout(() => setPulsarEnviar(false), 220);
       setRespondiendoA(null);
     } catch (e) {
       setErrorArchivo(e instanceof Error ? e.message : "No se pudo enviar el sticker");
@@ -1331,8 +1515,49 @@ export default function ChatDetailView({ id }: { id: string }) {
   });
 
   useEffect(() => {
-    finRef.current?.scrollIntoView({ block: "end" });
-  }, [chatQuery.data?.mensajes.length]);
+    finRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+  }, [chatQuery.data?.mensajes.length, idsAnimarEntrada]);
+
+  // Animar solo mensajes nuevos (no el historial al abrir el chat).
+  useEffect(() => {
+    const mensajes = chatQuery.data?.mensajes;
+    if (!mensajes) return;
+
+    if (conversacionAnimRef.current !== id) {
+      conversacionAnimRef.current = id;
+      mensajesVistosRef.current = new Set(mensajes.map((m: Mensaje) => m.id));
+      setIdsAnimarEntrada(new Set());
+      return;
+    }
+
+    const nuevos = mensajes.filter((m: Mensaje) => !mensajesVistosRef.current.has(m.id));
+    if (nuevos.length === 0) return;
+
+    for (const m of nuevos) mensajesVistosRef.current.add(m.id);
+    setIdsAnimarEntrada((prev) => {
+      const next = new Set(prev);
+      for (const m of nuevos) next.add(m.id);
+      return next;
+    });
+
+    const timer = window.setTimeout(() => {
+      setIdsAnimarEntrada((prev) => {
+        const next = new Set(prev);
+        for (const m of nuevos) next.delete(m.id);
+        return next;
+      });
+    }, 320);
+    return () => window.clearTimeout(timer);
+  }, [chatQuery.data?.mensajes, id]);
+
+  function alEnviarConFeedback(onDone?: () => void) {
+    return () => {
+      feedbackMensajeEnviado();
+      setPulsarEnviar(true);
+      window.setTimeout(() => setPulsarEnviar(false), 220);
+      onDone?.();
+    };
+  }
 
   useEffect(() => {
     return () => {
@@ -1426,6 +1651,7 @@ export default function ChatDetailView({ id }: { id: string }) {
               mensaje={mensaje}
               conversacionId={id}
               nombreContacto={nombre}
+              animarEntrada={idsAnimarEntrada.has(mensaje.id)}
               onResponder={setRespondiendoA}
               onReenviar={(m) => {
                 setReenviandoMensaje(m);
@@ -1459,7 +1685,7 @@ export default function ChatDetailView({ id }: { id: string }) {
               event.preventDefault();
               if (archivo) {
                 enviarArchivo.mutate(undefined, {
-                  onSuccess: () => {
+                  onSuccess: alEnviarConFeedback(() => {
                     setArchivo(null);
                     textoRef.current = "";
                     setTexto("");
@@ -1467,17 +1693,17 @@ export default function ChatDetailView({ id }: { id: string }) {
                     setRespondiendoA(null);
                     setPickerEmojiAbierto(false);
                     if (inputArchivoRef.current) inputArchivoRef.current.value = "";
-                  },
+                  }),
                 });
               } else if (texto.trim()) {
                 enviar.mutate(undefined, {
-                  onSuccess: () => {
+                  onSuccess: alEnviarConFeedback(() => {
                     textoRef.current = "";
                     setTexto("");
                     clearBorrador(id);
                     setRespondiendoA(null);
                     setPickerEmojiAbierto(false);
-                  },
+                  }),
                 });
               }
             }}
@@ -1533,6 +1759,40 @@ export default function ChatDetailView({ id }: { id: string }) {
               </div>
             )}
             {errorArchivo && <p className="text-theme-xs text-error-500">{errorArchivo}</p>}
+            {grabandoVoz ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={cancelarGrabacionVoz}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-error-500 transition hover:bg-error-50 dark:hover:bg-error-500/10"
+                  aria-label="Cancelar nota de voz"
+                >
+                  <Icon name="mdi:trash-can-outline" size={22} />
+                </button>
+                <div className="flex min-h-11 flex-1 items-center gap-2 rounded-3xl border border-error-200 bg-error-50/60 px-4 dark:border-error-500/30 dark:bg-error-500/10">
+                  <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-error-500" />
+                  <span className="text-theme-sm font-medium tabular-nums text-error-600 dark:text-error-400">
+                    {String(Math.floor(segundosVoz / 60)).padStart(2, "0")}:
+                    {String(segundosVoz % 60).padStart(2, "0")}
+                  </span>
+                  <span className="text-theme-xs text-gray-500 dark:text-gray-400">Grabando…</span>
+                </div>
+                <motion.button
+                  type="button"
+                  onClick={() => void enviarGrabacionVoz()}
+                  disabled={enviarMediaDirecto.isPending}
+                  aria-label="Enviar nota de voz"
+                  whileTap={{ scale: 0.88 }}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-brand-300"
+                >
+                  {enviarMediaDirecto.isPending ? (
+                    <Spinner size={18} />
+                  ) : (
+                    <Icon name="mdi:send" size={19} className="translate-x-px" />
+                  )}
+                </motion.button>
+              </div>
+            ) : (
             <div className="flex items-end gap-2">
               <input
                 ref={inputArchivoRef}
@@ -1621,6 +1881,7 @@ export default function ChatDetailView({ id }: { id: string }) {
                 <textarea
                   ref={textareaRef}
                   value={texto}
+                  onFocus={() => desbloquearAudioChat()}
                   onChange={(event) => actualizarTexto(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" && !event.shiftKey) {
@@ -1634,7 +1895,19 @@ export default function ChatDetailView({ id }: { id: string }) {
                   className="max-h-32 min-h-11 flex-1 resize-none bg-transparent px-1.5 py-2.5 text-base text-gray-800 outline-none sm:text-theme-sm dark:text-white/90"
                 />
               </div>
-              <button
+              {!archivo && !texto.trim() ? (
+                <motion.button
+                  type="button"
+                  onClick={() => void iniciarGrabacionVoz()}
+                  disabled={enviarMediaDirecto.isPending}
+                  aria-label="Grabar nota de voz"
+                  whileTap={{ scale: 0.88 }}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-brand-300 dark:disabled:bg-brand-500/40"
+                >
+                  <Icon name="mdi:microphone" size={22} />
+                </motion.button>
+              ) : (
+              <motion.button
                 type="submit"
                 disabled={
                   (!archivo && !texto.trim()) ||
@@ -1643,15 +1916,20 @@ export default function ChatDetailView({ id }: { id: string }) {
                   enviarMediaDirecto.isPending
                 }
                 aria-label="Enviar mensaje"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-brand-300 dark:disabled:bg-brand-500/40"
+                whileTap={{ scale: 0.88 }}
+                animate={pulsarEnviar ? { scale: [1, 0.84, 1] } : { scale: 1 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-brand-300 dark:disabled:bg-brand-500/40"
               >
                 {enviar.isPending || enviarArchivo.isPending || enviarMediaDirecto.isPending ? (
                   <Spinner size={18} />
                 ) : (
                   <Icon name="mdi:send" size={19} className="translate-x-px" />
                 )}
-              </button>
+              </motion.button>
+              )}
             </div>
+            )}
           </form>
         ) : (
           <div className="space-y-2">
@@ -1684,10 +1962,10 @@ export default function ChatDetailView({ id }: { id: string }) {
                   disabled={!plantillaSeleccionada}
                   onClick={() =>
                     enviar.mutate(undefined, {
-                      onSuccess: () => {
+                      onSuccess: alEnviarConFeedback(() => {
                         setPlantillaSeleccionada("");
                         setValoresVariables({});
-                      },
+                      }),
                     })
                   }
                 >
@@ -1719,10 +1997,10 @@ export default function ChatDetailView({ id }: { id: string }) {
                   disabled={!plantillaSeleccionada || !parametrosCompletos}
                   onClick={() =>
                     enviar.mutate(undefined, {
-                      onSuccess: () => {
+                      onSuccess: alEnviarConFeedback(() => {
                         setPlantillaSeleccionada("");
                         setValoresVariables({});
-                      },
+                      }),
                     })
                   }
                 >
@@ -1761,10 +2039,10 @@ export default function ChatDetailView({ id }: { id: string }) {
               disabled={!ubicLat.trim() || !ubicLng.trim()}
               onClick={() =>
                 enviarUbicacion.mutate(undefined, {
-                  onSuccess: () => {
+                  onSuccess: alEnviarConFeedback(() => {
                     cerrarModalUbicacion();
                     setRespondiendoA(null);
-                  },
+                  }),
                 })
               }
             >
@@ -1824,10 +2102,10 @@ export default function ChatDetailView({ id }: { id: string }) {
               disabled={!contactoNombre.trim() || !contactoTelefono.trim()}
               onClick={() =>
                 enviarContacto.mutate(undefined, {
-                  onSuccess: () => {
+                  onSuccess: alEnviarConFeedback(() => {
                     cerrarModalContacto();
                     setRespondiendoA(null);
-                  },
+                  }),
                 })
               }
             >
@@ -1877,10 +2155,10 @@ export default function ChatDetailView({ id }: { id: string }) {
               disabled={!interactivoValido}
               onClick={() =>
                 enviarInteractivo.mutate(undefined, {
-                  onSuccess: () => {
+                  onSuccess: alEnviarConFeedback(() => {
                     cerrarModalInteractivo();
                     setRespondiendoA(null);
-                  },
+                  }),
                 })
               }
             >
@@ -2101,8 +2379,8 @@ export default function ChatDetailView({ id }: { id: string }) {
         <div className="px-5 py-4">
           <Select
             options={(chatsQuery.data ?? [])
-              .filter((c) => c.id !== id && !c.bloqueado)
-              .map((c) => ({
+              .filter((c: ConversacionResumen) => c.id !== id && !c.bloqueado)
+              .map((c: ConversacionResumen) => ({
                 value: c.id,
                 label: c.lead?.nombre ?? c.nombreContacto ?? `+${c.waId}`,
               }))}

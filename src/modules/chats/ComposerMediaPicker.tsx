@@ -11,6 +11,12 @@ import { Klipy } from "gif-picker-react/providers/klipy";
 import { Icon } from "@/src/components/ui/Icon";
 import { useTheme } from "@/src/context/ThemeContext";
 import packStickers from "./sticker-pack.json";
+import {
+  listarFavoritos,
+  objectUrlDeFavorito,
+  quitarFavorito,
+  type StickerFavorito,
+} from "./sticker-favoritos";
 
 const ANCHO_PICKER = 350;
 const ALTO_CONTENIDO = 380;
@@ -22,6 +28,8 @@ export interface StickerPackItem {
   id: string;
   nombre: string;
   src: string;
+  /** Si viene de IndexedDB, el blob para reenviar sin re-fetch. */
+  blob?: Blob;
 }
 
 type Props = {
@@ -38,7 +46,7 @@ type Props = {
  * Panel unificado estilo WhatsApp Web: tabs Emoji | GIF | Stickers.
  * - Emoji: emoji-picker-react
  * - GIF: gif-picker-react + Klipy (NEXT_PUBLIC_KLIPY_API_KEY)
- * - Stickers: pack propio (Cloud API no expone la tienda de WhatsApp)
+ * - Stickers: favoritos locales + pack propio (Cloud API no expone la tienda)
  */
 export function ComposerMediaPicker({
   abierto,
@@ -51,10 +59,49 @@ export function ComposerMediaPicker({
 }: Props) {
   const [tab, setTab] = useState<TabComposerPicker>("emoji");
   const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
+  const [favoritos, setFavoritos] = useState<StickerFavorito[]>([]);
+  const [urlsFavoritos, setUrlsFavoritos] = useState<Record<string, string>>({});
   const panelRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
   const oscuro = theme === "dark";
   const klipyKey = process.env.NEXT_PUBLIC_KLIPY_API_KEY?.trim() ?? "";
+
+  useEffect(() => {
+    let cancelado = false;
+    const urlsCreadas: string[] = [];
+
+    async function cargar() {
+      try {
+        const rows = await listarFavoritos();
+        if (cancelado) return;
+        const map: Record<string, string> = {};
+        for (const f of rows) {
+          const url = objectUrlDeFavorito(f);
+          urlsCreadas.push(url);
+          map[f.id] = url;
+        }
+        setFavoritos(rows);
+        setUrlsFavoritos(map);
+      } catch {
+        if (!cancelado) {
+          setFavoritos([]);
+          setUrlsFavoritos({});
+        }
+      }
+    }
+
+    if (abierto && tab === "sticker") void cargar();
+
+    function onChanged() {
+      if (abierto && tab === "sticker") void cargar();
+    }
+    window.addEventListener("crm-sticker-favoritos-changed", onChanged);
+    return () => {
+      cancelado = true;
+      window.removeEventListener("crm-sticker-favoritos-changed", onChanged);
+      for (const u of urlsCreadas) URL.revokeObjectURL(u);
+    };
+  }, [abierto, tab]);
 
   useLayoutEffect(() => {
     if (!abierto) {
@@ -160,12 +207,58 @@ export function ComposerMediaPicker({
 
         {tab === "sticker" && (
           <div className="flex h-full flex-col">
-            <div className="border-b border-gray-100 px-3 py-2 dark:border-gray-800">
-              <p className="text-theme-xs text-gray-500 dark:text-gray-400">
-                Pack del CRM — la Cloud API no incluye la tienda de WhatsApp.
-              </p>
-            </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-2">
+              {favoritos.length > 0 && (
+                <div className="mb-3">
+                  <p className="mb-1.5 px-1 text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                    Favoritos
+                  </p>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {favoritos.map((f) => (
+                      <div key={f.id} className="group relative">
+                        <button
+                          type="button"
+                          title={f.nombre}
+                          onClick={() => {
+                            onSticker({
+                              id: f.id,
+                              nombre: f.nombre,
+                              src: urlsFavoritos[f.id] ?? "",
+                              blob: f.blob,
+                            });
+                            onCerrar();
+                          }}
+                          className="flex aspect-square w-full items-center justify-center rounded-xl p-1.5 transition hover:bg-gray-100 dark:hover:bg-white/5"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={urlsFavoritos[f.id]}
+                            alt={f.nombre}
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          title="Quitar de favoritos"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void quitarFavorito(f.id).then(() => {
+                              window.dispatchEvent(new Event("crm-sticker-favoritos-changed"));
+                            });
+                          }}
+                          className="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition group-hover:opacity-100"
+                        >
+                          <Icon name="mdi:close" size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <p className="mb-1.5 px-1 text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                Pack del CRM
+              </p>
               <div className="grid grid-cols-4 gap-1.5">
                 <button
                   type="button"
