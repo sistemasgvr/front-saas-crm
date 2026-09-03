@@ -29,6 +29,7 @@ import { clearBorrador, getBorrador, setBorrador } from "./chat-borradores";
 import { getChat, getTemplates } from "./queries";
 import type {
   ConversacionDetalle,
+  ConversacionResumen,
   ContactoMensaje,
   Interactivo,
   Mensaje,
@@ -816,20 +817,22 @@ export default function ChatDetailView({ id }: { id: string }) {
       ultimoEscribiendoRef.current = Date.now();
       notificarEscribiendoAction(id).catch(() => undefined);
     }
-    if (!valor.trim()) {
-      clearBorrador(id);
-    } else {
-      setBorrador(id, valor);
-    }
+    // Vacío = sin borrador. Guardamos de inmediato para que al cambiar de
+    // chat el cleanup no vuelva a persistir texto ya borrado.
+    setBorrador(id, valor);
   }
 
   useEffect(() => {
     const borrador = getBorrador(id) ?? "";
     textoRef.current = borrador;
     setTexto(borrador);
+    setRespondiendoA(null);
+    setArchivo(null);
+    setErrorArchivo(null);
+    setMenuAdjuntarAbierto(false);
     return () => {
-      const restante = textoRef.current;
-      if (restante.trim()) {
+      const restante = textoRef.current.trim();
+      if (restante) {
         setBorrador(id, restante);
       } else {
         clearBorrador(id);
@@ -842,6 +845,20 @@ export default function ChatDetailView({ id }: { id: string }) {
     queryFn: () => getChat(id),
     refetchInterval: INTERVALO_REFRESCO_MS,
   });
+
+  // Al abrir el chat el backend pone noLeidos=0 — reflejamos ya en la lista
+  // para que el badge azul desaparezca sin esperar el poll de 15s.
+  useEffect(() => {
+    if (!chatQuery.isSuccess) return;
+    queryClient.setQueryData(
+      queryKeys.whatsappChats,
+      (prev: ConversacionResumen[] | undefined) => {
+        if (!Array.isArray(prev)) return prev;
+        return prev.map((c) => (c.id === id ? { ...c, noLeidos: 0 } : c));
+      },
+    );
+    void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChatsUnreadCount });
+  }, [chatQuery.isSuccess, id, queryClient]);
 
   const dentroDeVentana = estaDentroDeVentana(chatQuery.data?.ventanaExpiraEn);
 
