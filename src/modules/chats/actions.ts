@@ -126,6 +126,41 @@ export async function notificarEscribiendoAction(conversacionId: string): Promis
   }
 }
 
+export async function bloquearContactoAction(conversacionId: string, bloquear: boolean): Promise<void> {
+  try {
+    await apiFetch(`/whatsapp/chats/${conversacionId}/block`, {
+      method: bloquear ? "POST" : "DELETE",
+    });
+  } catch (error) {
+    fail(error, bloquear ? "No se pudo bloquear el contacto" : "No se pudo desbloquear el contacto");
+  }
+}
+
+export async function reenviarMensajeAction(
+  conversacionId: string,
+  mensajeId: string,
+  conversacionDestinoId: string,
+): Promise<void> {
+  try {
+    await apiFetch(`/whatsapp/chats/${conversacionId}/messages/${mensajeId}/forward`, {
+      method: "POST",
+      body: JSON.stringify({ conversacionDestinoId }),
+    });
+  } catch (error) {
+    fail(error, "No se pudo reenviar el mensaje");
+  }
+}
+
+export async function eliminarMensajeAction(conversacionId: string, mensajeId: string): Promise<void> {
+  try {
+    await apiFetch(`/whatsapp/chats/${conversacionId}/messages/${mensajeId}`, {
+      method: "DELETE",
+    });
+  } catch (error) {
+    fail(error, "No se pudo eliminar el mensaje");
+  }
+}
+
 export async function iniciarChatDesdeLeadAction(leadId: string): Promise<{ conversacionId: string }> {
   try {
     return await apiFetch<{ conversacionId: string }>(`/whatsapp/chats/start-from-lead/${leadId}`, {

@@ -1,0 +1,10 @@
+[
+  { "id": "hola", "nombre": "Hola", "src": "/stickers/hola.webp" },
+  { "id": "ok", "nombre": "OK", "src": "/stickers/ok.webp" },
+  { "id": "gracias", "nombre": "Gracias", "src": "/stickers/gracias.webp" },
+  { "id": "corazon", "nombre": "Corazón", "src": "/stickers/corazon.webp" },
+  { "id": "risa", "nombre": "Risa", "src": "/stickers/risa.webp" },
+  { "id": "pulgar", "nombre": "Pulgar arriba", "src": "/stickers/pulgar.webp" },
+  { "id": "fuego", "nombre": "Fuego", "src": "/stickers/fuego.webp" },
+  { "id": "estrella", "nombre": "Estrella", "src": "/stickers/estrella.webp" }
+]

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import EmojiPicker, { Theme as TemaEmojiPicker, type EmojiClickData } from "emoji-picker-react";
+import type { Gif } from "gif-picker-react";
 import Avatar from "@/src/components/ui/avatar/Avatar";
 import Button from "@/src/components/ui/button/Button";
 import Input from "@/src/components/form/input/InputField";
@@ -12,7 +13,8 @@ import Select from "@/src/components/form/Select";
 import Modal from "@/src/components/ui/modal/Modal";
 import { Icon } from "@/src/components/ui/Icon";
 import { Spinner } from "@/src/components/ui/Spinner";
-import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import { QueryError } from "@/src/components/ui/PageLoader";
+import { Skeleton } from "@/src/components/ui/Skeleton";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { useTheme } from "@/src/context/ThemeContext";
@@ -24,9 +26,13 @@ import {
   enviarContactoAction,
   enviarInteractivoAction,
   notificarEscribiendoAction,
+  bloquearContactoAction,
+  reenviarMensajeAction,
+  eliminarMensajeAction,
 } from "./actions";
 import { clearBorrador, getBorrador, setBorrador } from "./chat-borradores";
-import { getChat, getTemplates } from "./queries";
+import { ComposerMediaPicker, type StickerPackItem } from "./ComposerMediaPicker";
+import { getChat, getTemplates, getChats } from "./queries";
 import type {
   ConversacionDetalle,
   ConversacionResumen,
@@ -78,6 +84,7 @@ const LIMITES_MEDIA: Record<string, { maxBytes: number; mimes: string[] }> = {
       "text/plain",
     ],
   },
+  sticker: { maxBytes: 500 * 1024, mimes: ["image/webp"] },
 };
 
 function validarArchivo(file: File): string | null {
@@ -88,6 +95,33 @@ function validarArchivo(file: File): string | null {
     return `El archivo pesa más de ${Math.round(limite.maxBytes / (1024 * 1024)) || 0.5}MB, el máximo que admite WhatsApp para este tipo`;
   }
   return null;
+}
+
+/** Meta no tiene type=gif: preferimos MP4 del raw de Klipy; si no, el imageUrl si es video. */
+function resolverFuenteGif(gif: Gif): { url: string; mime: string; nombre: string } | null {
+  const raw = gif.raw as {
+    file?: Record<string, { mp4?: { url?: string }; gif?: { url?: string } }>;
+  } | null;
+  const calidades = ["hd", "md", "sm", "xs"] as const;
+  if (raw?.file) {
+    for (const q of calidades) {
+      const mp4Url = raw.file[q]?.mp4?.url;
+      if (mp4Url) return { url: mp4Url, mime: "video/mp4", nombre: `${gif.id}.mp4` };
+    }
+  }
+  const url = gif.imageUrl;
+  if (/\.mp4(\?|$)/i.test(url) || /\/mp4/i.test(url)) {
+    return { url, mime: "video/mp4", nombre: `${gif.id}.mp4` };
+  }
+  // Sin MP4 no podemos enviar por Cloud API (image/gif no está admitido).
+  return null;
+}
+
+async function descargarComoArchivo(url: string, nombre: string, mime: string): Promise<File> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`No se pudo descargar el archivo (${res.status})`);
+  const blob = await res.blob();
+  return new File([blob], nombre, { type: mime || blob.type || "application/octet-stream" });
 }
 
 function estaDentroDeVentana(ventanaExpiraEn: string | null | undefined): boolean {
@@ -324,7 +358,7 @@ function ContenidoMedia({ mensaje, conversacionId }: { mensaje: Mensaje; convers
         <img
           src={src}
           alt="Sticker"
-          className="max-h-28 max-w-28 rounded-lg object-contain"
+          className="max-h-56 max-w-56 object-contain drop-shadow-sm"
         />
       </a>
     );
@@ -497,105 +531,57 @@ function SelectorReacciones({
 }
 
 /**
- * Picker del composer — inserta emojis en el texto (no es reacción).
- * Queda abierto al elegir para poder meter varios seguidos, como WhatsApp Web.
+ * Picker unificado del composer (Emoji / GIF / Stickers) — portal fijo
+ * para no quedar recortado por el scroll del chat.
  */
-function SelectorEmojiComposer({
+function SelectorComposerMedia({
   abierto,
   anchorRef,
-  onElegir,
+  onEmoji,
+  onGif,
+  onSticker,
+  onSubirSticker,
   onCerrar,
 }: {
   abierto: boolean;
   anchorRef: React.RefObject<HTMLElement | null>;
-  onElegir: (emoji: string) => void;
+  onEmoji: (emoji: string) => void;
+  onGif: (gif: Gif) => void;
+  onSticker: (sticker: StickerPackItem) => void;
+  onSubirSticker: () => void;
   onCerrar: () => void;
 }) {
-  const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const { theme } = useTheme();
-
-  useLayoutEffect(() => {
-    if (!abierto) {
-      setPos(null);
-      return;
-    }
-    const anchor = anchorRef.current;
-    if (!anchor) return;
-    const rect = anchor.getBoundingClientRect();
-    const hayEspacioArriba = rect.top - ALTO_PICKER - MARGEN_VIEWPORT > 0;
-    const left = Math.min(
-      Math.max(rect.left, MARGEN_VIEWPORT),
-      window.innerWidth - ANCHO_PICKER - MARGEN_VIEWPORT,
-    );
-    setPos(
-      hayEspacioArriba
-        ? { bottom: window.innerHeight - rect.top + MARGEN_VIEWPORT, left }
-        : { top: rect.bottom + MARGEN_VIEWPORT, left },
-    );
-  }, [abierto, anchorRef]);
-
-  useEffect(() => {
-    if (!abierto) return;
-    function onClickFuera(e: Event) {
-      const objetivo = e.target as Node;
-      if (panelRef.current?.contains(objetivo)) return;
-      if (anchorRef.current?.contains(objetivo)) return;
-      onCerrar();
-    }
-    function onScroll(e: Event) {
-      const objetivo = e.target as Node;
-      if (panelRef.current?.contains(objetivo)) return;
-      onCerrar();
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onCerrar();
-    }
-    document.addEventListener("mousedown", onClickFuera);
-    document.addEventListener("touchstart", onClickFuera, { passive: true });
-    document.addEventListener("scroll", onScroll, true);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onClickFuera);
-      document.removeEventListener("touchstart", onClickFuera);
-      document.removeEventListener("scroll", onScroll, true);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [abierto, onCerrar, anchorRef]);
-
-  if (!abierto || !pos || typeof document === "undefined") return null;
-
-  return createPortal(
-    <div ref={panelRef} className="fixed z-99999" style={{ top: pos.top, bottom: pos.bottom, left: pos.left }}>
-      <EmojiPicker
-        theme={theme === "dark" ? TemaEmojiPicker.DARK : TemaEmojiPicker.LIGHT}
-        onEmojiClick={(data: EmojiClickData) => onElegir(data.emoji)}
-        autoFocusSearch={false}
-        searchPlaceholder="Busca un emoji"
-        width={ANCHO_PICKER}
-        height={ALTO_PICKER}
-      />
-    </div>,
-    document.body,
+  return (
+    <ComposerMediaPicker
+      abierto={abierto}
+      anchorRef={anchorRef}
+      onEmoji={onEmoji}
+      onGif={onGif}
+      onSticker={onSticker}
+      onSubirSticker={onSubirSticker}
+      onCerrar={onCerrar}
+    />
   );
 }
 
-const ANCHO_MENU_ACCIONES = 170;
-const ALTO_MENU_ACCIONES = 42;
+const ANCHO_MENU_ACCIONES = 200;
+const ALTO_MENU_ACCIONES = 168;
 
 /** El desplegable de "más acciones" del hover — mismo mecanismo de posición
- * (portal + coordenadas reales) que SelectorReacciones, mismo motivo: la
- * lista de mensajes tiene su propio scroll y recorta cualquier popover
- * posicionado con `absolute` adentro. Por ahora solo trae "Responder" — el
- * resto del menú real de WhatsApp (Copiar, Reenviar, Fijar…) queda para
- * después, a propósito. */
+ * (portal + coordenadas reales) que SelectorReacciones. */
 function MenuAcciones({
   anchorRef,
   onResponder,
+  onCopiar,
+  onReenviar,
+  onEliminar,
   onCerrar,
 }: {
   anchorRef: React.RefObject<HTMLElement | null>;
   onResponder: () => void;
+  onCopiar: () => void;
+  onReenviar: () => void;
+  onEliminar: () => void;
   onCerrar: () => void;
 }) {
   const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
@@ -641,20 +627,32 @@ function MenuAcciones({
 
   if (!pos || typeof document === "undefined") return null;
 
+  const items = [
+    { icon: "mdi:reply-outline", label: "Responder", onClick: onResponder },
+    { icon: "mdi:content-copy", label: "Copiar", onClick: onCopiar },
+    { icon: "mdi:share-outline", label: "Reenviar", onClick: onReenviar },
+    { icon: "mdi:trash-can-outline", label: "Eliminar del CRM", onClick: onEliminar, danger: true },
+  ];
+
   return createPortal(
     <div
       ref={panelRef}
-      className="fixed z-99999 w-[170px] overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-theme-lg dark:border-gray-700 dark:bg-gray-800"
+      className="fixed z-99999 w-[200px] overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-theme-lg dark:border-gray-700 dark:bg-gray-800"
       style={{ top: pos.top, bottom: pos.bottom, left: pos.left }}
     >
-      <button
-        type="button"
-        onClick={onResponder}
-        className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-theme-sm text-gray-700 transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/5"
-      >
-        <Icon name="mdi:reply-outline" size={17} />
-        Responder
-      </button>
+      {items.map((item) => (
+        <button
+          key={item.label}
+          type="button"
+          onClick={item.onClick}
+          className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-theme-sm transition hover:bg-gray-50 dark:hover:bg-white/5 ${
+            item.danger ? "text-error-500" : "text-gray-700 dark:text-gray-200"
+          }`}
+        >
+          <Icon name={item.icon} size={17} />
+          {item.label}
+        </button>
+      ))}
     </div>,
     document.body,
   );
@@ -730,27 +728,42 @@ function Burbuja({
   conversacionId,
   nombreContacto,
   onResponder,
+  onReenviar,
+  onEliminar,
 }: {
   mensaje: Mensaje;
   conversacionId: string;
   nombreContacto: string;
   onResponder: (mensaje: Mensaje) => void;
+  onReenviar: (mensaje: Mensaje) => void;
+  onEliminar: (mensaje: Mensaje) => void;
 }) {
   const [selectorAbierto, setSelectorAbierto] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const chevronRef = useRef<HTMLButtonElement>(null);
   const esSaliente = mensaje.direccion === "saliente";
+  const eliminado = mensaje.estadoEntrega === "eliminado";
   const tieneReaccion = Boolean(mensaje.reaccionAgente || mensaje.reaccionCliente);
 
   const reaccionar = useAppMutation({
     mutationFn: (emoji: string) => enviarReaccionAction(conversacionId, mensaje.id, emoji),
     invalidateKeys: [queryKeys.whatsappChat(conversacionId)],
-    // Reaccionar es chiquito e instantáneo — tapar toda la pantalla con el
-    // overlay de "Procesando…" se siente exagerado. El loading vive local,
-    // en la propia burbujita de la reacción (más abajo).
     silent: true,
   });
+
+  function textoParaCopiar(): string {
+    return (
+      mensaje.texto ??
+      mensaje.mediaCaption ??
+      resumenCitado({
+        texto: mensaje.texto,
+        mediaCaption: mensaje.mediaCaption,
+        tieneMedia: mensaje.tieneMedia,
+        tipo: mensaje.tipo,
+      })
+    );
+  }
 
   const trigger = (
     <button
@@ -802,16 +815,29 @@ function Burbuja({
     </div>
   );
 
+  const esSticker = !eliminado && mensaje.tipo === "sticker" && mensaje.tieneMedia;
+
   return (
     <div className={`group flex items-center gap-1 ${esSaliente ? "justify-end" : "justify-start"}`}>
       {esSaliente && grupoAcciones}
       <div
-        className={`relative max-w-[85%] space-y-1.5 rounded-2xl px-4 py-2.5 text-theme-sm sm:max-w-[75%] ${
-          esSaliente
-            ? "bg-brand-500 text-white"
-            : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
+        className={`relative max-w-[85%] space-y-1.5 text-theme-sm sm:max-w-[75%] ${
+          esSticker
+            ? "px-1 py-1"
+            : `rounded-2xl px-4 py-2.5 ${
+                esSaliente
+                  ? "bg-brand-500 text-white"
+                  : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
+              }`
         } ${tieneReaccion || reaccionar.isPending ? "mb-2.5" : ""}`}
       >
+        {eliminado ? (
+          <p className="flex items-center gap-1.5 italic opacity-70">
+            <Icon name="mdi:cancel" size={16} />
+            Este mensaje fue eliminado
+          </p>
+        ) : (
+          <>
         {mensaje.tipo === "template" && mensaje.plantillaNombre ? (
           <p className="flex items-center gap-1 text-theme-xs opacity-80">
             <Icon name="mdi:script-text-outline" size={14} />
@@ -853,8 +879,16 @@ function Burbuja({
           !mensaje.ubicacion &&
           !mensaje.contactos?.length &&
           !mensaje.interactivo && <p className="whitespace-pre-wrap break-words opacity-70">(sin texto)</p>}
-        <div className="flex items-center justify-end gap-1 text-theme-xs opacity-70">
-          {mensaje.fechaEdicion && <span title={`Editado ${formatearHora(mensaje.fechaEdicion)}`}>editado</span>}
+          </>
+        )}
+        <div
+          className={`flex items-center justify-end gap-1 text-theme-xs ${
+            esSticker ? "text-gray-500 dark:text-gray-400" : "opacity-70"
+          }`}
+        >
+          {!eliminado && mensaje.fechaEdicion && (
+            <span title={`Editado ${formatearHora(mensaje.fechaEdicion)}`}>editado</span>
+          )}
           {formatearHora(mensaje.fechaMensaje)}
           {esSaliente &&
             (() => {
@@ -869,7 +903,7 @@ function Burbuja({
             })()}
         </div>
 
-        {(tieneReaccion || reaccionar.isPending) && (
+        {!eliminado && (tieneReaccion || reaccionar.isPending) && (
           <div className={`absolute -bottom-2.5 flex items-center gap-0.5 ${esSaliente ? "right-2" : "left-2"}`}>
             {mensaje.reaccionCliente && (
               <span className="flex h-5 items-center rounded-full border border-gray-100 bg-white px-1 text-xs shadow-theme-xs dark:border-gray-700 dark:bg-gray-900">
@@ -877,8 +911,6 @@ function Burbuja({
               </span>
             )}
             {reaccionar.isPending ? (
-              // Loading local, solo acá — nada de tapar la pantalla entera
-              // por reaccionar a un mensaje.
               <span className="flex h-5 w-5 items-center justify-center rounded-full border border-gray-100 bg-white shadow-theme-xs dark:border-gray-700 dark:bg-gray-900">
                 <Spinner size={11} />
               </span>
@@ -897,12 +929,10 @@ function Burbuja({
           </div>
         )}
 
-        {selectorAbierto && (
+        {!eliminado && selectorAbierto && (
           <SelectorReacciones
             anchorRef={triggerRef}
             onElegir={(emoji) => {
-              // Elegir el mismo emoji que ya tenías puesto lo saca — mismo
-              // criterio que tocar de nuevo la burbujita de la reacción.
               reaccionar.mutate(emoji === mensaje.reaccionAgente ? "" : emoji);
               setSelectorAbierto(false);
             }}
@@ -915,6 +945,18 @@ function Burbuja({
             anchorRef={chevronRef}
             onResponder={() => {
               onResponder(mensaje);
+              setMenuAbierto(false);
+            }}
+            onCopiar={() => {
+              void navigator.clipboard.writeText(textoParaCopiar());
+              setMenuAbierto(false);
+            }}
+            onReenviar={() => {
+              onReenviar(mensaje);
+              setMenuAbierto(false);
+            }}
+            onEliminar={() => {
+              onEliminar(mensaje);
               setMenuAbierto(false);
             }}
             onCerrar={() => setMenuAbierto(false)}
@@ -935,6 +977,8 @@ export default function ChatDetailView({ id }: { id: string }) {
   const [archivo, setArchivo] = useState<File | null>(null);
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null);
   const [respondiendoA, setRespondiendoA] = useState<Mensaje | null>(null);
+  const [reenviandoMensaje, setReenviandoMensaje] = useState<Mensaje | null>(null);
+  const [destinoReenvio, setDestinoReenvio] = useState("");
   const [menuAdjuntarAbierto, setMenuAdjuntarAbierto] = useState(false);
   const [pickerEmojiAbierto, setPickerEmojiAbierto] = useState(false);
   const [modalUbicacionAbierto, setModalUbicacionAbierto] = useState(false);
@@ -961,6 +1005,7 @@ export default function ChatDetailView({ id }: { id: string }) {
   const [interUrl, setInterUrl] = useState("");
   const finRef = useRef<HTMLDivElement>(null);
   const inputArchivoRef = useRef<HTMLInputElement>(null);
+  const inputStickerRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const botonEmojiRef = useRef<HTMLButtonElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -1077,6 +1122,80 @@ export default function ChatDetailView({ id }: { id: string }) {
       if (texto.trim()) formData.append("caption", texto.trim());
       if (respondiendoA) formData.append("respondeAMensajeId", respondiendoA.id);
       await enviarMediaAction(id, formData);
+    },
+    invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
+  });
+
+  /** Envío inmediato de GIF/sticker del picker (sin pasar por el draft del composer). */
+  const enviarMediaDirecto = useAppMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("archivo", file);
+      if (respondiendoA) formData.append("respondeAMensajeId", respondiendoA.id);
+      await enviarMediaAction(id, formData);
+    },
+    invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
+  });
+
+  async function enviarGifElegido(gif: Gif) {
+    setErrorArchivo(null);
+    const fuente = resolverFuenteGif(gif);
+    if (!fuente) {
+      setErrorArchivo(
+        "Este GIF no trae MP4. WhatsApp Cloud API no admite GIF nativo; elige otro.",
+      );
+      return;
+    }
+    try {
+      const file = await descargarComoArchivo(fuente.url, fuente.nombre, fuente.mime);
+      const error = validarArchivo(file);
+      if (error) {
+        setErrorArchivo(error);
+        return;
+      }
+      await enviarMediaDirecto.mutateAsync(file);
+      setRespondiendoA(null);
+    } catch (e) {
+      setErrorArchivo(e instanceof Error ? e.message : "No se pudo enviar el GIF");
+    }
+  }
+
+  async function enviarStickerPack(sticker: StickerPackItem) {
+    setErrorArchivo(null);
+    try {
+      const file = await descargarComoArchivo(sticker.src, `${sticker.id}.webp`, "image/webp");
+      const error = validarArchivo(file);
+      if (error) {
+        setErrorArchivo(error);
+        return;
+      }
+      await enviarMediaDirecto.mutateAsync(file);
+      setRespondiendoA(null);
+    } catch (e) {
+      setErrorArchivo(e instanceof Error ? e.message : "No se pudo enviar el sticker");
+    }
+  }
+
+  const chatsQuery = useQuery<ConversacionResumen[]>({
+    queryKey: queryKeys.whatsappChats,
+    queryFn: getChats,
+    enabled: Boolean(reenviandoMensaje),
+  });
+
+  const bloquear = useAppMutation({
+    mutationFn: (bloquearContacto: boolean) => bloquearContactoAction(id, bloquearContacto),
+    invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
+  });
+
+  const eliminarMensaje = useAppMutation({
+    mutationFn: (mensajeId: string) => eliminarMensajeAction(id, mensajeId),
+    invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
+  });
+
+  const reenviar = useAppMutation({
+    mutationFn: () => {
+      if (!reenviandoMensaje || !destinoReenvio) return Promise.resolve();
+      return reenviarMensajeAction(id, reenviandoMensaje.id, destinoReenvio);
     },
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
   });
@@ -1221,8 +1340,31 @@ export default function ChatDetailView({ id }: { id: string }) {
     };
   }, [queryClient]);
 
-  if (chatQuery.isLoading) return <PageLoader />;
-  if (chatQuery.isError) return <QueryError error={chatQuery.error} />;
+  if (chatQuery.isLoading) {
+    return (
+      <div className="flex h-full min-h-0 flex-col" role="status" aria-label="Cargando conversación">
+        <div className="flex shrink-0 items-center gap-3 border-b border-gray-100 px-3 py-3 dark:border-gray-800 sm:px-4">
+          <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-28" />
+          </div>
+        </div>
+        <div className="flex flex-1 flex-col justify-end gap-3 p-4">
+          <Skeleton className="ml-auto h-12 w-[55%] rounded-2xl" />
+          <Skeleton className="h-16 w-[65%] rounded-2xl" />
+          <Skeleton className="ml-auto h-10 w-[40%] rounded-2xl" />
+          <Skeleton className="h-14 w-[70%] rounded-2xl" />
+        </div>
+        <div className="border-t border-gray-100 p-3 dark:border-gray-800">
+          <Skeleton className="h-11 w-full rounded-3xl" />
+        </div>
+      </div>
+    );
+  }
+  if (chatQuery.isError) {
+    return <QueryError error={chatQuery.error} onRetry={() => void chatQuery.refetch()} />;
+  }
   if (!chatQuery.data) return null;
 
   const chat = chatQuery.data;
@@ -1246,14 +1388,30 @@ export default function ChatDetailView({ id }: { id: string }) {
           <Icon name="mdi:arrow-left" size={22} />
         </Link>
         <Avatar name={nombre} size="sm" />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-theme-sm font-medium text-gray-800 dark:text-white/90">{nombre}</p>
-          {chat.lead ? (
+          {chat.bloqueado ? (
+            <p className="text-theme-xs text-error-500">+{chat.waId} · Bloqueado</p>
+          ) : chat.lead ? (
             <p className="text-theme-xs text-gray-500 dark:text-gray-400">+{chat.waId} · Lead vinculado</p>
           ) : (
             <p className="text-theme-xs text-warning-500">+{chat.waId} · Sin lead vinculado</p>
           )}
         </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          loading={bloquear.isPending}
+          onClick={() => {
+            const accion = chat.bloqueado ? "desbloquear" : "bloquear";
+            if (window.confirm(`¿Seguro que quieres ${accion} a este contacto en WhatsApp?`)) {
+              bloquear.mutate(!chat.bloqueado);
+            }
+          }}
+        >
+          {chat.bloqueado ? "Desbloquear" : "Bloquear"}
+        </Button>
       </div>
 
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-3 [-webkit-overflow-scrolling:touch] sm:px-5 sm:py-4">
@@ -1269,6 +1427,19 @@ export default function ChatDetailView({ id }: { id: string }) {
               conversacionId={id}
               nombreContacto={nombre}
               onResponder={setRespondiendoA}
+              onReenviar={(m) => {
+                setReenviandoMensaje(m);
+                setDestinoReenvio("");
+              }}
+              onEliminar={(m) => {
+                if (
+                  window.confirm(
+                    "¿Eliminar este mensaje del CRM?\n\nNota: Meta Cloud API no permite borrar el mensaje en el WhatsApp del contacto. Si lo borras desde la app Business del celular, sí se sincroniza aquí.",
+                  )
+                ) {
+                  eliminarMensaje.mutate(m.id);
+                }
+              }}
             />
           ))
         )}
@@ -1276,7 +1447,12 @@ export default function ChatDetailView({ id }: { id: string }) {
       </div>
 
       <div className="shrink-0 border-t border-gray-100 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-gray-800 sm:p-4">
-        {dentroDeVentana ? (
+        {chat.bloqueado ? (
+          <p className="flex items-center gap-1.5 text-theme-sm text-error-500">
+            <Icon name="mdi:block-helper" size={16} />
+            Contacto bloqueado — desbloquéalo para volver a escribir.
+          </p>
+        ) : dentroDeVentana ? (
           <form
             ref={formRef}
             onSubmit={(event) => {
@@ -1365,38 +1541,81 @@ export default function ChatDetailView({ id }: { id: string }) {
                 accept="image/jpeg,image/png,video/mp4,video/3gpp,audio/aac,audio/mp4,audio/mpeg,audio/amr,audio/ogg,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
                 onChange={(e) => elegirArchivo(e.target.files?.[0])}
               />
+              <input
+                ref={inputStickerRef}
+                type="file"
+                className="hidden"
+                accept="image/webp,.webp"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (inputStickerRef.current) inputStickerRef.current.value = "";
+                  elegirArchivo(file);
+                }}
+              />
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPickerEmojiAbierto(false);
+                    setMenuAdjuntarAbierto((v) => !v);
+                  }}
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+                  aria-label="Adjuntar"
+                >
+                  <Icon name="mdi:plus" size={24} />
+                </button>
+                <MenuAdjuntar
+                  abierto={menuAdjuntarAbierto}
+                  onCerrar={() => setMenuAdjuntarAbierto(false)}
+                  onArchivo={() => {
+                    setMenuAdjuntarAbierto(false);
+                    inputArchivoRef.current?.click();
+                  }}
+                  onUbicacion={() => {
+                    setMenuAdjuntarAbierto(false);
+                    setModalUbicacionAbierto(true);
+                  }}
+                  onContacto={() => {
+                    setMenuAdjuntarAbierto(false);
+                    setModalContactoAbierto(true);
+                  }}
+                  onInteractivo={() => {
+                    setMenuAdjuntarAbierto(false);
+                    setModalInteractivoAbierto(true);
+                  }}
+                />
+              </div>
               <div className="flex flex-1 items-end gap-0.5 rounded-3xl border border-gray-200 bg-white pl-1 pr-1.5 py-1 dark:border-gray-700 dark:bg-gray-900">
                 <div className="relative shrink-0">
                   <button
+                    ref={botonEmojiRef}
                     type="button"
                     onClick={() => {
-                      setPickerEmojiAbierto(false);
-                      setMenuAdjuntarAbierto((v) => !v);
+                      setMenuAdjuntarAbierto(false);
+                      setPickerEmojiAbierto((v) => !v);
                     }}
-                    className="flex h-11 w-11 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
-                    aria-label="Adjuntar"
+                    className={`flex h-11 w-11 items-center justify-center rounded-full transition hover:bg-gray-100 dark:hover:bg-white/5 ${
+                      pickerEmojiAbierto
+                        ? "text-brand-500"
+                        : "text-gray-500 dark:text-gray-400"
+                    }`}
+                    aria-label="Emojis, GIFs y stickers"
+                    aria-expanded={pickerEmojiAbierto}
                   >
-                    <Icon name="mdi:plus" size={24} />
+                    <Icon name="mdi:emoticon-outline" size={24} />
                   </button>
-                  <MenuAdjuntar
-                    abierto={menuAdjuntarAbierto}
-                    onCerrar={() => setMenuAdjuntarAbierto(false)}
-                    onArchivo={() => {
-                      setMenuAdjuntarAbierto(false);
-                      inputArchivoRef.current?.click();
+                  <SelectorComposerMedia
+                    abierto={pickerEmojiAbierto}
+                    anchorRef={botonEmojiRef}
+                    onEmoji={insertarEmojiEnTexto}
+                    onGif={(gif) => {
+                      void enviarGifElegido(gif);
                     }}
-                    onUbicacion={() => {
-                      setMenuAdjuntarAbierto(false);
-                      setModalUbicacionAbierto(true);
+                    onSticker={(sticker) => {
+                      void enviarStickerPack(sticker);
                     }}
-                    onContacto={() => {
-                      setMenuAdjuntarAbierto(false);
-                      setModalContactoAbierto(true);
-                    }}
-                    onInteractivo={() => {
-                      setMenuAdjuntarAbierto(false);
-                      setModalInteractivoAbierto(true);
-                    }}
+                    onSubirSticker={() => inputStickerRef.current?.click()}
+                    onCerrar={() => setPickerEmojiAbierto(false)}
                   />
                 </div>
                 <textarea
@@ -1414,39 +1633,19 @@ export default function ChatDetailView({ id }: { id: string }) {
                   enterKeyHint="send"
                   className="max-h-32 min-h-11 flex-1 resize-none bg-transparent px-1.5 py-2.5 text-base text-gray-800 outline-none sm:text-theme-sm dark:text-white/90"
                 />
-                <div className="relative shrink-0">
-                  <button
-                    ref={botonEmojiRef}
-                    type="button"
-                    onClick={() => {
-                      setMenuAdjuntarAbierto(false);
-                      setPickerEmojiAbierto((v) => !v);
-                    }}
-                    className={`flex h-11 w-11 items-center justify-center rounded-full transition hover:bg-gray-100 dark:hover:bg-white/5 ${
-                      pickerEmojiAbierto
-                        ? "text-brand-500"
-                        : "text-gray-500 dark:text-gray-400"
-                    }`}
-                    aria-label="Emojis"
-                    aria-expanded={pickerEmojiAbierto}
-                  >
-                    <Icon name="mdi:emoticon-outline" size={24} />
-                  </button>
-                  <SelectorEmojiComposer
-                    abierto={pickerEmojiAbierto}
-                    anchorRef={botonEmojiRef}
-                    onElegir={insertarEmojiEnTexto}
-                    onCerrar={() => setPickerEmojiAbierto(false)}
-                  />
-                </div>
               </div>
               <button
                 type="submit"
-                disabled={(!archivo && !texto.trim()) || enviar.isPending || enviarArchivo.isPending}
+                disabled={
+                  (!archivo && !texto.trim()) ||
+                  enviar.isPending ||
+                  enviarArchivo.isPending ||
+                  enviarMediaDirecto.isPending
+                }
                 aria-label="Enviar mensaje"
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-brand-300 dark:disabled:bg-brand-500/40"
               >
-                {enviar.isPending || enviarArchivo.isPending ? (
+                {enviar.isPending || enviarArchivo.isPending || enviarMediaDirecto.isPending ? (
                   <Spinner size={18} />
                 ) : (
                   <Icon name="mdi:send" size={19} className="translate-x-px" />
@@ -1850,6 +2049,67 @@ export default function ChatDetailView({ id }: { id: string }) {
               Le aparece un botón &quot;Enviar ubicación&quot; que abre el selector de mapa del contacto.
             </p>
           )}
+        </div>
+      </Modal>
+
+      <Modal
+        open={Boolean(reenviandoMensaje)}
+        onClose={() => {
+          setReenviandoMensaje(null);
+          setDestinoReenvio("");
+        }}
+        header={
+          <div className="px-5 py-4">
+            <h3 className="text-theme-sm font-medium text-gray-800 dark:text-white/90">Reenviar mensaje</h3>
+            <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
+              Elige otro chat (debe estar dentro de la ventana de 24h).
+            </p>
+          </div>
+        }
+        footer={
+          <div className="flex items-center justify-end gap-2 px-5 py-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setReenviandoMensaje(null);
+                setDestinoReenvio("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              loading={reenviar.isPending}
+              disabled={!destinoReenvio}
+              onClick={() =>
+                reenviar.mutate(undefined, {
+                  onSuccess: () => {
+                    setReenviandoMensaje(null);
+                    setDestinoReenvio("");
+                  },
+                })
+              }
+            >
+              Reenviar
+            </Button>
+          </div>
+        }
+      >
+        <div className="px-5 py-4">
+          <Select
+            options={(chatsQuery.data ?? [])
+              .filter((c) => c.id !== id && !c.bloqueado)
+              .map((c) => ({
+                value: c.id,
+                label: c.lead?.nombre ?? c.nombreContacto ?? `+${c.waId}`,
+              }))}
+            placeholder={chatsQuery.isLoading ? "Cargando chats…" : "Elige el chat destino"}
+            value={destinoReenvio}
+            onChange={setDestinoReenvio}
+          />
         </div>
       </Modal>
     </div>

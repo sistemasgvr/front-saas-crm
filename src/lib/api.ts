@@ -28,8 +28,19 @@ function señalConTimeout(timeoutMs: number, externa?: AbortSignal | null): Abor
 
 async function parseError(res: Response): Promise<string> {
   const body = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
-  if (!body?.message) return res.statusText;
-  return Array.isArray(body.message) ? body.message.join(', ') : body.message;
+  const raw = !body?.message
+    ? res.statusText
+    : Array.isArray(body.message)
+      ? body.message.join(", ")
+      : body.message;
+  // Nest/Express a menudo devuelven el statusText en inglés ("Internal Server Error").
+  if (!raw || /^internal\s*server\s*error$/i.test(raw.trim())) {
+    if (res.status >= 500) {
+      return "Algo falló en el servidor. Intenta de nuevo en unos segundos.";
+    }
+    return "No se pudo completar la solicitud.";
+  }
+  return raw;
 }
 
 /** Un fetch que nunca resuelve rechaza por el AbortSignal, no por un status

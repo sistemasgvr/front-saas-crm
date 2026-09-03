@@ -12,6 +12,7 @@ export interface ConversacionResumen {
   ventanaExpiraEn: string | null;
   noLeidos: number;
   ultimoMensajeTexto: string | null;
+  bloqueado: boolean;
 }
 
 export interface Mensaje {

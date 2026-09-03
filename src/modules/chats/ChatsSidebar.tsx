@@ -7,7 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import Avatar from "@/src/components/ui/avatar/Avatar";
 import EmptyState from "@/src/components/ui/EmptyState";
 import { Icon } from "@/src/components/ui/Icon";
-import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import { QueryError } from "@/src/components/ui/PageLoader";
+import { Skeleton } from "@/src/components/ui/Skeleton";
 import { queryKeys } from "@/src/lib/query/keys";
 import { filtrarConversaciones } from "./filtrar-conversaciones";
 import { useChatBorradores } from "./chat-borradores";
@@ -24,6 +25,25 @@ function formatearFecha(iso: string | null) {
     timeZone: "America/Lima",
     ...(esHoy ? { timeStyle: "short" as const } : { dateStyle: "short" as const }),
   });
+}
+
+function ChatsListSkeleton() {
+  return (
+    <div className="divide-y divide-gray-100 dark:divide-gray-800" role="status" aria-label="Cargando chats">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+          <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Skeleton className="h-3.5 w-28" />
+              <Skeleton className="h-3 w-10" />
+            </div>
+            <Skeleton className="h-3 w-3/4 max-w-[180px]" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 /** Lista de conversaciones tipo WhatsApp Web — vive en el layout de /chats,
@@ -79,11 +99,9 @@ export default function ChatsSidebar() {
 
       <div className="flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
         {chatsQuery.isLoading ? (
-          <PageLoader />
+          <ChatsListSkeleton />
         ) : chatsQuery.isError ? (
-          <div className="p-4">
-            <QueryError error={chatsQuery.error} />
-          </div>
+          <QueryError error={chatsQuery.error} onRetry={() => void chatsQuery.refetch()} />
         ) : chatsQuery.data?.length === 0 ? (
           <div className="p-4">
             <EmptyState
