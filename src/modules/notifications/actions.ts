@@ -21,3 +21,29 @@ export async function markAllNotificationsReadAction(): Promise<void> {
     fail(error, "No se pudieron marcar como leídas");
   }
 }
+
+export async function subscribePushAction(input: {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  userAgent?: string;
+}): Promise<void> {
+  try {
+    await apiFetch("/notifications/push/subscribe", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  } catch (error) {
+    fail(error, "No se pudo registrar el dispositivo para notificaciones push");
+  }
+}
+
+export async function unsubscribePushAction(endpoint: string): Promise<void> {
+  try {
+    await apiFetch("/notifications/push/subscribe", {
+      method: "DELETE",
+      body: JSON.stringify({ endpoint }),
+    });
+  } catch (error) {
+    fail(error, "No se pudo desactivar las notificaciones push");
+  }
+}

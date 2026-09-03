@@ -6,15 +6,16 @@ import { io, type Socket } from "socket.io-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { queryKeys } from "@/src/lib/query/keys";
-import { getSocketTicket } from "./queries";
+import { getSocketTicket, getVapidPublicKey } from "./queries";
+import { subscribePushAction } from "./actions";
 import { reproducirSonidoNotificacion } from "./notification-sounds";
-import { mostrarNotificacionSistema } from "./system-notifications";
+import { mostrarNotificacionSistema, permisoNotificacionesSistema } from "./system-notifications";
+import { asegurarSuscripcionPush, registrarServiceWorker } from "./web-push";
 import { resolverRutaNotificacion, type NotificacionEventoSocket } from "./types";
 
 /**
- * Un ticket nuevo se pide en cada intento de conexión (incluidas las
- * reconexiones) porque el ticket vive solo 60s — el callback `auth` de
- * socket.io-client se re-ejecuta automáticamente en cada intento.
+ * Socket de notificaciones + registro de Service Worker / Web Push.
+ * El ticket se pide en cada intento de conexión (vive 60s).
  */
 export function useNotificationsSocket(enabled: boolean) {
   const queryClient = useQueryClient();
@@ -23,8 +24,29 @@ export function useNotificationsSocket(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return;
 
+    void registrarServiceWorker();
+
+    if (permisoNotificacionesSistema() === "granted") {
+      void asegurarSuscripcionPush({
+        getVapidPublicKey,
+        saveSubscription: subscribePushAction,
+      });
+    }
+
+    const onSwMessage = (event: MessageEvent) => {
+      const data = event.data as { type?: string; ruta?: string } | null;
+      if (data?.type === "crm-notification-navigate" && typeof data.ruta === "string") {
+        router.push(data.ruta);
+      }
+    };
+    navigator.serviceWorker?.addEventListener("message", onSwMessage);
+
     const url = process.env.NEXT_PUBLIC_SOCKET_URL;
-    if (!url) return;
+    if (!url) {
+      return () => {
+        navigator.serviceWorker?.removeEventListener("message", onSwMessage);
+      };
+    }
 
     let socket: Socket | null = io(`${url}/notifications`, {
       auth: (cb) => {
@@ -37,9 +59,6 @@ export function useNotificationsSocket(enabled: boolean) {
     socket.on("notificacion:nueva", (data: NotificacionEventoSocket) => {
       toast.info(data.titulo, { description: data.mensaje });
       reproducirSonidoNotificacion(data.tipo);
-      // Nativa del sistema operativo — llega igual si el CRM está minimizado,
-      // en otra pestaña o en otra ventana (no requiere estar al frente).
-      // No hace nada si el usuario no dio permiso (ver Perfil).
       mostrarNotificacionSistema(data.titulo, {
         body: data.mensaje,
         tag: data.id,
@@ -50,14 +69,13 @@ export function useNotificationsSocket(enabled: boolean) {
       });
       void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsAll });
       void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
-      // Un mensaje nuevo de WhatsApp también dispara una notificación — de
-      // paso actualiza el badge de "Chats" del sidebar sin abrir otro socket.
       void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChatsUnreadCount });
     });
 
     return () => {
       socket?.disconnect();
       socket = null;
+      navigator.serviceWorker?.removeEventListener("message", onSwMessage);
     };
   }, [enabled, queryClient, router]);
 }

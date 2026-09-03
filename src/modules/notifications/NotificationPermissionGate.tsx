@@ -5,18 +5,20 @@ import { toast } from "sonner";
 import Button from "@/src/components/ui/button/Button";
 import Modal from "@/src/components/ui/modal/Modal";
 import { Icon } from "@/src/components/ui/Icon";
+import { getVapidPublicKey } from "./queries";
+import { subscribePushAction } from "./actions";
 import {
   pedirPermisoNotificacionesSistema,
   soportaNotificacionesSistema,
   useNotificacionesSistemaPermiso,
 } from "./system-notifications";
+import { asegurarSuscripcionPush, soportaWebPush } from "./web-push";
 
 const SESSION_ACK_KEY = "crm-notif-unsupported-ack";
 
 /**
- * Solicita permiso de notificaciones del sistema al entrar al CRM.
- * Los navegadores exigen un gesto del usuario para abrir el diálogo nativo,
- * por eso mostramos un modal obligatorio hasta que el usuario responda.
+ * Solicita permiso de notificaciones al entrar al CRM y registra Web Push
+ * para que los avisos lleguen en el teléfono aunque la pestaña esté cerrada.
  */
 export default function NotificationPermissionGate() {
   const permiso = useNotificacionesSistemaPermiso();
@@ -37,9 +39,23 @@ export default function NotificationPermissionGate() {
     try {
       const resultado = await pedirPermisoNotificacionesSistema();
       if (resultado === "denied") {
-        toast.error("Bloqueaste las notificaciones. Habilítalas en los ajustes de tu navegador para este sitio.");
-      } else if (resultado === "granted") {
-        toast.success("Notificaciones del sistema activadas");
+        toast.error(
+          "Bloqueaste las notificaciones. Habilítalas en los ajustes de tu navegador para este sitio.",
+        );
+        return;
+      }
+      if (resultado === "granted") {
+        const push = await asegurarSuscripcionPush({
+          getVapidPublicKey,
+          saveSubscription: subscribePushAction,
+        });
+        if (push === "ok") {
+          toast.success("Notificaciones activadas (también en segundo plano)");
+        } else if (push === "sin-vapid") {
+          toast.success("Notificaciones activadas en esta pestaña");
+        } else {
+          toast.success("Notificaciones del sistema activadas");
+        }
       }
     } finally {
       setPidiendo(false);
@@ -62,9 +78,8 @@ export default function NotificationPermissionGate() {
             Notificaciones no disponibles aquí
           </h2>
           <p className="mt-2 text-center text-theme-sm text-gray-500 dark:text-gray-400">
-            Este navegador o dispositivo no permite avisos nativos del sistema en la web. Prueba desde
-            escritorio (Chrome, Edge o Firefox) o, en iPhone, agrega el CRM a la pantalla de inicio e
-            ábrelo desde ahí.
+            En iPhone, agrega el CRM a la pantalla de inicio (Compartir → Agregar a inicio) y ábrelo
+            desde ahí para poder recibir avisos. En Android usa Chrome.
           </p>
           <p className="mt-3 text-center text-theme-xs text-gray-400 dark:text-gray-500">
             El sonido y los avisos dentro del CRM siguen funcionando con la pestaña abierta.
@@ -86,14 +101,15 @@ export default function NotificationPermissionGate() {
           <Icon name="mdi:bell-ring-outline" size={28} />
         </div>
         <h2 className="mt-5 text-center text-lg font-semibold text-gray-800 dark:text-white/90">
-          Activa las notificaciones del sistema
+          Activa las notificaciones
         </h2>
         <p className="mt-2 text-center text-theme-sm text-gray-500 dark:text-gray-400">
-          Para no perderte mensajes de WhatsApp ni avisos de leads nuevos, el CRM necesita permiso para
-          mostrar alertas nativas — aunque estés en otra pestaña o la ventana esté minimizada.
+          Recibe avisos de WhatsApp, leads nuevos y actividades de agenda cercanas — también en el
+          teléfono cuando el CRM esté en segundo plano
+          {soportaWebPush() ? "" : " (en este navegador solo mientras la pestaña esté abierta)"}.
         </p>
         <p className="mt-3 text-center text-theme-xs text-gray-400 dark:text-gray-500">
-          Funciona en escritorio y móvil. Tu navegador te pedirá confirmación al pulsar el botón.
+          Tu navegador te pedirá confirmación al pulsar el botón.
         </p>
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <Button

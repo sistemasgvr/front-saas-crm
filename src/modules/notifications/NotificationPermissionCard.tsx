@@ -4,14 +4,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
+import { getVapidPublicKey } from "./queries";
+import { subscribePushAction } from "./actions";
 import { pedirPermisoNotificacionesSistema, useNotificacionesSistemaPermiso } from "./system-notifications";
+import { asegurarSuscripcionPush, soportaWebPush } from "./web-push";
 
 /**
- * Preferencia por dispositivo/navegador, no de la organización — por eso va
- * en Perfil, no en Configuración. Activa el aviso nativo del sistema
- * operativo (además del toast y el sonido, que ya funcionan siempre) para
- * mensajes de WhatsApp y notificaciones generales, mientras el CRM siga
- * abierto en algún lado (aunque esté minimizado o en otra pestaña).
+ * Preferencia por dispositivo — en Perfil. Activa permiso + suscripción Web Push.
  */
 export default function NotificationPermissionCard() {
   const permiso = useNotificacionesSistemaPermiso();
@@ -23,13 +22,44 @@ export default function NotificationPermissionCard() {
       const resultado = await pedirPermisoNotificacionesSistema();
       if (resultado === "denied") {
         toast.error("Bloqueaste las notificaciones del sistema para este sitio en tu navegador");
+        return;
+      }
+      if (resultado === "granted") {
+        const push = await asegurarSuscripcionPush({
+          getVapidPublicKey,
+          saveSubscription: subscribePushAction,
+        });
+        if (push === "ok") {
+          toast.success("Dispositivo listo para avisos en segundo plano");
+        } else if (push === "sin-vapid") {
+          toast.message("Permiso OK; el servidor aún no tiene claves VAPID configuradas");
+        }
       }
     } finally {
       setPidiendo(false);
     }
   }
 
-  if (permiso === "no-soportado") return null;
+  if (permiso === "no-soportado") {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+        <div className="flex items-start gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400">
+            <Icon name="mdi:cellphone" size={18} />
+          </span>
+          <div>
+            <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+              Notificaciones en este dispositivo
+            </p>
+            <p className="mt-1 max-w-md text-theme-xs text-gray-500 dark:text-gray-400">
+              En iPhone: Compartir → Agregar a pantalla de inicio, y abre el CRM desde el icono.
+              En Android: usa Chrome y activa el permiso cuando se solicite.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
@@ -39,10 +69,14 @@ export default function NotificationPermissionCard() {
             <Icon name="mdi:bell-ring-outline" size={18} />
           </span>
           <div>
-            <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">Notificaciones del sistema</p>
+            <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+              Notificaciones del sistema
+            </p>
             <p className="mt-1 max-w-md text-theme-xs text-gray-500 dark:text-gray-400">
-              Avisos nativos para WhatsApp y notificaciones generales mientras el CRM siga abierto. Se
-              solicitan al entrar; aquí puedes revisar el estado en este dispositivo.
+              WhatsApp, leads y recordatorios de agenda
+              {soportaWebPush()
+                ? " — también con el CRM cerrado o en segundo plano."
+                : " mientras la pestaña esté abierta."}
             </p>
           </div>
         </div>
@@ -54,7 +88,7 @@ export default function NotificationPermissionCard() {
           </span>
         ) : permiso === "denied" ? (
           <span className="shrink-0 text-theme-xs text-gray-400">
-            Bloqueadas — para activarlas, habilita notificaciones para este sitio desde los ajustes de tu navegador.
+            Bloqueadas — habilítalas en los ajustes del navegador para este sitio.
           </span>
         ) : (
           <Button

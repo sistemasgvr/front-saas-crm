@@ -10,6 +10,12 @@ const outfit = Outfit({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "CRM",
   description: "Panel de gestión de leads y campañas Meta",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "CRM",
+    statusBarStyle: "default",
+  },
   icons: {
     icon: "/images/logo/logo-crm.png",
     apple: "/images/logo/logo-crm.png",

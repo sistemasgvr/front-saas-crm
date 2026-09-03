@@ -26,9 +26,20 @@ export interface NotificacionEventoSocket {
   fechaCreacion: string;
 }
 
-/** Deep link por tipo de notificación — hoy "lead nuevo" y "salud de webhook" (Fase 14.4). */
+/** Deep link por tipo de notificación. */
 export function resolverRutaNotificacion(payload: Record<string, unknown> | null): string | null {
   if (!payload) return null;
+  if (typeof payload.whatsappConversacionId === "string") {
+    return `/chats/${payload.whatsappConversacionId}`;
+  }
+  if (
+    payload.origen === "VISITA" ||
+    payload.origen === "ACTIVIDAD" ||
+    typeof payload.visitaId === "string" ||
+    typeof payload.actividadId === "string"
+  ) {
+    return "/agenda";
+  }
   if (typeof payload.leadId === "string") return `/leads/${payload.leadId}`;
   if (typeof payload.metaPaginaId === "string") return `/settings/meta/pages/${payload.metaPaginaId}`;
   return null;
