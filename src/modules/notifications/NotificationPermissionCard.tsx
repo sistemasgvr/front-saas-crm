@@ -41,8 +41,8 @@ export default function NotificationPermissionCard() {
           <div>
             <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">Notificaciones del sistema</p>
             <p className="mt-1 max-w-md text-theme-xs text-gray-500 dark:text-gray-400">
-              Avisos nativos de tu computadora para mensajes de WhatsApp y notificaciones generales, mientras el
-              CRM siga abierto — aunque esté minimizado o estés en otra pestaña. El sonido ya suena siempre.
+              Avisos nativos para WhatsApp y notificaciones generales mientras el CRM siga abierto. Se
+              solicitan al entrar; aquí puedes revisar el estado en este dispositivo.
             </p>
           </div>
         </div>

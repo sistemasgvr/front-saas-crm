@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import { useSidebar } from "./SidebarContext";
+import NotificationPermissionGate from "@/src/modules/notifications/NotificationPermissionGate";
 
 export default function AppShell({ header, children }: { header: ReactNode; children: ReactNode }) {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
@@ -14,6 +15,7 @@ export default function AppShell({ header, children }: { header: ReactNode; chil
 
   return (
     <div className={`min-w-0 flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}>
+      <NotificationPermissionGate />
       {header}
       <div className="mx-auto max-w-(--breakpoint-2xl) p-4 md:p-6">{children}</div>
     </div>

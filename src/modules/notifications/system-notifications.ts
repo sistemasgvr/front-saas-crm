@@ -38,7 +38,11 @@ export function useNotificacionesSistemaPermiso(): NotificationPermission | "no-
 
 export async function pedirPermisoNotificacionesSistema(): Promise<NotificationPermission> {
   if (!soportaNotificacionesSistema()) return "denied";
-  const resultado = await Notification.requestPermission();
+  // Algunos navegadores antiguos usan callback; los modernos devuelven Promise.
+  const resultado =
+    typeof Notification.requestPermission === "function"
+      ? await Notification.requestPermission()
+      : "denied";
   emitirCambio();
   return resultado;
 }
