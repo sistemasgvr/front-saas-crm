@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   useDroppable,
   useDraggable,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import Button from "@/src/components/ui/button/Button";
 import Select from "@/src/components/form/Select";
@@ -94,28 +96,24 @@ function AccionCard({
   );
 }
 
-function LeadCard({
+function LeadCardBody({
   lead,
-  puedeArrastrar,
   mostrarTipo,
   whatsappHabilitado,
   onVerDetalle,
   onClasificar,
+  interactive,
 }: {
   lead: LeadTableroRow;
-  puedeArrastrar: boolean;
   mostrarTipo: boolean;
   whatsappHabilitado: boolean;
-  onVerDetalle: (leadId: string) => void;
-  onClasificar: (leadId: string) => void;
+  onVerDetalle?: (leadId: string) => void;
+  onClasificar?: (leadId: string) => void;
+  /** false = preview del DragOverlay (sin botones accionables). */
+  interactive?: boolean;
 }) {
   const router = useRouter();
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: lead.id,
-    disabled: !puedeArrastrar,
-  });
   const sinClasificar = !tipoLeadClasificado(lead.tipoLead);
-
   const tomar = useAppMutation({
     mutationFn: () => tomarLeadAction(lead.id),
     successMessage: "Lead tomado",
@@ -125,34 +123,29 @@ function LeadCard({
     mutationFn: () => iniciarChatDesdeLeadAction(lead.id),
   });
 
-  const style = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 20 }
-    : undefined;
-
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...(puedeArrastrar ? { ...listeners, ...attributes } : {})}
-      className={`rounded-lg border border-gray-100 bg-white p-3 shadow-theme-xs dark:border-gray-800 dark:bg-gray-900 ${
-        puedeArrastrar ? "cursor-grab active:cursor-grabbing" : "cursor-default opacity-90"
-      } ${isDragging ? "opacity-50" : ""}`}
-    >
+    <>
       <div className="flex items-start justify-between gap-2">
         <p className="min-w-0 truncate text-theme-sm font-medium text-gray-800 dark:text-white/90">
           {lead.nombre ?? "Sin nombre"}
         </p>
         {mostrarTipo &&
           (sinClasificar ? (
-            <button
-              type="button"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => onClasificar(lead.id)}
-              title="Clasificar tipo de lead"
-              className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 hover:bg-amber-100 dark:bg-amber-500/15 dark:text-amber-400 dark:hover:bg-amber-500/25"
-            >
-              Sin clasificar
-            </button>
+            interactive && onClasificar ? (
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => onClasificar(lead.id)}
+                title="Clasificar tipo de lead"
+                className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 hover:bg-amber-100 dark:bg-amber-500/15 dark:text-amber-400 dark:hover:bg-amber-500/25"
+              >
+                Sin clasificar
+              </button>
+            ) : (
+              <span className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                Sin clasificar
+              </span>
+            )
           ) : (
             <span className="shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-white/10 dark:text-gray-400">
               {ETIQUETA_TIPO_LEAD[lead.tipoLead ?? "OTRO"] ?? "Otro"}
@@ -171,31 +164,83 @@ function LeadCard({
           <Icon name={lead.asignado ? "mdi:account-check-outline" : "mdi:account-question-outline"} size={13} className="shrink-0" />
           <span className="truncate">{lead.asignado?.nombre ?? "Sin asignar"}</span>
         </p>
-        <div className="flex shrink-0 items-center gap-0.5">
-          {!lead.asignado && (
-            <AccionCard
-              icon="mdi:hand-front-left-outline"
-              label="Tomar lead"
-              variant="brand"
-              loading={tomar.isPending}
-              onClick={() => tomar.mutate()}
-            />
-          )}
-          {whatsappHabilitado && lead.telefono && (
-            <AccionCard
-              icon="mdi:whatsapp"
-              label="Iniciar chat"
-              loading={iniciarChat.isPending}
-              onClick={() =>
-                iniciarChat.mutate(undefined, {
-                  onSuccess: (resultado) => router.push(`/chats/${resultado.conversacionId}`),
-                })
-              }
-            />
-          )}
-          <AccionCard icon="mdi:eye-outline" label="Ver detalle" onClick={() => onVerDetalle(lead.id)} />
-        </div>
+        {interactive && onVerDetalle ? (
+          <div className="flex shrink-0 items-center gap-0.5">
+            {!lead.asignado && (
+              <AccionCard
+                icon="mdi:hand-front-left-outline"
+                label="Tomar lead"
+                variant="brand"
+                loading={tomar.isPending}
+                onClick={() => tomar.mutate()}
+              />
+            )}
+            {whatsappHabilitado && lead.telefono && (
+              <AccionCard
+                icon="mdi:whatsapp"
+                label="Iniciar chat"
+                loading={iniciarChat.isPending}
+                onClick={() =>
+                  iniciarChat.mutate(undefined, {
+                    onSuccess: (resultado) => router.push(`/chats/${resultado.conversacionId}`),
+                  })
+                }
+              />
+            )}
+            <AccionCard icon="mdi:eye-outline" label="Ver detalle" onClick={() => onVerDetalle(lead.id)} />
+          </div>
+        ) : null}
       </div>
+    </>
+  );
+}
+
+function LeadCard({
+  lead,
+  puedeArrastrar,
+  mostrarTipo,
+  whatsappHabilitado,
+  onVerDetalle,
+  onClasificar,
+}: {
+  lead: LeadTableroRow;
+  puedeArrastrar: boolean;
+  mostrarTipo: boolean;
+  whatsappHabilitado: boolean;
+  onVerDetalle: (leadId: string) => void;
+  onClasificar: (leadId: string) => void;
+}) {
+  // Sin aplicar transform aquí: el movimiento visual va en DragOverlay,
+  // si no overflow-y-auto de la columna recorta la card al arrastrar.
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: lead.id,
+    disabled: !puedeArrastrar,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...(puedeArrastrar ? { ...listeners, ...attributes } : {})}
+      className={`rounded-lg border border-gray-100 bg-white p-3 shadow-theme-xs dark:border-gray-800 dark:bg-gray-900 ${
+        puedeArrastrar ? "cursor-grab active:cursor-grabbing" : "cursor-default opacity-90"
+      } ${isDragging ? "opacity-40" : ""}`}
+    >
+      <LeadCardBody
+        lead={lead}
+        mostrarTipo={mostrarTipo}
+        whatsappHabilitado={whatsappHabilitado}
+        onVerDetalle={onVerDetalle}
+        onClasificar={onClasificar}
+        interactive
+      />
+    </div>
+  );
+}
+
+function LeadCardOverlay({ lead, mostrarTipo }: { lead: LeadTableroRow; mostrarTipo: boolean }) {
+  return (
+    <div className="w-72 cursor-grabbing rounded-lg border border-brand-200 bg-white p-3 shadow-theme-lg dark:border-brand-800 dark:bg-gray-900">
+      <LeadCardBody lead={lead} mostrarTipo={mostrarTipo} whatsappHabilitado={false} interactive={false} />
     </div>
   );
 }
@@ -279,6 +324,7 @@ export default function LeadsKanbanView({
   const [motivoForm, setMotivoForm] = useState("");
   const [notaForm, setNotaForm] = useState("");
   const [leadDetalleId, setLeadDetalleId] = useState<string | null>(null);
+  const [draggingLeadId, setDraggingLeadId] = useState<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -383,7 +429,12 @@ export default function LeadsKanbanView({
     gestionar.mutate(payload);
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setDraggingLeadId(String(event.active.id));
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
+    setDraggingLeadId(null);
     const { active, over } = event;
     if (!over) return;
     const leadId = String(active.id);
@@ -392,6 +443,10 @@ export default function LeadsKanbanView({
     if (!lead || lead.estadoGestion === destino) return;
 
     procesarAvance(lead, destino);
+  };
+
+  const handleDragCancel = () => {
+    setDraggingLeadId(null);
   };
 
   const confirmarClasificacion = (tipo: string) => {
@@ -482,7 +537,12 @@ export default function LeadsKanbanView({
           description={tipoFiltro ? "Prueba otro filtro o revisa la lista de leads." : "Cuando entren leads aparecerán aquí por etapa."}
         />
       ) : (
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+        >
           <div className="thin-scrollbar flex gap-3 overflow-x-auto pb-2">
             {tableroQuery.data.columnas.map((columna: ColumnaTablero) => (
               <KanbanColumn
@@ -499,6 +559,14 @@ export default function LeadsKanbanView({
               />
             ))}
           </div>
+          <DragOverlay dropAnimation={null}>
+            {draggingLeadId && leadPorId.get(draggingLeadId) ? (
+              <LeadCardOverlay
+                lead={leadPorId.get(draggingLeadId)!}
+                mostrarTipo={tipoFiltro === null}
+              />
+            ) : null}
+          </DragOverlay>
         </DndContext>
       )}
 

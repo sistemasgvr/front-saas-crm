@@ -38,6 +38,60 @@ function formatearFecha(iso: string | null) {
   return new Date(iso).toLocaleString("es-PE", { timeZone: "America/Lima", dateStyle: "short", timeStyle: "short" });
 }
 
+function LeadMobileCard({
+  lead,
+  rol,
+}: {
+  lead: LeadResumen;
+  rol: Rol;
+}) {
+  const nombre = lead.nombre ?? "Sin nombre";
+
+  return (
+    <article className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="flex items-start justify-between gap-3">
+        <EntityCell name={nombre} subtitle={lead.email ?? "Sin email"} icon="mdi:account-outline" size="sm" />
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {lead.tipoLead ? (
+            <span className="text-theme-xs text-gray-400">{ETIQUETA_TIPO_LEAD[lead.tipoLead] ?? lead.tipoLead}</span>
+          ) : null}
+          <EstadoPipelineBadge tipoLead={lead.tipoLead} estado={lead.estadoGestion} />
+        </div>
+      </div>
+
+      <dl className="mt-3 space-y-2 text-theme-sm text-gray-600 dark:text-gray-300">
+        <div>
+          <CeldaConIcono icon="mdi:phone-outline" value={lead.telefono} />
+        </div>
+        <div>
+          <CeldaConIcono icon="mdi:bullhorn-outline" value={lead.campana?.nombre} />
+        </div>
+        <div>
+          <CeldaConIcono icon="mdi:image-outline" value={lead.anuncio?.nombre} />
+        </div>
+        <div>
+          {lead.asignado ? (
+            <CeldaConIcono icon="mdi:account-check-outline" value={lead.asignado.nombre} />
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-warning-500">
+              <Icon name="mdi:account-question-outline" size={16} className="shrink-0" />
+              Sin asignar
+            </span>
+          )}
+        </div>
+        <div>
+          <CeldaConIcono icon="mdi:calendar-clock-outline" value={formatearFecha(lead.fechaLead)} />
+        </div>
+      </dl>
+
+      <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-100 pt-3 dark:border-gray-800">
+        <LeadAssignmentActions leadId={lead.id} asignado={lead.asignado} rol={rol} />
+        <TableAction href={`/leads/${lead.id}`} icon="mdi:eye-outline" label={`Ver ${nombre}`} />
+      </div>
+    </article>
+  );
+}
+
 function CeldaConIcono({
   icon,
   value,
@@ -182,7 +236,7 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
         searchable: true,
         placeholder: "Todos",
         searchPlaceholder: "Buscar formulario...",
-        options: (formulariosQuery.data ?? []).map((formulario) => ({
+        options: (formulariosQuery.data ?? []).map((formulario: ReferenciaNombrada) => ({
           value: formulario.id,
           label: formulario.nombre,
         })),
@@ -222,8 +276,8 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
             ? [
                 { value: "", label: "Todos" },
                 ...(asignablesQuery.data ?? [])
-                  .filter((u) => u.id !== usuarioId)
-                  .map((u) => ({ value: u.id, label: u.nombre })),
+                  .filter((u: ReferenciaNombrada) => u.id !== usuarioId)
+                  .map((u: ReferenciaNombrada) => ({ value: u.id, label: u.nombre })),
               ]
             : []),
         ],
@@ -277,6 +331,24 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
       ) : leadsQuery.isError ? (
         <QueryError error={leadsQuery.error} />
       ) : (
+        <>
+          <div className="space-y-3 md:hidden">
+            {leadsQuery.data?.data.length === 0 ? (
+              <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+                <EmptyState
+                  icon="mdi:account-search-outline"
+                  title="No hay leads con estos filtros"
+                  description="Prueba a cambiar la búsqueda, sincronizar desde Meta o ampliar el rango de fechas."
+                />
+              </div>
+            ) : (
+              (leadsQuery.data?.data ?? []).map((lead: LeadResumen) => (
+                <LeadMobileCard key={lead.id} lead={lead} rol={rol} />
+              ))
+            )}
+          </div>
+
+          <div className="hidden md:block">
         <TableCard
           footer={
             leadsQuery.data ? (
@@ -384,6 +456,21 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
             </TableBody>
           </Table>
         </TableCard>
+          </div>
+
+          {leadsQuery.data ? (
+            <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50/70 px-5 py-5 dark:border-gray-800 dark:bg-white/[0.02] md:hidden">
+              <Pagination
+                page={leadsQuery.data.page}
+                pageSize={leadsQuery.data.pageSize}
+                total={leadsQuery.data.total}
+                totalPages={leadsQuery.data.totalPages}
+                onPageChange={setPage}
+                itemLabel="leads"
+              />
+            </div>
+          ) : null}
+        </>
       )}
     </div>
   );

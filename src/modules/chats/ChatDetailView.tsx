@@ -356,7 +356,7 @@ function SelectorReacciones({
   }, [anchorRef, pickerCompleto]);
 
   useEffect(() => {
-    function onClickFuera(e: MouseEvent) {
+    function onClickFuera(e: Event) {
       const objetivo = e.target as Node;
       if (panelRef.current?.contains(objetivo)) return;
       if (anchorRef.current?.contains(objetivo)) return;
@@ -374,9 +374,11 @@ function SelectorReacciones({
     // lejos de donde calculamos la posición; más simple cerrar que
     // perseguirlo con un recálculo en cada scroll.
     document.addEventListener("mousedown", onClickFuera);
+    document.addEventListener("touchstart", onClickFuera, { passive: true });
     document.addEventListener("scroll", onScroll, true);
     return () => {
       document.removeEventListener("mousedown", onClickFuera);
+      document.removeEventListener("touchstart", onClickFuera);
       document.removeEventListener("scroll", onScroll, true);
     };
   }, [onCerrar, anchorRef]);
@@ -460,7 +462,7 @@ function MenuAcciones({
   }, [anchorRef]);
 
   useEffect(() => {
-    function onClickFuera(e: MouseEvent) {
+    function onClickFuera(e: Event) {
       const objetivo = e.target as Node;
       if (panelRef.current?.contains(objetivo)) return;
       if (anchorRef.current?.contains(objetivo)) return;
@@ -472,9 +474,11 @@ function MenuAcciones({
       onCerrar();
     }
     document.addEventListener("mousedown", onClickFuera);
+    document.addEventListener("touchstart", onClickFuera, { passive: true });
     document.addEventListener("scroll", onScroll, true);
     return () => {
       document.removeEventListener("mousedown", onClickFuera);
+      document.removeEventListener("touchstart", onClickFuera);
       document.removeEventListener("scroll", onScroll, true);
     };
   }, [onCerrar, anchorRef]);
@@ -524,12 +528,16 @@ function MenuAdjuntar({
 
   useEffect(() => {
     if (!abierto) return;
-    function onClickFuera(e: MouseEvent) {
+    function onClickFuera(e: Event) {
       if (panelRef.current?.contains(e.target as Node)) return;
       onCerrar();
     }
     document.addEventListener("mousedown", onClickFuera);
-    return () => document.removeEventListener("mousedown", onClickFuera);
+    document.addEventListener("touchstart", onClickFuera, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", onClickFuera);
+      document.removeEventListener("touchstart", onClickFuera);
+    };
   }, [abierto, onCerrar]);
 
   if (!abierto) return null;
@@ -551,7 +559,7 @@ function MenuAdjuntar({
           key={opcion.label}
           type="button"
           onClick={opcion.onClick}
-          className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-theme-sm text-gray-700 transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/5"
+          className="flex min-h-11 w-full items-center gap-2.5 px-3 py-3 text-left text-theme-sm text-gray-700 transition hover:bg-gray-50 active:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/5"
         >
           <Icon name={opcion.icon} size={18} />
           {opcion.label}
@@ -592,8 +600,11 @@ function Burbuja({
     <button
       ref={triggerRef}
       type="button"
-      onClick={() => setSelectorAbierto((v) => !v)}
-      className="flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-full text-gray-400 opacity-0 transition hover:bg-gray-100 group-hover:opacity-100 dark:text-gray-500 dark:hover:bg-white/10"
+      onClick={() => {
+        setMenuAbierto(false);
+        setSelectorAbierto((v) => !v);
+      }}
+      className="flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-full text-gray-400 transition hover:bg-gray-100 md:h-7 md:w-7 md:opacity-0 md:group-hover:opacity-100 dark:text-gray-500 dark:hover:bg-white/10"
       aria-label="Reaccionar"
       title="Reaccionar"
     >
@@ -605,8 +616,11 @@ function Burbuja({
     <button
       ref={chevronRef}
       type="button"
-      onClick={() => setMenuAbierto((v) => !v)}
-      className="flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-full text-gray-400 opacity-0 transition hover:bg-gray-100 group-hover:opacity-100 dark:text-gray-500 dark:hover:bg-white/10"
+      onClick={() => {
+        setSelectorAbierto(false);
+        setMenuAbierto((v) => !v);
+      }}
+      className="flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-full text-gray-400 transition hover:bg-gray-100 md:h-7 md:w-7 md:opacity-0 md:group-hover:opacity-100 dark:text-gray-500 dark:hover:bg-white/10"
       aria-label="Más acciones"
       title="Más acciones"
     >
@@ -636,7 +650,7 @@ function Burbuja({
     <div className={`group flex items-center gap-1 ${esSaliente ? "justify-end" : "justify-start"}`}>
       {esSaliente && grupoAcciones}
       <div
-        className={`relative max-w-[75%] space-y-1.5 rounded-2xl px-4 py-2.5 text-theme-sm ${
+        className={`relative max-w-[85%] space-y-1.5 rounded-2xl px-4 py-2.5 text-theme-sm sm:max-w-[75%] ${
           esSaliente
             ? "bg-brand-500 text-white"
             : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
@@ -1030,10 +1044,14 @@ export default function ChatDetailView({ id }: { id: string }) {
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
-        <Link href="/chats" className="text-gray-500 md:hidden" aria-label="Volver a chats">
-          <Icon name="mdi:arrow-left" size={20} />
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 items-center gap-3 border-b border-gray-100 px-3 py-3 dark:border-gray-800 sm:px-4">
+        <Link
+          href="/chats"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 md:hidden dark:hover:bg-white/5"
+          aria-label="Volver a chats"
+        >
+          <Icon name="mdi:arrow-left" size={22} />
         </Link>
         <Avatar name={nombre} size="sm" />
         <div className="min-w-0">
@@ -1046,7 +1064,7 @@ export default function ChatDetailView({ id }: { id: string }) {
         </div>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-3 [-webkit-overflow-scrolling:touch] sm:px-5 sm:py-4">
         {chat.mensajes.length === 0 ? (
           <p className="text-center text-theme-sm text-gray-500 dark:text-gray-400">
             Todavía no hay mensajes en esta conversación.
@@ -1065,7 +1083,7 @@ export default function ChatDetailView({ id }: { id: string }) {
         <div ref={finRef} />
       </div>
 
-      <div className="border-t border-gray-100 p-3 dark:border-gray-800 sm:p-4">
+      <div className="shrink-0 border-t border-gray-100 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-gray-800 sm:p-4">
         {dentroDeVentana ? (
           <form
             ref={formRef}
@@ -1158,10 +1176,10 @@ export default function ChatDetailView({ id }: { id: string }) {
                   <button
                     type="button"
                     onClick={() => setMenuAdjuntarAbierto((v) => !v)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+                    className="flex h-11 w-11 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
                     aria-label="Adjuntar"
                   >
-                    <Icon name="mdi:plus" size={22} />
+                    <Icon name="mdi:plus" size={24} />
                   </button>
                   <MenuAdjuntar
                     abierto={menuAdjuntarAbierto}
@@ -1195,7 +1213,8 @@ export default function ChatDetailView({ id }: { id: string }) {
                   }}
                   placeholder={archivo ? "Agrega un texto (opcional)…" : "Escribe un mensaje…"}
                   rows={1}
-                  className="max-h-32 flex-1 resize-none bg-transparent px-1.5 py-1.5 text-theme-sm text-gray-800 outline-none dark:text-white/90"
+                  enterKeyHint="send"
+                  className="max-h-32 min-h-11 flex-1 resize-none bg-transparent px-1.5 py-2.5 text-base text-gray-800 outline-none sm:text-theme-sm dark:text-white/90"
                 />
               </div>
               <button

@@ -77,7 +77,7 @@ export default function ChatsSidebar() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
         {chatsQuery.isLoading ? (
           <PageLoader />
         ) : chatsQuery.isError ? (
@@ -111,7 +111,7 @@ export default function ChatsSidebar() {
                 <Link
                   key={chat.id}
                   href={`/chats/${chat.id}`}
-                  className={`flex items-center gap-3 px-4 py-3 transition ${
+                  className={`flex min-h-[64px] items-center gap-3 px-4 py-3.5 transition active:bg-gray-100 dark:active:bg-white/[0.04] ${
                     activo
                       ? "bg-brand-50 dark:bg-brand-500/10"
                       : "hover:bg-gray-50 dark:hover:bg-white/[0.02]"
