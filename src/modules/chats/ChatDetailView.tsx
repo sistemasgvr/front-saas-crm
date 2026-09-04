@@ -1100,7 +1100,11 @@ export default function ChatDetailView({ id }: { id: string }) {
   ]);
   const [interTextoBoton, setInterTextoBoton] = useState("");
   const [interUrl, setInterUrl] = useState("");
-  const finRef = useRef<HTMLDivElement>(null);
+  const listaRef = useRef<HTMLDivElement>(null);
+  const contenidoListaRef = useRef<HTMLDivElement>(null);
+  /** Si el usuario está cerca del fondo, seguimos pegando el scroll al último mensaje. */
+  const pegarAlFondoRef = useRef(true);
+  const conversacionScrollRef = useRef<string | null>(null);
   const inputArchivoRef = useRef<HTMLInputElement>(null);
   const inputStickerRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -1514,9 +1518,56 @@ export default function ChatDetailView({ id }: { id: string }) {
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
   });
 
+  function scrollListaAlFondo() {
+    const lista = listaRef.current;
+    if (!lista) return;
+    // Asignar scrollTop (no scrollIntoView): evita desplazar el layout
+    // padre y no deja animaciones smooth a medias cuando crece el contenido.
+    lista.scrollTop = lista.scrollHeight;
+  }
+
+  function actualizarPegarAlFondo() {
+    const lista = listaRef.current;
+    if (!lista) return;
+    const distancia = lista.scrollHeight - lista.scrollTop - lista.clientHeight;
+    pegarAlFondoRef.current = distancia <= 96;
+  }
+
+  // Al abrir el chat o llegar mensajes nuevos: ir al fondo antes de pintar.
+  // Antes se usaba scrollIntoView({ behavior: "smooth" }), que podía
+  // scrollear ancestros y quedarse "atascado" cuando imágenes/audio
+  // cambiaban la altura después del primer paint.
+  useLayoutEffect(() => {
+    const mensajes = chatQuery.data?.mensajes;
+    if (!mensajes) return;
+
+    const cambioConversacion = conversacionScrollRef.current !== id;
+    if (cambioConversacion) {
+      conversacionScrollRef.current = id;
+      pegarAlFondoRef.current = true;
+      scrollListaAlFondo();
+      return;
+    }
+
+    if (pegarAlFondoRef.current) {
+      scrollListaAlFondo();
+    }
+  }, [chatQuery.data?.mensajes, id]);
+
+  // Cuando carga media (img/audio/video) el contenido crece: re-pegar al
+  // fondo solo si el usuario no se fue a leer historial más arriba.
   useEffect(() => {
-    finRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [chatQuery.data?.mensajes.length, idsAnimarEntrada]);
+    const contenido = contenidoListaRef.current;
+    if (!contenido || !chatQuery.isSuccess) return;
+
+    const ro = new ResizeObserver(() => {
+      if (pegarAlFondoRef.current) {
+        scrollListaAlFondo();
+      }
+    });
+    ro.observe(contenido);
+    return () => ro.disconnect();
+  }, [id, chatQuery.isSuccess]);
 
   // Animar solo mensajes nuevos (no el historial al abrir el chat).
   useEffect(() => {
@@ -1639,37 +1690,42 @@ export default function ChatDetailView({ id }: { id: string }) {
         </Button>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-3 [-webkit-overflow-scrolling:touch] sm:px-5 sm:py-4">
-        {chat.mensajes.length === 0 ? (
-          <p className="text-center text-theme-sm text-gray-500 dark:text-gray-400">
-            Todavía no hay mensajes en esta conversación.
-          </p>
-        ) : (
-          chat.mensajes.map((mensaje: Mensaje) => (
-            <Burbuja
-              key={mensaje.id}
-              mensaje={mensaje}
-              conversacionId={id}
-              nombreContacto={nombre}
-              animarEntrada={idsAnimarEntrada.has(mensaje.id)}
-              onResponder={setRespondiendoA}
-              onReenviar={(m) => {
-                setReenviandoMensaje(m);
-                setDestinoReenvio("");
-              }}
-              onEliminar={(m) => {
-                if (
-                  window.confirm(
-                    "¿Eliminar este mensaje del CRM?\n\nNota: Meta Cloud API no permite borrar el mensaje en el WhatsApp del contacto. Si lo borras desde la app Business del celular, sí se sincroniza aquí.",
-                  )
-                ) {
-                  eliminarMensaje.mutate(m.id);
-                }
-              }}
-            />
-          ))
-        )}
-        <div ref={finRef} />
+      <div
+        ref={listaRef}
+        onScroll={actualizarPegarAlFondo}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 [-webkit-overflow-scrolling:touch] sm:px-5 sm:py-4"
+      >
+        <div ref={contenidoListaRef} className="space-y-3">
+          {chat.mensajes.length === 0 ? (
+            <p className="text-center text-theme-sm text-gray-500 dark:text-gray-400">
+              Todavía no hay mensajes en esta conversación.
+            </p>
+          ) : (
+            chat.mensajes.map((mensaje: Mensaje) => (
+              <Burbuja
+                key={mensaje.id}
+                mensaje={mensaje}
+                conversacionId={id}
+                nombreContacto={nombre}
+                animarEntrada={idsAnimarEntrada.has(mensaje.id)}
+                onResponder={setRespondiendoA}
+                onReenviar={(m) => {
+                  setReenviandoMensaje(m);
+                  setDestinoReenvio("");
+                }}
+                onEliminar={(m) => {
+                  if (
+                    window.confirm(
+                      "¿Eliminar este mensaje del CRM?\n\nNota: Meta Cloud API no permite borrar el mensaje en el WhatsApp del contacto. Si lo borras desde la app Business del celular, sí se sincroniza aquí.",
+                    )
+                  ) {
+                    eliminarMensaje.mutate(m.id);
+                  }
+                }}
+              />
+            ))
+          )}
+        </div>
       </div>
 
       <div className="shrink-0 border-t border-gray-100 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-gray-800 sm:p-4">
