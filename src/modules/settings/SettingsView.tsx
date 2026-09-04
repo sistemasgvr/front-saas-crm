@@ -55,7 +55,7 @@ export default function SettingsView() {
           icon="mdi:office-building-outline"
           help="Nombre, contacto, país y zona horaria de esta organización."
           preview={orgQuery.data.nombre}
-          defaultOpen
+          defaultOpen={false}
         >
           <OrganizationSettingsForm org={orgQuery.data} />
         </CollapsibleSection>

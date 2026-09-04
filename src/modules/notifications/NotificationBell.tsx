@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { DropdownItem } from "@/src/components/ui/dropdown/DropdownItem";
 import Avatar from "@/src/components/ui/avatar/Avatar";
 import { Icon } from "@/src/components/ui/Icon";
+import { ListItemSkeleton } from "@/src/components/ui/skeletons";
 import { popoverMotionClass, useOpenTransition } from "@/src/components/ui/use-open-transition";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
@@ -123,7 +124,9 @@ export default function NotificationBell({ organizacionId }: NotificationBellPro
 
               <ul className="max-h-[360px] overflow-y-auto">
                 {listQuery.isLoading && (
-                  <li className="px-4 py-8 text-center text-theme-sm text-gray-500">Cargando…</li>
+                  <li>
+                    <ListItemSkeleton count={4} />
+                  </li>
                 )}
                 {!listQuery.isLoading && items.length === 0 && (
                   <li className="px-4 py-8 text-center text-theme-sm text-gray-500">Sin notificaciones.</li>

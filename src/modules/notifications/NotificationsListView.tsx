@@ -7,7 +7,8 @@ import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/src/compon
 import { Icon } from "@/src/components/ui/Icon";
 import ActionButton from "@/src/components/ui/ActionButton";
 import Pagination from "@/src/components/ui/Pagination";
-import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import { QueryError } from "@/src/components/ui/PageLoader";
+import { TableRowsSkeleton } from "@/src/components/ui/skeletons";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { getNotifications } from "./queries";
@@ -55,7 +56,7 @@ export default function NotificationsListView() {
       </div>
 
       {isLoading ? (
-        <PageLoader />
+        <TableRowsSkeleton rows={8} cols={3} />
       ) : isError ? (
         <QueryError error={error} />
       ) : (

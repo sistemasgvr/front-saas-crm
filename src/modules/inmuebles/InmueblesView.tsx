@@ -10,7 +10,8 @@ import DynamicFilters from "@/src/components/ui/filters/DynamicFilters";
 import type { DynamicFilterFieldDef, DynamicFilterValues } from "@/src/components/ui/filters/types";
 import PageHeader from "@/src/components/ui/PageHeader";
 import Pagination from "@/src/components/ui/Pagination";
-import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import { QueryError } from "@/src/components/ui/PageLoader";
+import { TablePageSkeleton } from "@/src/components/ui/skeletons";
 import TableAction from "@/src/components/ui/TableAction";
 import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
 import { canManageOrganization } from "@/src/lib/roles";
@@ -113,7 +114,7 @@ export default function InmueblesView({ rol }: { rol: string | null }) {
       </PageHeader>
 
       {isLoading ? (
-        <PageLoader />
+        <TablePageSkeleton cols={5} showMobileCards={false} />
       ) : isError ? (
         <QueryError error={error} />
       ) : (

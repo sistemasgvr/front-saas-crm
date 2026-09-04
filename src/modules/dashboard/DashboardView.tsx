@@ -4,7 +4,12 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import PageHeader from "@/src/components/ui/PageHeader";
-import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import { QueryError } from "@/src/components/ui/PageLoader";
+import {
+  ChartPanelSkeleton,
+  EmbudoSkeleton,
+  KpiCardsSkeleton,
+} from "@/src/components/ui/skeletons";
 import DynamicFilters from "@/src/components/ui/filters/DynamicFilters";
 import type { DynamicFilterFieldDef, DynamicFilterValues } from "@/src/components/ui/filters/types";
 import LineChart from "@/src/components/charts/LineChart";
@@ -306,7 +311,7 @@ export default function DashboardView({
       )}
 
       {kpisQuery.isLoading ? (
-        <PageLoader label="Cargando KPIs…" />
+        <KpiCardsSkeleton />
       ) : kpisQuery.isError ? (
         <QueryError error={kpisQuery.error} />
       ) : (
@@ -321,7 +326,7 @@ export default function DashboardView({
       )}
 
       {embudoQuery.isLoading ? (
-        <PageLoader label="Cargando embudo…" />
+        <EmbudoSkeleton />
       ) : embudoQuery.isError ? (
         <QueryError error={embudoQuery.error} />
       ) : (
@@ -408,7 +413,7 @@ export default function DashboardView({
       )}
 
       {adsKpisQuery.isLoading ? (
-        <PageLoader label="Cargando métricas de anuncios…" />
+        <KpiCardsSkeleton className="mb-4" />
       ) : adsKpisQuery.isError ? (
         <QueryError error={adsKpisQuery.error} />
       ) : (
@@ -444,7 +449,16 @@ export default function DashboardView({
       )}
 
       {seriesQuery.isLoading ? (
-        <PageLoader label="Cargando gráficos…" />
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <div className="lg:col-span-2">
+            <ChartPanelSkeleton heightClass="h-[240px]" />
+          </div>
+          <div className="lg:col-span-2">
+            <ChartPanelSkeleton heightClass="h-[240px]" />
+          </div>
+          <ChartPanelSkeleton />
+          <ChartPanelSkeleton />
+        </div>
       ) : seriesQuery.isError ? (
         <QueryError error={seriesQuery.error} />
       ) : (
@@ -484,12 +498,14 @@ export default function DashboardView({
                         data: cuenta.porDia.map((p) => p.spend),
                       })),
                     ]}
+                    valueFormat="money"
                   />
                 ) : (
                   <LineChart
                     categories={adsSeriesData.porDia.map((p) => formatearFechaCorta(p.fecha))}
                     data={adsSeriesData.porDia.map((p) => p.spend)}
                     seriesName="Inversión"
+                    valueFormat="money"
                   />
                 )}
               </div>
@@ -503,6 +519,7 @@ export default function DashboardView({
                 <BarChart
                   categories={seriesData.porCampana.map((p) => p.nombre)}
                   data={seriesData.porCampana.map((p) => p.total)}
+                  horizontal
                 />
               )}
             </div>
@@ -515,6 +532,7 @@ export default function DashboardView({
                 <BarChart
                   categories={seriesData.porAnuncio.map((p) => p.nombre)}
                   data={seriesData.porAnuncio.map((p) => p.total)}
+                  horizontal
                 />
               )}
             </div>
@@ -534,7 +552,8 @@ export default function DashboardView({
                       categories={topInmuebles.map((p) => p.nombre)}
                       data={topInmuebles.map((p) => p.total)}
                       seriesName="Leads"
-                      height={260}
+                      horizontal
+                      height={Math.min(360, Math.max(220, topInmuebles.length * 40 + 40))}
                     />
                     <ul className="max-h-[260px] space-y-1.5 overflow-y-auto">
                       {topInmuebles.map((p, idx) => (

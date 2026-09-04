@@ -138,7 +138,7 @@ export default function LeadAutoAssignmentSettingsCard() {
       <CollapsibleSection
         title="Asignación automática de leads"
         icon="mdi:account-switch-outline"
-        defaultOpen
+        defaultOpen={false}
       >
         <PageLoader label="Cargando auto-asignación…" />
       </CollapsibleSection>
@@ -155,7 +155,7 @@ export default function LeadAutoAssignmentSettingsCard() {
       preview={preview}
       badge={form.habilitado ? "Activa" : "Inactiva"}
       badgeColor={form.habilitado ? "success" : "light"}
-      defaultOpen
+      defaultOpen={false}
     >
       <div className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center justify-between gap-3">

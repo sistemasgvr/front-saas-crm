@@ -19,7 +19,8 @@ import Select from "@/src/components/form/Select";
 import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
 import PageHeader from "@/src/components/ui/PageHeader";
-import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import { QueryError } from "@/src/components/ui/PageLoader";
+import { CalendarSkeleton } from "@/src/components/ui/skeletons";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
@@ -314,12 +315,9 @@ export default function AgendaView({
 
       <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white p-2 dark:border-gray-800 dark:bg-white/[0.03] sm:p-4">
         {agendaQuery.isLoading || !calendarioListo ? (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 dark:bg-gray-900/70">
-            <PageLoader label="Cargando agenda…" />
-          </div>
-        ) : null}
-        <div className="agenda-calendar min-h-[28rem] text-theme-sm text-gray-800 sm:min-h-[32rem] dark:text-gray-200">
-          {calendarioListo ? (
+          <CalendarSkeleton />
+        ) : (
+          <div className="agenda-calendar min-h-[28rem] text-theme-sm text-gray-800 sm:min-h-[32rem] dark:text-gray-200">
             <FullCalendar
               key={esMovil ? "agenda-movil" : "agenda-desktop"}
               plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
@@ -373,8 +371,8 @@ export default function AgendaView({
                 list: "Lista",
               }}
             />
-          ) : null}
-        </div>
+          </div>
+        )}
       </div>
 
       {itemSeleccionado ? (

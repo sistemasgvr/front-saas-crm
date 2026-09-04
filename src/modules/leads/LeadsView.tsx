@@ -11,7 +11,8 @@ import type { DynamicFilterFieldDef, DynamicFilterValues } from "@/src/component
 import { Icon } from "@/src/components/ui/Icon";
 import PageHeader from "@/src/components/ui/PageHeader";
 import Pagination from "@/src/components/ui/Pagination";
-import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import { QueryError } from "@/src/components/ui/PageLoader";
+import { TablePageSkeleton } from "@/src/components/ui/skeletons";
 import TableAction from "@/src/components/ui/TableAction";
 import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
@@ -335,7 +336,7 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
       )}
 
       {leadsQuery.isLoading ? (
-        <PageLoader />
+        <TablePageSkeleton cols={7} />
       ) : leadsQuery.isError ? (
         <QueryError error={leadsQuery.error} />
       ) : (

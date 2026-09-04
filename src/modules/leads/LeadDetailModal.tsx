@@ -7,7 +7,8 @@ import Avatar from "@/src/components/ui/avatar/Avatar";
 import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
 import Modal from "@/src/components/ui/modal/Modal";
-import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import { DetailModalSkeleton } from "@/src/components/ui/skeletons";
+import { QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
@@ -111,7 +112,7 @@ export default function LeadDetailModal({
     >
       <div className="p-5 sm:p-6">
         {leadQuery.isLoading ? (
-          <PageLoader />
+          <DetailModalSkeleton />
         ) : leadQuery.isError ? (
           <QueryError error={leadQuery.error} />
         ) : !lead ? null : (

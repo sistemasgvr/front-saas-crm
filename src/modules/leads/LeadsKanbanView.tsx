@@ -19,7 +19,8 @@ import Select from "@/src/components/form/Select";
 import TextArea from "@/src/components/form/input/TextArea";
 import { Icon } from "@/src/components/ui/Icon";
 import PageHeader from "@/src/components/ui/PageHeader";
-import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import { QueryError } from "@/src/components/ui/PageLoader";
+import { KanbanBoardSkeleton } from "@/src/components/ui/skeletons";
 import EmptyState from "@/src/components/ui/EmptyState";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
@@ -541,7 +542,7 @@ export default function LeadsKanbanView({
       )}
 
       {tableroQuery.isLoading ? (
-        <PageLoader />
+        <KanbanBoardSkeleton />
       ) : tableroQuery.isError ? (
         <QueryError error={tableroQuery.error} />
       ) : !tableroQuery.data || tableroQuery.data.columnas.every((c: ColumnaTablero) => c.leads.length === 0) ? (

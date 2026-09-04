@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Icon } from "@/src/components/ui/Icon";
+import { Skeleton } from "@/src/components/ui/Skeleton";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getVisitasLead } from "./queries";
 import type { LeadVisitaRow } from "./types";
@@ -22,6 +23,27 @@ const ETIQUETA_ESTADO: Record<string, string> = {
   CANCELADA: "Cancelada",
 };
 
+function VisitasSkeleton() {
+  return (
+    <div className="space-y-2" role="status" aria-label="Cargando visitas">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div
+          key={i}
+          className="rounded-xl border border-gray-200 p-3 dark:border-gray-800"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-2">
+              <Skeleton className="h-3.5 w-40" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function LeadVisitasPanel({
   leadId,
   crmHabilitado = false,
@@ -38,7 +60,7 @@ export default function LeadVisitasPanel({
   const pasadas = visitas.filter((v: LeadVisitaRow) => v.estado !== "PROGRAMADA");
 
   if (isLoading) {
-    return <p className="text-theme-xs text-gray-400">Cargando visitas…</p>;
+    return <VisitasSkeleton />;
   }
 
   if (visitas.length === 0) {

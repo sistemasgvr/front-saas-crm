@@ -8,7 +8,8 @@ import Avatar from "@/src/components/ui/avatar/Avatar";
 import Button from "@/src/components/ui/button/Button";
 import CollapsibleSection from "@/src/components/ui/CollapsibleSection";
 import { Icon } from "@/src/components/ui/Icon";
-import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import { DetailPageSkeleton } from "@/src/components/ui/skeletons";
+import { QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
@@ -138,7 +139,7 @@ export default function LeadDetailView({
     mutationFn: () => iniciarChatDesdeLeadAction(id),
   });
 
-  if (leadQuery.isLoading) return <PageLoader />;
+  if (leadQuery.isLoading) return <DetailPageSkeleton />;
   if (leadQuery.isError) {
     const message = leadQuery.error instanceof Error ? leadQuery.error.message : "";
     if (message.toLowerCase().includes("no encontrado")) {

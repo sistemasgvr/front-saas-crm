@@ -10,7 +10,8 @@ import DynamicFilters from "@/src/components/ui/filters/DynamicFilters";
 import type { DynamicFilterFieldDef, DynamicFilterValues } from "@/src/components/ui/filters/types";
 import PageHeader from "@/src/components/ui/PageHeader";
 import Pagination from "@/src/components/ui/Pagination";
-import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import { QueryError } from "@/src/components/ui/PageLoader";
+import { TableRowsSkeleton } from "@/src/components/ui/skeletons";
 import TableAction from "@/src/components/ui/TableAction";
 import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
@@ -85,7 +86,7 @@ export default function UsersView() {
       </PageHeader>
 
       {isLoading ? (
-        <PageLoader />
+        <TableRowsSkeleton rows={8} cols={5} />
       ) : isError ? (
         <QueryError error={error} />
       ) : (

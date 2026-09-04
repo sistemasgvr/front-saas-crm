@@ -6,7 +6,8 @@ import Button from "@/src/components/ui/button/Button";
 import Badge from "@/src/components/ui/badge/Badge";
 import { Icon } from "@/src/components/ui/Icon";
 import PageHeader from "@/src/components/ui/PageHeader";
-import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import { DetailPageSkeleton, ListItemSkeleton } from "@/src/components/ui/skeletons";
+import { QueryError } from "@/src/components/ui/PageLoader";
 import { canManageOrganization } from "@/src/lib/roles";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
@@ -65,7 +66,7 @@ function InteresadosSection({ inmuebleId }: { inmuebleId: string }) {
       </div>
 
       {query.isLoading ? (
-        <PageLoader label="Cargando interesados…" />
+        <ListItemSkeleton count={5} />
       ) : query.isError ? (
         <QueryError error={query.error} />
       ) : !query.data?.length ? (
@@ -145,7 +146,7 @@ export default function InmuebleDetailView({
     redirectTo: "/inmuebles",
   });
 
-  if (query.isLoading) return <PageLoader />;
+  if (query.isLoading) return <DetailPageSkeleton />;
   if (query.isError) return <QueryError error={query.error} />;
   if (!query.data) return null;
 
