@@ -54,6 +54,12 @@ export const queryKeys = {
   leadsTablero: (tipoLead: string | null | undefined, asignado?: string) =>
     ["leads", "tablero", tipoLead ?? null, asignado ?? null] as const,
   leadAutoAsignacionConfig: ["leads", "auto-asignacion", "config"] as const,
+  organizationPipelineConfig: ["organizations", "pipeline-config"] as const,
+  inmuebles: (params?: Record<string, string | number | undefined>) =>
+    ["inmuebles", params ?? {}] as const,
+  inmueblesAll: ["inmuebles"] as const,
+  inmueble: (id: string) => ["inmuebles", id] as const,
+  inmueblesFiltro: ["inmuebles", "filtro"] as const,
   notifications: (params?: { page?: number }) => ["notifications", params ?? {}] as const,
   /** Prefijo para invalidar todas las páginas a la vez (no usar para fetch). */
   notificationsAll: ["notifications"] as const,

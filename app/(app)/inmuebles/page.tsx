@@ -1,16 +1,16 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/src/lib/auth";
 import { getDefaultClientRoute, isModuloHabilitado } from "@/src/lib/modules";
-import DashboardView from "@/src/modules/dashboard/DashboardView";
+import InmueblesView from "@/src/modules/inmuebles/InmueblesView";
 
-export default async function DashboardPage() {
+export default async function InmueblesPage() {
   const me = await getMe();
   if (!me) {
     redirect("/login");
   }
-  if (!isModuloHabilitado(me.modulos, "DASHBOARD")) {
+  if (!isModuloHabilitado(me.modulos, "META_LEADS")) {
     redirect(getDefaultClientRoute(me));
   }
 
-  return <DashboardView rol={me.rol} usuarioId={me.usuario.id} />;
+  return <InmueblesView rol={me.rol} />;
 }

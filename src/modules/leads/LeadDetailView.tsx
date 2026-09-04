@@ -35,6 +35,22 @@ function formatearFecha(iso: string | null | undefined) {
   });
 }
 
+const ETIQUETA_TIPO_ACCION: Record<string, string> = {
+  VISITA: "Visita",
+  LLAMADA: "Llamada",
+  REUNION: "Reunión",
+  SEGUIMIENTO: "Seguimiento",
+  OTRO: "Otra",
+};
+
+const ICONO_TIPO_ACCION: Record<string, string> = {
+  VISITA: "mdi:home-city-outline",
+  LLAMADA: "mdi:phone-outline",
+  REUNION: "mdi:account-group-outline",
+  SEGUIMIENTO: "mdi:clipboard-text-outline",
+  OTRO: "mdi:calendar-clock-outline",
+};
+
 function Campo({
   label,
   value,
@@ -253,13 +269,60 @@ export default function LeadDetailView({
         </div>
       </SeccionFija>
 
+      {lead.proximaAccion ? (
+        <SeccionFija
+          title="Próxima acción"
+          icon="mdi:calendar-start"
+          description="La cita o actividad programada más cercana de este lead."
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="flex items-center gap-1.5 text-theme-sm font-semibold text-gray-800 dark:text-white/90">
+                <Icon
+                  name={ICONO_TIPO_ACCION[lead.proximaAccion.tipo] ?? "mdi:calendar-clock-outline"}
+                  size={18}
+                  className="shrink-0 text-brand-500"
+                />
+                {ETIQUETA_TIPO_ACCION[lead.proximaAccion.tipo] ?? lead.proximaAccion.tipo}
+              </p>
+              <p className="mt-1 text-theme-sm text-gray-700 dark:text-gray-200">
+                {lead.proximaAccion.titulo}
+              </p>
+              <p className="mt-0.5 text-theme-xs text-gray-500 dark:text-gray-400">
+                {formatearFecha(lead.proximaAccion.programadaEn)}
+                {lead.proximaAccion.origen === "visita" ? " · Visita de pipeline" : " · Agenda"}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/agenda"
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-theme-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-transparent dark:text-gray-200 dark:hover:bg-white/5"
+              >
+                <Icon name="mdi:calendar-month-outline" size={16} />
+                Ver en agenda
+              </Link>
+              {lead.proximaAccion.origen === "visita" ? (
+                <a
+                  href="#visitas-agenda"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-500 px-3 py-2 text-theme-sm font-medium text-white transition hover:bg-brand-600"
+                >
+                  Ver detalle
+                </a>
+              ) : null}
+            </div>
+          </div>
+        </SeccionFija>
+      ) : null}
+
       <CollapsibleSection
         title="Visitas y agenda"
         icon="mdi:calendar-month-outline"
         description="Citas estructuradas — alimentan la vista calendario del equipo."
         defaultOpen
       >
-        <LeadVisitasPanel leadId={id} />
+        <div id="visitas-agenda">
+          <LeadVisitasPanel leadId={id} />
+        </div>
       </CollapsibleSection>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">

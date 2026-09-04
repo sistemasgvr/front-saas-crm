@@ -29,6 +29,8 @@ export interface FiltroDashboard {
   metaCuentaId?: string;
   fechaDesde?: string;
   fechaHasta?: string;
+  tipoLead?: string;
+  asignado?: string;
 }
 
 export interface KpisPublicitarios {
@@ -56,4 +58,30 @@ export interface SerieSpendCuenta {
 export interface SeriesPublicitarias {
   porDia: PuntoSpendDia[];
   porCuenta?: SerieSpendCuenta[];
+}
+
+export interface EmbudoEstadoPunto {
+  estadoGestion: string;
+  etiqueta: string;
+  total: number;
+  horasPromedio: number | null;
+}
+
+export interface EmbudoKpisPorTipo {
+  tipoLead: string | null;
+  etiquetaTipo: string;
+  total: number;
+  tasaContacto: number | null;
+  conversionGanado: number | null;
+  porEstado: { estadoGestion: string; etiqueta: string; total: number }[];
+}
+
+export interface EmbudoKpis {
+  total: number;
+  contactados: number;
+  cerradosGanados: number;
+  tasaContacto: number | null;
+  conversionGanado: number | null;
+  porEstado: EmbudoEstadoPunto[];
+  porTipoLead: EmbudoKpisPorTipo[];
 }

@@ -43,6 +43,16 @@ export interface LeadDetalle extends LeadResumen {
   estadoGestionEn: string | null;
   motivoCierre: string | null;
   notaCierre: string | null;
+  proximaAccion: ProximaAccionLead | null;
+}
+
+export interface ProximaAccionLead {
+  origen: "visita" | "actividad";
+  id: string;
+  tipo: string;
+  titulo: string;
+  programadaEn: string;
+  programadaFin: string;
 }
 
 // --- Pipeline (PLAN-PIPELINE-INMOBILIARIA.md) ---------------------------
@@ -74,6 +84,8 @@ export interface MetaPipeline {
   motivosPerdido: MotivoMeta[];
   motivosGanado: MotivoMeta[];
   camposReapertura: CampoTransicionMeta[];
+  /** Presente si el backend conoce override por org (v1). */
+  usandoOverride?: boolean;
 }
 
 export interface LeadTableroRow {
@@ -192,6 +204,7 @@ export interface CrearVisitaAgendaInput {
   programadaEn: string;
   duracionMinutos?: number;
   referenciaInmueble: string;
+  inmuebleId?: string;
   modalidad?: string;
   nota?: string;
   asignadoUsuarioId?: string;

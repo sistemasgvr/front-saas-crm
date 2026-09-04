@@ -15,6 +15,7 @@ import type {
   LeadResumen,
   ReferenciaNombrada,
 } from "@/src/modules/leads/types";
+import InmuebleSelect from "@/src/modules/inmuebles/InmuebleSelect";
 
 const TIPOS = [
   { value: "LLAMADA", label: "Llamada" },
@@ -71,6 +72,7 @@ export default function CrearActividadAgendaModal({
   );
   const [duracionMinutos, setDuracionMinutos] = useState("60");
   const [referenciaInmueble, setReferenciaInmueble] = useState("");
+  const [inmuebleId, setInmuebleId] = useState("");
   const [modalidad, setModalidad] = useState("PRESENCIAL");
   const [nota, setNota] = useState("");
   const [asignadoUsuarioId, setAsignadoUsuarioId] = useState(usuarioId);
@@ -245,12 +247,14 @@ export default function CrearActividadAgendaModal({
             <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
               Inmueble o proyecto <span className="text-error-500">*</span>
             </label>
-            <Input
-              type="text"
-              placeholder="Ej. Domaria Torre A"
-              value={referenciaInmueble}
-              onChange={(e) => setReferenciaInmueble(e.target.value)}
+            <InmuebleSelect
+              inmuebleId={inmuebleId}
+              referencia={referenciaInmueble}
               required
+              onChange={({ inmuebleId: nextId, referencia }) => {
+                setInmuebleId(nextId);
+                setReferenciaInmueble(referencia);
+              }}
             />
           </div>
         ) : null}

@@ -10,6 +10,7 @@ import OrganizationSettingsForm from "./OrganizationSettingsForm";
 import MetaSettingsEntryCard from "./meta/MetaSettingsEntryCard";
 import WhatsappSettingsEntryCard from "./whatsapp/WhatsappSettingsEntryCard";
 import LeadAutoAssignmentSettingsCard from "./leads/LeadAutoAssignmentSettingsCard";
+import PipelineConfigSettingsCard from "./pipeline/PipelineConfigSettingsCard";
 import CollapsibleSection from "@/src/components/ui/CollapsibleSection";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
@@ -67,6 +68,7 @@ export default function SettingsView() {
           <LeadAutoAssignmentSettingsCard />
         </>
       )}
+      <PipelineConfigSettingsCard />
       {whatsappHabilitado && <WhatsappSettingsEntryCard />}
     </div>
   );

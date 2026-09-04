@@ -6,6 +6,7 @@ import Modal from "@/src/components/ui/modal/Modal";
 import Select from "@/src/components/form/Select";
 import TextArea from "@/src/components/form/input/TextArea";
 import Input from "@/src/components/form/input/InputField";
+import InmuebleSelect from "@/src/modules/inmuebles/InmuebleSelect";
 import {
   construirPayloadTransicion,
   formularioTransicionValido,
@@ -137,6 +138,28 @@ export default function TransicionPipelineModal({
                     value={valores[campo.codigo] ?? ""}
                     onChange={(e) => setValor(campo.codigo, e.target.value)}
                     required={campo.requerido}
+                  />
+                </div>
+              );
+            }
+            if (campo.codigo === "referenciaInmueble") {
+              return (
+                <div key={campo.codigo}>
+                  <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
+                    {campo.etiqueta}
+                    {campo.requerido ? <span className="text-error-500"> *</span> : null}
+                  </label>
+                  <InmuebleSelect
+                    inmuebleId={valores.inmuebleId ?? ""}
+                    referencia={valores.referenciaInmueble ?? ""}
+                    required={campo.requerido}
+                    onChange={({ inmuebleId, referencia }) => {
+                      setValores((prev) => ({
+                        ...prev,
+                        inmuebleId,
+                        referenciaInmueble: referencia,
+                      }));
+                    }}
                   />
                 </div>
               );

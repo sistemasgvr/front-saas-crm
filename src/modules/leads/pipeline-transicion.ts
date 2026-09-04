@@ -125,6 +125,12 @@ export function construirPayloadTransicion(
     }
   }
 
+  // FK opcional del catálogo (no es un campo declarado del pipeline).
+  const inmuebleId = valores.inmuebleId?.trim();
+  if (inmuebleId) {
+    metadata.inmuebleId = inmuebleId;
+  }
+
   return {
     notaTransicion,
     metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
