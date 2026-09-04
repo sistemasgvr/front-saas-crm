@@ -15,6 +15,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
       rol={me.rol}
       usuarioId={me.usuario.id}
       whatsappHabilitado={isModuloHabilitado(me.modulos, "WHATSAPP")}
+      crmHabilitado={isModuloHabilitado(me.modulos, "CRM")}
     />
   );
 }

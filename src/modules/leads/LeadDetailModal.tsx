@@ -13,6 +13,7 @@ import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
 import { iniciarChatDesdeLeadAction } from "@/src/modules/chats/actions";
 import LeadAssignmentActions from "./LeadAssignmentActions";
+import LeadInmuebleInteresBlock from "./LeadInmuebleInteresBlock";
 import LeadPipelinePanel from "./LeadPipelinePanel";
 import { getLead } from "./queries";
 
@@ -41,6 +42,7 @@ export default function LeadDetailModal({
   rol,
   usuarioId,
   whatsappHabilitado,
+  crmHabilitado = false,
 }: {
   leadId: string | null;
   open: boolean;
@@ -48,6 +50,7 @@ export default function LeadDetailModal({
   rol: Rol;
   usuarioId: string;
   whatsappHabilitado: boolean;
+  crmHabilitado?: boolean;
 }) {
   const router = useRouter();
   const leadQuery = useQuery({
@@ -166,8 +169,16 @@ export default function LeadDetailModal({
                 notaCierre={lead.notaCierre}
                 esAdmin={canManageOrganization(rol)}
                 puedeGestionar={canManageOrganization(rol) || lead.asignado?.id === usuarioId}
+                crmHabilitado={crmHabilitado}
               />
             </div>
+
+            <LeadInmuebleInteresBlock
+              leadId={leadId as string}
+              inmuebleInteres={lead.inmuebleInteres ?? null}
+              puedeGestionar={canManageOrganization(rol) || lead.asignado?.id === usuarioId}
+              crmHabilitado={crmHabilitado}
+            />
           </div>
         )}
       </div>

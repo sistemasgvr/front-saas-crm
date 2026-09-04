@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Icon } from "@/src/components/ui/Icon";
 import { queryKeys } from "@/src/lib/query/keys";
@@ -21,7 +22,13 @@ const ETIQUETA_ESTADO: Record<string, string> = {
   CANCELADA: "Cancelada",
 };
 
-export default function LeadVisitasPanel({ leadId }: { leadId: string }) {
+export default function LeadVisitasPanel({
+  leadId,
+  crmHabilitado = false,
+}: {
+  leadId: string;
+  crmHabilitado?: boolean;
+}) {
   const { data: visitas = [], isLoading } = useQuery({
     queryKey: queryKeys.leadVisitas(leadId),
     queryFn: () => getVisitasLead(leadId),
@@ -51,7 +58,7 @@ export default function LeadVisitasPanel({ leadId }: { leadId: string }) {
           </p>
           <ul className="space-y-2">
             {proximas.map((v) => (
-              <VisitaCard key={v.id} visita={v} destacada />
+              <VisitaCard key={v.id} visita={v} destacada crmHabilitado={crmHabilitado} />
             ))}
           </ul>
         </section>
@@ -63,7 +70,7 @@ export default function LeadVisitasPanel({ leadId }: { leadId: string }) {
           </p>
           <ul className="space-y-2">
             {pasadas.map((v) => (
-              <VisitaCard key={v.id} visita={v} />
+              <VisitaCard key={v.id} visita={v} crmHabilitado={crmHabilitado} />
             ))}
           </ul>
         </section>
@@ -72,7 +79,20 @@ export default function LeadVisitasPanel({ leadId }: { leadId: string }) {
   );
 }
 
-function VisitaCard({ visita, destacada }: { visita: LeadVisitaRow; destacada?: boolean }) {
+function VisitaCard({
+  visita,
+  destacada,
+  crmHabilitado,
+}: {
+  visita: LeadVisitaRow;
+  destacada?: boolean;
+  crmHabilitado: boolean;
+}) {
+  const inmuebleId = visita.inmueble?.id ?? visita.inmuebleId;
+  const etiqueta = visita.inmueble
+    ? `${visita.inmueble.codigo} — ${visita.inmueble.titulo}`
+    : visita.referenciaInmueble;
+
   return (
     <li
       className={`rounded-xl border p-4 ${
@@ -87,7 +107,17 @@ function VisitaCard({ visita, destacada }: { visita: LeadVisitaRow; destacada?: 
             <Icon name="mdi:calendar-clock-outline" size={18} className="shrink-0 text-brand-500" />
             {formatearFecha(visita.programadaEn)}
           </p>
-          <p className="mt-1 text-theme-sm text-gray-700 dark:text-gray-200">{visita.referenciaInmueble}</p>
+          {inmuebleId && crmHabilitado ? (
+            <Link
+              href={`/inmuebles/${inmuebleId}`}
+              className="mt-1 inline-flex max-w-full items-center gap-1 text-theme-sm font-medium text-brand-600 hover:underline dark:text-brand-400"
+            >
+              <Icon name="mdi:home-outline" size={14} className="shrink-0" />
+              <span className="truncate">{etiqueta}</span>
+            </Link>
+          ) : (
+            <p className="mt-1 text-theme-sm text-gray-700 dark:text-gray-200">{etiqueta}</p>
+          )}
           <p className="mt-0.5 text-theme-xs text-gray-500 dark:text-gray-400">
             {visita.modalidad === "VIRTUAL" ? "Virtual" : "Presencial"}
             {" · "}

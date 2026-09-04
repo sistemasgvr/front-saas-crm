@@ -147,7 +147,15 @@ function EventoContenido({ arg }: { arg: EventContentArg }) {
   );
 }
 
-export default function AgendaView({ rol, usuarioId }: { rol: Rol; usuarioId: string }) {
+export default function AgendaView({
+  rol,
+  usuarioId,
+  crmHabilitado = false,
+}: {
+  rol: Rol;
+  usuarioId: string;
+  crmHabilitado?: boolean;
+}) {
   const esAdmin = canManageOrganization(rol);
   const [rango, setRango] = useState(rangoInicial);
   const [asignadoFiltro, setAsignadoFiltro] = useState(esAdmin ? "todos" : "mios");
@@ -373,6 +381,7 @@ export default function AgendaView({ rol, usuarioId }: { rol: Rol; usuarioId: st
         <AgendaItemDetalleModal
           item={itemSeleccionado}
           loading={actualizarVisita.isPending || actualizarActividad.isPending}
+          crmHabilitado={crmHabilitado}
           onClose={() => setItemSeleccionado(null)}
           onActualizarVisita={(visitaId, input) => {
             actualizarVisita.mutate(

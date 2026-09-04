@@ -72,6 +72,7 @@ export default function LeadPipelinePanel({
   notaCierre,
   esAdmin,
   puedeGestionar,
+  crmHabilitado = false,
 }: {
   leadId: string;
   tipoLead: string | null;
@@ -81,6 +82,7 @@ export default function LeadPipelinePanel({
   notaCierre: string | null;
   esAdmin: boolean;
   puedeGestionar: boolean;
+  crmHabilitado?: boolean;
 }) {
   const [destinoCierre, setDestinoCierre] = useState<string | null>(null);
   const [destinoTransicion, setDestinoTransicion] = useState<string | null>(null);
@@ -487,7 +489,7 @@ export default function LeadPipelinePanel({
               historialExpandido ? "max-h-80 overflow-y-auto" : ""
             }`}
           >
-            <PipelineTimeline filas={historialVisible} />
+            <PipelineTimeline filas={historialVisible} crmHabilitado={crmHabilitado} />
           </div>
         </div>
       )}

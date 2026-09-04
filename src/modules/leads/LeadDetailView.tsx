@@ -13,6 +13,7 @@ import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
 import LeadAssignmentActions from "./LeadAssignmentActions";
+import LeadInmuebleInteresBlock from "./LeadInmuebleInteresBlock";
 import LeadPipelinePanel from "./LeadPipelinePanel";
 import LeadVisitasPanel from "./LeadVisitasPanel";
 import {
@@ -123,11 +124,13 @@ export default function LeadDetailView({
   rol,
   usuarioId,
   whatsappHabilitado,
+  crmHabilitado,
 }: {
   id: string;
   rol: Rol;
   usuarioId: string;
   whatsappHabilitado: boolean;
+  crmHabilitado: boolean;
 }) {
   const router = useRouter();
   const leadQuery = useQuery({ queryKey: queryKeys.lead(id), queryFn: () => getLead(id) });
@@ -161,6 +164,7 @@ export default function LeadDetailView({
 
   const lead = leadQuery.data;
   const nombre = lead.nombre ?? "Sin nombre";
+  const puedeGestionar = canManageOrganization(rol) || lead.asignado?.id === usuarioId;
   const meta = parsearMetaLeadPayload(lead.datosCrudos);
   const respuestas = meta?.field_data ?? [];
   const previewRespuestas =
@@ -264,9 +268,17 @@ export default function LeadDetailView({
             motivoCierre={lead.motivoCierre}
             notaCierre={lead.notaCierre}
             esAdmin={canManageOrganization(rol)}
-            puedeGestionar={canManageOrganization(rol) || lead.asignado?.id === usuarioId}
+            puedeGestionar={puedeGestionar}
+            crmHabilitado={crmHabilitado}
           />
         </div>
+
+        <LeadInmuebleInteresBlock
+          leadId={id}
+          inmuebleInteres={lead.inmuebleInteres ?? null}
+          puedeGestionar={puedeGestionar}
+          crmHabilitado={crmHabilitado}
+        />
       </SeccionFija>
 
       {lead.proximaAccion ? (
@@ -321,7 +333,7 @@ export default function LeadDetailView({
         defaultOpen
       >
         <div id="visitas-agenda">
-          <LeadVisitasPanel leadId={id} />
+          <LeadVisitasPanel leadId={id} crmHabilitado={crmHabilitado} />
         </div>
       </CollapsibleSection>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { Icon } from "@/src/components/ui/Icon";
@@ -24,11 +25,45 @@ function formatearRelativo(iso: string) {
   }
 }
 
+function InmuebleVisitaLink({
+  referencia,
+  inmuebleId,
+  inmueble,
+  crmHabilitado,
+}: {
+  referencia: string;
+  inmuebleId?: string | null;
+  inmueble?: { id: string; codigo: string; titulo: string } | null;
+  crmHabilitado: boolean;
+}) {
+  const id = inmueble?.id ?? inmuebleId;
+  const etiqueta = inmueble
+    ? `${inmueble.codigo} — ${inmueble.titulo}`
+    : referencia;
+  if (id && crmHabilitado) {
+    return (
+      <Link
+        href={`/inmuebles/${id}`}
+        className="font-medium text-brand-600 hover:underline dark:text-brand-400"
+      >
+        {etiqueta}
+      </Link>
+    );
+  }
+  return <>{etiqueta}</>;
+}
+
 /** Línea de tiempo del historial de un lead — un punto de color por fila
  * (mismo color que el estado destino en el badge/tablero) sobre una línea
  * vertical continua, con las etiquetas reales del pipeline en vez de texto
  * plano "Contactado → Calificado". */
-export default function PipelineTimeline({ filas }: { filas: HistorialEstadoRow[] }) {
+export default function PipelineTimeline({
+  filas,
+  crmHabilitado = false,
+}: {
+  filas: HistorialEstadoRow[];
+  crmHabilitado?: boolean;
+}) {
   const ordenDesc = [...filas].reverse();
 
   return (
@@ -88,7 +123,13 @@ export default function PipelineTimeline({ filas }: { filas: HistorialEstadoRow[
                       : null}
                   </p>
                   <p>
-                    <span className="font-medium">Inmueble:</span> {fila.visita.referenciaInmueble}
+                    <span className="font-medium">Inmueble:</span>{" "}
+                    <InmuebleVisitaLink
+                      referencia={fila.visita.referenciaInmueble}
+                      inmuebleId={fila.visita.inmuebleId}
+                      inmueble={fila.visita.inmueble}
+                      crmHabilitado={crmHabilitado}
+                    />
                   </p>
                   <p>
                     {fila.visita.modalidad === "VIRTUAL" ? "Virtual" : "Presencial"}

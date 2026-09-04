@@ -17,6 +17,7 @@ export default async function LeadsTableroPage() {
       rol={me.rol}
       usuarioId={me.usuario.id}
       whatsappHabilitado={isModuloHabilitado(me.modulos, "WHATSAPP")}
+      crmHabilitado={isModuloHabilitado(me.modulos, "CRM")}
     />
   );
 }

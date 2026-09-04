@@ -63,6 +63,14 @@ function LeadMobileCard({
         <div>
           <CeldaConIcono icon="mdi:phone-outline" value={lead.telefono} />
         </div>
+        {lead.inmuebleInteres ? (
+          <div>
+            <CeldaConIcono
+              icon="mdi:home-city-outline"
+              value={`${lead.inmuebleInteres.codigo} · ${lead.inmuebleInteres.titulo}`}
+            />
+          </div>
+        ) : null}
         <div>
           <CeldaConIcono icon="mdi:bullhorn-outline" value={lead.campana?.nombre} />
         </div>

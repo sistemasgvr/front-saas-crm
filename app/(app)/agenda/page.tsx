@@ -12,5 +12,5 @@ export default async function AgendaPage() {
     redirect(getDefaultClientRoute(me));
   }
 
-  return <AgendaView rol={me.rol} usuarioId={me.usuario.id} />;
+  return <AgendaView rol={me.rol} usuarioId={me.usuario.id} crmHabilitado={isModuloHabilitado(me.modulos, "CRM")} />;
 }

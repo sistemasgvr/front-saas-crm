@@ -3,6 +3,13 @@ export interface ReferenciaNombrada {
   nombre: string;
 }
 
+/** Resumen del catálogo CRM vinculado al lead o a una visita. */
+export interface InmuebleResumenCorto {
+  id: string;
+  codigo: string;
+  titulo: string;
+}
+
 /** Opciones de filtro con parent ids para cascada Cuenta → Campaña → Conjunto → Anuncio. */
 export interface CampanaFiltroOpcion extends ReferenciaNombrada {
   metaCuentaPublicitariaId?: string | null;
@@ -32,6 +39,7 @@ export interface LeadResumen {
   asignado: ReferenciaNombrada | null;
   /** Código del pipeline — PLAN-PIPELINE-INMOBILIARIA.md. */
   estadoGestion: string;
+  inmuebleInteres: InmuebleResumenCorto | null;
 }
 
 export interface LeadDetalle extends LeadResumen {
@@ -97,6 +105,7 @@ export interface LeadTableroRow {
   asignado: ReferenciaNombrada | null;
   estadoGestion: string;
   fechaLead: string | null;
+  inmuebleInteres: InmuebleResumenCorto | null;
 }
 
 export interface ColumnaTablero {
@@ -123,6 +132,8 @@ export interface HistorialEstadoRow {
     programadaFin?: string;
     duracionMinutos?: number;
     referenciaInmueble: string;
+    inmuebleId?: string | null;
+    inmueble?: InmuebleResumenCorto | null;
     modalidad: string;
     estado: string;
     resultado: string | null;
@@ -147,6 +158,8 @@ export interface LeadVisitaRow {
   programadaFin?: string;
   duracionMinutos?: number;
   referenciaInmueble: string;
+  inmuebleId?: string | null;
+  inmueble?: InmuebleResumenCorto | null;
   modalidad: string;
   estado: string;
   resultado: string | null;
@@ -167,6 +180,8 @@ export interface AgendaItemRow {
   programadaFin: string;
   duracionMinutos: number;
   referenciaInmueble: string | null;
+  inmuebleId?: string | null;
+  inmueble?: InmuebleResumenCorto | null;
   modalidad: string | null;
   estado: string;
   nota?: string | null;
@@ -228,6 +243,8 @@ export interface GestionarLeadInput {
   notaCierre?: string;
   notaTransicion?: string;
   metadata?: Record<string, string>;
+  /** null quita el vínculo con el catálogo. */
+  inmuebleInteresId?: string | null;
 }
 
 export interface ListaLeadsResultado {

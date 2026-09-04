@@ -60,12 +60,14 @@ export default function AgendaItemDetalleModal({
   onClose,
   onActualizarVisita,
   onActualizarActividad,
+  crmHabilitado = false,
 }: {
   item: AgendaItemRow | null;
   loading?: boolean;
   onClose: () => void;
   onActualizarVisita: (id: string, input: ActualizarVisitaAgendaInput) => void;
   onActualizarActividad: (id: string, input: ActualizarActividadAgendaInput) => void;
+  crmHabilitado?: boolean;
 }) {
   const router = useRouter();
   const [modoReagendar, setModoReagendar] = useState(false);
@@ -271,7 +273,23 @@ export default function AgendaItemDetalleModal({
               {item.referenciaInmueble ? (
                 <div>
                   <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">Inmueble</dt>
-                  <dd>{item.referenciaInmueble}</dd>
+                  <dd>
+                    {(item.inmueble?.id ?? item.inmuebleId) && crmHabilitado ? (
+                      <button
+                        type="button"
+                        className="text-left font-medium text-brand-600 hover:underline dark:text-brand-400"
+                        onClick={() =>
+                          router.push(`/inmuebles/${item.inmueble?.id ?? item.inmuebleId}`)
+                        }
+                      >
+                        {item.inmueble
+                          ? `${item.inmueble.codigo} — ${item.inmueble.titulo}`
+                          : item.referenciaInmueble}
+                      </button>
+                    ) : (
+                      item.referenciaInmueble
+                    )}
+                  </dd>
                 </div>
               ) : null}
               <div>

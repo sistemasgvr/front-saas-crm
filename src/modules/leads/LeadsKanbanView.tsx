@@ -158,6 +158,18 @@ function LeadCardBody({
           {lead.telefono}
         </p>
       )}
+      {lead.inmuebleInteres ? (
+        <p
+          className="mt-1 flex items-center gap-1 truncate text-theme-xs text-gray-500 dark:text-gray-400"
+          title={`${lead.inmuebleInteres.codigo} — ${lead.inmuebleInteres.titulo}`}
+        >
+          <Icon name="mdi:home-city-outline" size={13} className="shrink-0" />
+          <span className="truncate">
+            {lead.inmuebleInteres.codigo}
+            {lead.inmuebleInteres.titulo ? ` · ${lead.inmuebleInteres.titulo}` : ""}
+          </span>
+        </p>
+      ) : null}
 
       <div className="mt-2 flex items-center justify-between gap-2 border-t border-gray-50 pt-2 dark:border-gray-800">
         <p className="flex min-w-0 items-center gap-1 text-theme-xs text-gray-400">
@@ -311,10 +323,12 @@ export default function LeadsKanbanView({
   rol,
   usuarioId,
   whatsappHabilitado,
+  crmHabilitado = false,
 }: {
   rol: Rol;
   usuarioId: string;
   whatsappHabilitado: boolean;
+  crmHabilitado?: boolean;
 }) {
   const esAdmin = canManageOrganization(rol);
   const [tipoFiltro, setTipoFiltro] = useState<string | null>(null);
@@ -647,6 +661,7 @@ export default function LeadsKanbanView({
         rol={rol}
         usuarioId={usuarioId}
         whatsappHabilitado={whatsappHabilitado}
+        crmHabilitado={crmHabilitado}
       />
     </div>
   );
