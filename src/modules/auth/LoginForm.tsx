@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Checkbox from "@/src/components/form/input/Checkbox";
@@ -17,7 +16,6 @@ import { loginAction } from "./actions";
 import { loginSchema, type LoginValues } from "./schema";
 
 export default function LoginForm() {
-  const router = useRouter();
   const remember = useAuthUiStore((state) => state.remember);
   const forget = useAuthUiStore((state) => state.forget);
   const rememberedEmail = useAuthUiStore((state) => state.rememberedEmail);
@@ -46,7 +44,13 @@ export default function LoginForm() {
       );
       if (values.rememberMe) remember(values.email);
       else forget();
-      router.push(result.redirectTo);
+
+      // Navegación dura: sale del login al instante (cookies ya seteadas).
+      // El soft router.push dejaba el formulario visible mientras cargaba el RSC.
+      window.location.assign(result.redirectTo);
+
+      // Mantener isPending / overlay hasta que el navegador descargue la página.
+      await new Promise<never>(() => {});
     },
   });
 

@@ -1,10 +1,13 @@
 "use server";
 
 import { publicFetch } from "@/src/lib/api";
-import { getApiUrl } from "@/src/lib/api-url";
-import type { MeResponse } from "@/src/lib/auth";
-import { getDefaultClientRoute } from "@/src/lib/modules";
 import { clearSessionCookies, getRefreshToken, setSessionCookies } from "@/src/lib/session";
+
+type LoginResponse = {
+  accessToken: string;
+  refreshToken: string;
+  usuario: { esAdminPlataforma: boolean };
+};
 
 export async function loginAction(formData: FormData): Promise<{ redirectTo: string }> {
   const email = String(formData.get("email") ?? "").trim();
@@ -15,8 +18,7 @@ export async function loginAction(formData: FormData): Promise<{ redirectTo: str
     throw new Error("Ingresa tu email y contraseña");
   }
 
-  let accessToken: string;
-  let refreshToken: string;
+  let data: LoginResponse;
   try {
     const res = await publicFetch("/auth/login", {
       method: "POST",
@@ -27,9 +29,7 @@ export async function loginAction(formData: FormData): Promise<{ redirectTo: str
       throw new Error("Email o contraseña incorrectos");
     }
 
-    const data = (await res.json()) as { accessToken: string; refreshToken: string };
-    accessToken = data.accessToken;
-    refreshToken = data.refreshToken;
+    data = (await res.json()) as LoginResponse;
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes("API_URL no está configurada")) throw error;
@@ -40,21 +40,11 @@ export async function loginAction(formData: FormData): Promise<{ redirectTo: str
     throw error;
   }
 
-  await setSessionCookies(accessToken, refreshToken, rememberMe);
+  await setSessionCookies(data.accessToken, data.refreshToken, rememberMe);
 
-  let redirectTo = "/profile";
-  try {
-    const meRes = await fetch(`${getApiUrl()}/me`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      cache: "no-store",
-    });
-    if (meRes.ok) {
-      const me = (await meRes.json()) as MeResponse;
-      redirectTo = me.usuario.esAdminPlataforma ? "/admin/organizations" : getDefaultClientRoute(me);
-    }
-  } catch {
-    redirectTo = "/profile";
-  }
+  // Destino inmediato desde la respuesta de login (sin GET /me extra).
+  // Clientes van a /dashboard; si no tienen el módulo, esa página redirige.
+  const redirectTo = data.usuario.esAdminPlataforma ? "/admin/organizations" : "/dashboard";
 
   return { redirectTo };
 }
