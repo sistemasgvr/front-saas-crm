@@ -36,6 +36,11 @@ export default function ModulesMatrix({
               <div>
                 <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">{modulo.nombre}</p>
                 <p className="text-theme-xs text-gray-500">{modulo.codigo}</p>
+                {modulo.descripcion ? (
+                  <p className="mt-0.5 max-w-md text-theme-xs text-gray-400 dark:text-gray-500">
+                    {modulo.descripcion}
+                  </p>
+                ) : null}
               </div>
             </div>
             <div className="flex items-center gap-2">

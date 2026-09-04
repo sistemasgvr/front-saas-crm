@@ -9,7 +9,7 @@ export default async function NuevoInmueblePage() {
   if (!me) {
     redirect("/login");
   }
-  if (!isModuloHabilitado(me.modulos, "META_LEADS")) {
+  if (!isModuloHabilitado(me.modulos, "CRM")) {
     redirect(getDefaultClientRoute(me));
   }
   if (!canManageOrganization(me.rol)) {

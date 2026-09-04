@@ -50,6 +50,7 @@ export interface ModuloMatriz {
   id: string;
   codigo: string;
   nombre: string;
+  descripcion: string | null;
   icono: string | null;
   orden: number;
   habilitado: boolean;

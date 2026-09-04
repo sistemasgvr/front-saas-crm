@@ -8,7 +8,7 @@ export default async function InmueblesPage() {
   if (!me) {
     redirect("/login");
   }
-  if (!isModuloHabilitado(me.modulos, "META_LEADS")) {
+  if (!isModuloHabilitado(me.modulos, "CRM")) {
     redirect(getDefaultClientRoute(me));
   }
 

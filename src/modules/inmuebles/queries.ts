@@ -1,6 +1,6 @@
 "use server";
 
-import { apiFetch } from "@/src/lib/api";
+import { apiFetch, ApiError } from "@/src/lib/api";
 import type {
   FiltroInmuebles,
   InmuebleFiltroOption,
@@ -28,7 +28,15 @@ export async function getInmueble(id: string) {
   return apiFetch<InmuebleRow>(`/inmuebles/${id}`);
 }
 
-/** Lista liviana para selects de visitas / pipeline. */
-export async function getInmueblesFiltro() {
-  return apiFetch<InmuebleFiltroOption[]>("/inmuebles/filtro");
+/** Lista liviana para selects de visitas / pipeline.
+ * Si el módulo CRM no está habilitado (403), devuelve [] para degradar a texto libre. */
+export async function getInmueblesFiltro(): Promise<InmuebleFiltroOption[]> {
+  try {
+    return await apiFetch<InmuebleFiltroOption[]>("/inmuebles/filtro");
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 403 || error.status === 404)) {
+      return [];
+    }
+    throw error;
+  }
 }

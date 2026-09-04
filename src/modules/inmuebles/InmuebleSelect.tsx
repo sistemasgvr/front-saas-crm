@@ -6,7 +6,7 @@ import SelectSearch from "@/src/components/ui/filters/SelectSearch";
 import Input from "@/src/components/form/input/InputField";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getInmueblesFiltro } from "./queries";
-import { etiquetaInmuebleFiltro } from "./types";
+import { etiquetaInmuebleFiltro, type InmuebleFiltroOption } from "./types";
 
 /**
  * Select del catálogo + referencia libre (compatibilidad).
@@ -26,18 +26,20 @@ export default function InmuebleSelect({
   disabled?: boolean;
   required?: boolean;
 }) {
-  const filtroQuery = useQuery({
+  const filtroQuery = useQuery<InmuebleFiltroOption[]>({
     queryKey: queryKeys.inmueblesFiltro,
     queryFn: getInmueblesFiltro,
   });
 
+  const filtroData: InmuebleFiltroOption[] = filtroQuery.data ?? [];
+
   const options = useMemo(
     () =>
-      (filtroQuery.data ?? []).map((o) => ({
+      filtroData.map((o) => ({
         value: o.id,
         label: etiquetaInmuebleFiltro(o),
       })),
-    [filtroQuery.data],
+    [filtroData],
   );
 
   return (
@@ -48,12 +50,14 @@ export default function InmuebleSelect({
         placeholder={
           filtroQuery.isLoading
             ? "Cargando inmuebles…"
-            : options.length === 0
-              ? "Sin inmuebles en catálogo"
-              : "Elige del catálogo"
+            : filtroQuery.isError
+              ? "Catálogo no disponible"
+              : options.length === 0
+                ? "Sin inmuebles en catálogo — usa referencia libre"
+                : "Elige del catálogo"
         }
         searchPlaceholder="Buscar por código o título…"
-        disabled={disabled || filtroQuery.isLoading}
+        disabled={disabled || filtroQuery.isLoading || options.length === 0}
         onChange={(id) => {
           const opt = options.find((o) => o.value === id);
           onChange({

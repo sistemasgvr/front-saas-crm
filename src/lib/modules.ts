@@ -8,5 +8,6 @@ export function isModuloHabilitado(modulos: ModuloEstado[], codigo: string): boo
 export function getDefaultClientRoute(me: Pick<MeResponse, "modulos">): string {
   if (isModuloHabilitado(me.modulos, "DASHBOARD")) return "/dashboard";
   if (isModuloHabilitado(me.modulos, "META_LEADS")) return "/leads";
+  if (isModuloHabilitado(me.modulos, "CRM")) return "/inmuebles";
   return "/profile";
 }
