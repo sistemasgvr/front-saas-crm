@@ -16,25 +16,51 @@ export function permisoNotificacionesSistema(): NotificationPermission | "no-sop
 }
 
 const listeners = new Set<() => void>();
+let permissionWatchStarted = false;
+
 function emitirCambio() {
   listeners.forEach((listener) => listener());
 }
+
+/** Escucha cambios de permiso hechos fuera de la app (ajustes del SO/navegador). */
+function asegurarWatchPermiso(): void {
+  if (permissionWatchStarted || typeof window === "undefined") return;
+  permissionWatchStarted = true;
+
+  if (!("permissions" in navigator) || typeof navigator.permissions?.query !== "function") {
+    return;
+  }
+
+  void navigator.permissions
+    .query({ name: "notifications" as PermissionName })
+    .then((status) => {
+      status.addEventListener("change", () => {
+        emitirCambio();
+      });
+    })
+    .catch(() => {
+      // Safari / algunos embeds no soportan permissions.query(notifications)
+    });
+}
+
 function subscribe(listener: () => void): () => void {
+  asegurarWatchPermiso();
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
+
 function snapshotServidor(): NotificationPermission | "no-soportado" {
   return "no-soportado";
 }
 
-/** Permiso actual de notificaciones del sistema — se recalcula solo cuando
- * `pedirPermisoNotificacionesSistema()` resuelve. */
+/** Permiso actual — se actualiza tras requestPermission o permissionchange. */
 export function useNotificacionesSistemaPermiso(): NotificationPermission | "no-soportado" {
   return useSyncExternalStore(subscribe, permisoNotificacionesSistema, snapshotServidor);
 }
 
 export async function pedirPermisoNotificacionesSistema(): Promise<NotificationPermission> {
   if (!soportaNotificacionesSistema()) return "denied";
+  asegurarWatchPermiso();
   const resultado =
     typeof Notification.requestPermission === "function"
       ? await Notification.requestPermission()
@@ -75,4 +101,26 @@ export function mostrarNotificacionSistema(
   } catch {
     // Algunos navegadores tiran si Notification() se llama sin gesto reciente.
   }
+}
+
+/** Evita toast duplicado socket + push-foreground (~2s). */
+const recentNotifIds = new Map<string, number>();
+const DEDUPE_MS = 2_000;
+
+export function marcarNotificacionVistaReciente(id: string): void {
+  const ahora = Date.now();
+  recentNotifIds.set(id, ahora);
+  for (const [key, ts] of recentNotifIds) {
+    if (ahora - ts > DEDUPE_MS) recentNotifIds.delete(key);
+  }
+}
+
+export function notificacionYaVistaReciente(id: string): boolean {
+  const ts = recentNotifIds.get(id);
+  if (!ts) return false;
+  if (Date.now() - ts > DEDUPE_MS) {
+    recentNotifIds.delete(id);
+    return false;
+  }
+  return true;
 }

@@ -2,7 +2,8 @@
 /**
  * Service Worker del CRM — Web Push + click en notificación.
  * Si hay una ventana del CRM enfocada, no muestra el toast del SO (el socket
- * ya cubre toast/sonido); si está en segundo plano o cerrada, sí muestra.
+ * ya cubre toast/sonido; si el socket falla, postMessage crm-push-foreground);
+ * si está en segundo plano o cerrada, sí muestra.
  */
 
 self.addEventListener("install", (event) => {
@@ -33,6 +34,14 @@ function resolverRuta(payload) {
   return "/notifications";
 }
 
+function urlAbsoluta(ruta) {
+  try {
+    return new URL(ruta, self.location.origin).href;
+  } catch {
+    return self.location.origin + (ruta.startsWith("/") ? ruta : `/${ruta}`);
+  }
+}
+
 self.addEventListener("push", (event) => {
   let data = {};
   try {
@@ -56,9 +65,11 @@ self.addEventListener("push", (event) => {
       }
 
       const titulo = data.titulo || "CRM";
+      const tag = data.id || `crm-${Date.now()}`;
       await self.registration.showNotification(titulo, {
         body: data.mensaje || "",
-        tag: data.id || undefined,
+        tag,
+        renotify: true,
         icon: "/icon.png",
         badge: "/icon.png",
         data: {
@@ -75,6 +86,7 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const ruta =
     (event.notification.data && event.notification.data.ruta) || "/notifications";
+  const destino = urlAbsoluta(ruta);
 
   event.waitUntil(
     (async () => {
@@ -90,8 +102,13 @@ self.addEventListener("notificationclick", (event) => {
         }
       }
       if (self.clients.openWindow) {
-        await self.clients.openWindow(ruta);
+        await self.clients.openWindow(destino);
       }
     })(),
   );
+});
+
+/** Reserva: métricas / cleanup futuro al descartar el aviso del SO. */
+self.addEventListener("notificationclose", () => {
+  // no-op
 });

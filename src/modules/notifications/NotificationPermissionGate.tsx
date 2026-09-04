@@ -15,10 +15,13 @@ import {
 import { asegurarSuscripcionPush, soportaWebPush } from "./web-push";
 
 const SESSION_ACK_KEY = "crm-notif-unsupported-ack";
+const SESSION_LATER_KEY = "crm-notif-permission-later";
 
 /**
- * Solicita permiso de notificaciones al entrar al CRM y registra Web Push
- * para que los avisos lleguen en el teléfono aunque la pestaña esté cerrada.
+ * Pre-prompt de notificaciones (best practice MDN):
+ * - Explica el valor antes de llamar a requestPermission
+ * - Solo pide permiso en gesto de usuario (click)
+ * - Permite "Ahora no" sin quemar el prompt del navegador
  */
 export default function NotificationPermissionGate() {
   const permiso = useNotificacionesSistemaPermiso();
@@ -28,8 +31,12 @@ export default function NotificationPermissionGate() {
     if (typeof sessionStorage === "undefined") return false;
     return sessionStorage.getItem(SESSION_ACK_KEY) === "1";
   });
+  const [pospuesto, setPospuesto] = useState(() => {
+    if (typeof sessionStorage === "undefined") return false;
+    return sessionStorage.getItem(SESSION_LATER_KEY) === "1";
+  });
 
-  const debeSolicitar = soportado && permiso === "default";
+  const debeSolicitar = soportado && permiso === "default" && !pospuesto;
   const debeInformarSinSoporte = !soportado && !sinSoporteAck;
 
   if (!debeSolicitar && !debeInformarSinSoporte) return null;
@@ -67,6 +74,11 @@ export default function NotificationPermissionGate() {
     setSinSoporteAck(true);
   }
 
+  function ahoraNo() {
+    sessionStorage.setItem(SESSION_LATER_KEY, "1");
+    setPospuesto(true);
+  }
+
   if (debeInformarSinSoporte) {
     return (
       <Modal open onClose={reconocerSinSoporte} showCloseButton={false}>
@@ -95,7 +107,7 @@ export default function NotificationPermissionGate() {
   }
 
   return (
-    <Modal open onClose={() => {}} showCloseButton={false}>
+    <Modal open onClose={ahoraNo} showCloseButton={false}>
       <div className="p-6 pt-8 sm:p-8">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400">
           <Icon name="mdi:bell-ring-outline" size={28} />
@@ -109,9 +121,19 @@ export default function NotificationPermissionGate() {
           {soportaWebPush() ? "" : " (en este navegador solo mientras la pestaña esté abierta)"}.
         </p>
         <p className="mt-3 text-center text-theme-xs text-gray-400 dark:text-gray-500">
-          Tu navegador te pedirá confirmación al pulsar el botón.
+          Tu navegador te pedirá confirmación al pulsar Activar. Puedes hacerlo después desde Perfil.
         </p>
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="w-full sm:w-auto"
+            disabled={pidiendo}
+            onClick={ahoraNo}
+          >
+            Ahora no
+          </Button>
           <Button
             type="button"
             size="sm"

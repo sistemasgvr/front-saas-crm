@@ -3,6 +3,10 @@
 /**
  * Helpers de Web Push + Service Worker.
  * Requiere VAPID configurado en el backend y HTTPS (o localhost).
+ *
+ * Env front relevantes:
+ * - NEXT_PUBLIC_SOCKET_URL — Socket.IO (toasts en vivo)
+ * - NEXT_PUBLIC_VAPID_PUBLIC_KEY — fallback si GET /push/vapid-public-key falla
  */
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -78,5 +82,38 @@ export async function asegurarSuscripcionPush(opts: {
     return "ok";
   } catch {
     return "error";
+  }
+}
+
+/**
+ * Quita la suscripción Push de este navegador (local + servidor).
+ * Best-effort: no lanza; pensado para logout y permiso denied.
+ */
+export async function desactivarSuscripcionPushLocal(opts?: {
+  removeOnServer?: (endpoint: string) => Promise<void>;
+}): Promise<void> {
+  if (!soportaWebPush()) return;
+
+  try {
+    const reg = await navigator.serviceWorker.getRegistration("/");
+    const sub = await reg?.pushManager.getSubscription();
+    if (!sub) return;
+
+    const endpoint = sub.endpoint;
+    try {
+      await sub.unsubscribe();
+    } catch {
+      // endpoint puede seguir válido en servidor
+    }
+
+    if (opts?.removeOnServer && endpoint) {
+      try {
+        await opts.removeOnServer(endpoint);
+      } catch {
+        // no bloquear logout / cambio de permiso
+      }
+    }
+  } catch {
+    // ignore
   }
 }
