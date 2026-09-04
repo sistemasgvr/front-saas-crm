@@ -28,9 +28,10 @@ import {
   enviarInteractivoAction,
   notificarEscribiendoAction,
   bloquearContactoAction,
-  reenviarMensajeAction,
+  reenviarMensajesLoteAction,
   eliminarMensajeAction,
 } from "./actions";
+import { toast } from "sonner";
 import { clearBorrador, getBorrador, setBorrador } from "./chat-borradores";
 import { ComposerMediaPicker, type StickerPackItem } from "./ComposerMediaPicker";
 import { desbloquearAudioChat, feedbackMensajeEnviado } from "./chat-feedback";
@@ -52,6 +53,8 @@ import type {
   UbicacionMensaje,
 } from "./types";
 
+/** Alineado con multi-forward de WhatsApp y con la validación del action. */
+const MAX_MENSAJES_REENVIAR = 30;
 const INTERVALO_REFRESCO_MS = 10_000;
 // El indicador de "escribiendo…" de Meta dura hasta 25s en el WhatsApp del
 // contacto — refrescarlo cada 10s lo mantiene vivo sin gaps mientras el
@@ -574,7 +577,7 @@ function SelectorComposerMedia({
 }
 
 const ANCHO_MENU_ACCIONES = 200;
-const ALTO_MENU_ACCIONES = 200;
+const ALTO_MENU_ACCIONES = 236;
 
 /** El desplegable de "más acciones" del hover — mismo mecanismo de posición
  * (portal + coordenadas reales) que SelectorReacciones. */
@@ -583,6 +586,7 @@ function MenuAcciones({
   onResponder,
   onCopiar,
   onReenviar,
+  onSeleccionar,
   onEliminar,
   onFavorito,
   esFavoritoSticker,
@@ -592,6 +596,7 @@ function MenuAcciones({
   onResponder: () => void;
   onCopiar: () => void;
   onReenviar: () => void;
+  onSeleccionar: () => void;
   onEliminar: () => void;
   onFavorito?: () => void;
   esFavoritoSticker?: boolean;
@@ -650,6 +655,7 @@ function MenuAcciones({
     { icon: "mdi:reply-outline", label: "Responder", onClick: onResponder },
     { icon: "mdi:content-copy", label: "Copiar", onClick: onCopiar },
     { icon: "mdi:share-outline", label: "Reenviar", onClick: onReenviar },
+    { icon: "mdi:checkbox-marked-outline", label: "Seleccionar", onClick: onSeleccionar },
   ];
   if (onFavorito) {
     items.push({
@@ -762,6 +768,10 @@ function Burbuja({
   onResponder,
   onReenviar,
   onEliminar,
+  onSeleccionarParaReenvio,
+  modoSeleccion,
+  seleccionado,
+  onToggleSeleccion,
 }: {
   mensaje: Mensaje;
   conversacionId: string;
@@ -770,6 +780,10 @@ function Burbuja({
   onResponder: (mensaje: Mensaje) => void;
   onReenviar: (mensaje: Mensaje) => void;
   onEliminar: (mensaje: Mensaje) => void;
+  onSeleccionarParaReenvio?: (mensaje: Mensaje) => void;
+  modoSeleccion?: boolean;
+  seleccionado?: boolean;
+  onToggleSeleccion?: () => void;
 }) {
   const [selectorAbierto, setSelectorAbierto] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -848,7 +862,7 @@ function Burbuja({
 
   // Mismo orden que WhatsApp real: el desplegable pegado al lado de afuera
   // de la burbuja, la carita de reaccionar entre el desplegable y la burbuja.
-  const grupoAcciones = (
+  const grupoAcciones = !modoSeleccion ? (
     <div className="flex shrink-0 items-center gap-0.5">
       {esSaliente ? (
         <>
@@ -862,14 +876,29 @@ function Burbuja({
         </>
       )}
     </div>
-  );
+  ) : null;
+
+  const checkboxSeleccion = modoSeleccion ? (
+    <span
+      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition ${
+        seleccionado
+          ? "border-brand-500 bg-brand-500 text-white"
+          : "border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900"
+      }`}
+      aria-hidden
+    >
+      {seleccionado ? <Icon name="mdi:check" size={14} /> : null}
+    </span>
+  ) : null;
 
   const esSticker = !eliminado && mensaje.tipo === "sticker" && mensaje.tieneMedia;
   const preferirMenosMovimiento = useReducedMotion();
 
   return (
     <motion.div
-      className={`group flex items-center gap-1 ${esSaliente ? "justify-end" : "justify-start"}`}
+      className={`group flex items-center gap-2 ${esSaliente ? "justify-end" : "justify-start"} ${
+        modoSeleccion ? "cursor-pointer" : ""
+      }`}
       style={{ transformOrigin: esSaliente ? "bottom right" : "bottom left" }}
       initial={
         animarEntrada && !preferirMenosMovimiento
@@ -882,7 +911,11 @@ function Burbuja({
           ? { duration: 0 }
           : { type: "spring", stiffness: 520, damping: 28, mass: 0.65 }
       }
+      onClick={modoSeleccion ? onToggleSeleccion : undefined}
+      role={modoSeleccion ? "checkbox" : undefined}
+      aria-checked={modoSeleccion ? Boolean(seleccionado) : undefined}
     >
+      {checkboxSeleccion}
       {esSaliente && grupoAcciones}
       <div
         className={`relative max-w-[85%] space-y-1.5 text-theme-sm sm:max-w-[75%] ${
@@ -893,7 +926,9 @@ function Burbuja({
                   ? "bg-brand-500 text-white"
                   : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
               }`
-        } ${tieneReaccion || reaccionar.isPending ? "mb-2.5" : ""}`}
+        } ${tieneReaccion || reaccionar.isPending ? "mb-2.5" : ""} ${
+          modoSeleccion && seleccionado ? "ring-2 ring-brand-400/70" : ""
+        }`}
       >
         {eliminado ? (
           <p className="flex items-center gap-1.5 italic opacity-70">
@@ -993,7 +1028,7 @@ function Burbuja({
           </div>
         )}
 
-        {!eliminado && selectorAbierto && (
+        {!eliminado && selectorAbierto && !modoSeleccion && (
           <SelectorReacciones
             anchorRef={triggerRef}
             onElegir={(emoji) => {
@@ -1004,7 +1039,7 @@ function Burbuja({
           />
         )}
 
-        {menuAbierto && (
+        {menuAbierto && !modoSeleccion && (
           <MenuAcciones
             anchorRef={chevronRef}
             onResponder={() => {
@@ -1017,6 +1052,10 @@ function Burbuja({
             }}
             onReenviar={() => {
               onReenviar(mensaje);
+              setMenuAbierto(false);
+            }}
+            onSeleccionar={() => {
+              onSeleccionarParaReenvio?.(mensaje);
               setMenuAbierto(false);
             }}
             esFavoritoSticker={esFavoritoSticker}
@@ -1073,7 +1112,9 @@ export default function ChatDetailView({
   const [archivo, setArchivo] = useState<File | null>(null);
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null);
   const [respondiendoA, setRespondiendoA] = useState<Mensaje | null>(null);
-  const [reenviandoMensaje, setReenviandoMensaje] = useState<Mensaje | null>(null);
+  const [modoSeleccionReenvio, setModoSeleccionReenvio] = useState(false);
+  const [idsReenvio, setIdsReenvio] = useState<string[]>([]);
+  const [modalReenvioAbierto, setModalReenvioAbierto] = useState(false);
   const [destinoReenvio, setDestinoReenvio] = useState("");
   const [menuAdjuntarAbierto, setMenuAdjuntarAbierto] = useState(false);
   const [pickerEmojiAbierto, setPickerEmojiAbierto] = useState(false);
@@ -1374,7 +1415,7 @@ export default function ChatDetailView({
   const chatsQuery = useQuery<ConversacionResumen[]>({
     queryKey: queryKeys.whatsappChats,
     queryFn: getChats,
-    enabled: Boolean(reenviandoMensaje),
+    enabled: modalReenvioAbierto,
   });
 
   const bloquear = useAppMutation({
@@ -1387,13 +1428,52 @@ export default function ChatDetailView({
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
   });
 
+  function ordenarIdsPorChat(ids: string[]): string[] {
+    const mensajes: Mensaje[] = chatQuery.data?.mensajes ?? [];
+    const ordenChat = new Map<string, number>();
+    mensajes.forEach((m, i) => ordenChat.set(m.id, i));
+    return [...ids].sort((a, b) => (ordenChat.get(a) ?? 0) - (ordenChat.get(b) ?? 0));
+  }
+
   const reenviar = useAppMutation({
     mutationFn: () => {
-      if (!reenviandoMensaje || !destinoReenvio) return Promise.resolve();
-      return reenviarMensajeAction(id, reenviandoMensaje.id, destinoReenvio);
+      if (!destinoReenvio || idsReenvio.length === 0) {
+        return Promise.resolve({ enviados: 0, fallidos: [] as { mensajeId: string; error: string }[] });
+      }
+      return reenviarMensajesLoteAction(id, ordenarIdsPorChat(idsReenvio), destinoReenvio);
     },
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
   });
+
+  function salirModoSeleccionReenvio() {
+    setModoSeleccionReenvio(false);
+    setIdsReenvio([]);
+  }
+
+  function cerrarModalReenvio() {
+    setModalReenvioAbierto(false);
+    setDestinoReenvio("");
+    if (!modoSeleccionReenvio) setIdsReenvio([]);
+  }
+
+  function abrirModalReenvio(ids?: string[]) {
+    const seleccion = ids ?? idsReenvio;
+    if (seleccion.length === 0) return;
+    setIdsReenvio(ordenarIdsPorChat(seleccion));
+    setDestinoReenvio("");
+    setModalReenvioAbierto(true);
+  }
+
+  function toggleSeleccionReenvio(mensajeId: string) {
+    setIdsReenvio((prev) => {
+      if (prev.includes(mensajeId)) return prev.filter((idMsg) => idMsg !== mensajeId);
+      if (prev.length >= MAX_MENSAJES_REENVIAR) {
+        toast.error(`Máximo ${MAX_MENSAJES_REENVIAR} mensajes`);
+        return prev;
+      }
+      return [...prev, mensajeId];
+    });
+  }
 
   function cerrarModalUbicacion() {
     setModalUbicacionAbierto(false);
@@ -1724,10 +1804,16 @@ export default function ChatDetailView({
                 conversacionId={id}
                 nombreContacto={nombre}
                 animarEntrada={idsAnimarEntrada.has(mensaje.id)}
+                modoSeleccion={modoSeleccionReenvio}
+                seleccionado={idsReenvio.includes(mensaje.id)}
+                onToggleSeleccion={() => toggleSeleccionReenvio(mensaje.id)}
                 onResponder={setRespondiendoA}
                 onReenviar={(m) => {
-                  setReenviandoMensaje(m);
-                  setDestinoReenvio("");
+                  abrirModalReenvio([m.id]);
+                }}
+                onSeleccionarParaReenvio={(m) => {
+                  setModoSeleccionReenvio(true);
+                  setIdsReenvio([m.id]);
                 }}
                 onEliminar={(m) => {
                   if (
@@ -1745,6 +1831,27 @@ export default function ChatDetailView({
       </div>
 
       <div className="shrink-0 border-t border-gray-100 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-gray-800 sm:p-4">
+        {modoSeleccionReenvio && (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-white/[0.03]">
+            <p className="text-theme-sm text-gray-700 dark:text-gray-200">
+              {idsReenvio.length} seleccionado{idsReenvio.length === 1 ? "" : "s"} (máx.{" "}
+              {MAX_MENSAJES_REENVIAR})
+            </p>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={salirModoSeleccionReenvio}>
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={idsReenvio.length === 0}
+                onClick={() => abrirModalReenvio()}
+              >
+                Reenviar
+              </Button>
+            </div>
+          </div>
+        )}
         {chat.bloqueado ? (
           <p className="flex items-center gap-1.5 text-theme-sm text-error-500">
             <Icon name="mdi:block-helper" size={16} />
@@ -2403,14 +2510,13 @@ export default function ChatDetailView({
       </Modal>
 
       <Modal
-        open={Boolean(reenviandoMensaje)}
-        onClose={() => {
-          setReenviandoMensaje(null);
-          setDestinoReenvio("");
-        }}
+        open={modalReenvioAbierto}
+        onClose={cerrarModalReenvio}
         header={
           <div className="px-5 py-4">
-            <h3 className="text-theme-sm font-medium text-gray-800 dark:text-white/90">Reenviar mensaje</h3>
+            <h3 className="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+              Reenviar {idsReenvio.length} mensaje{idsReenvio.length === 1 ? "" : "s"}
+            </h3>
             <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
               Elige otro chat (debe estar dentro de la ventana de 24h).
             </p>
@@ -2418,27 +2524,28 @@ export default function ChatDetailView({
         }
         footer={
           <div className="flex items-center justify-end gap-2 px-5 py-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setReenviandoMensaje(null);
-                setDestinoReenvio("");
-              }}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={cerrarModalReenvio}>
               Cancelar
             </Button>
             <Button
               type="button"
               size="sm"
               loading={reenviar.isPending}
-              disabled={!destinoReenvio}
+              disabled={!destinoReenvio || idsReenvio.length === 0}
               onClick={() =>
                 reenviar.mutate(undefined, {
-                  onSuccess: () => {
-                    setReenviandoMensaje(null);
-                    setDestinoReenvio("");
+                  onSuccess: (resultado) => {
+                    if (resultado) {
+                      if (resultado.fallidos.length > 0) {
+                        toast.success(
+                          `Reenviados ${resultado.enviados}; ${resultado.fallidos.length} fallaron`,
+                        );
+                      } else {
+                        toast.success("Mensajes reenviados");
+                      }
+                    }
+                    cerrarModalReenvio();
+                    salirModoSeleccionReenvio();
                   },
                 })
               }

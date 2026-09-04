@@ -141,13 +141,33 @@ export async function reenviarMensajeAction(
   mensajeId: string,
   conversacionDestinoId: string,
 ): Promise<void> {
+  await reenviarMensajesLoteAction(conversacionId, [mensajeId], conversacionDestinoId);
+}
+
+export type ResultadoReenvioLote = {
+  enviados: number;
+  fallidos: { mensajeId: string; error: string }[];
+};
+
+/** Máximo alineado con multi-forward de WhatsApp (~30). No exportar const
+ * desde este archivo ("use server" solo permite funciones async). */
+const MAX_MENSAJES_REENVIAR = 30;
+
+export async function reenviarMensajesLoteAction(
+  conversacionId: string,
+  mensajeIds: string[],
+  conversacionDestinoId: string,
+): Promise<ResultadoReenvioLote> {
+  if (mensajeIds.length > MAX_MENSAJES_REENVIAR) {
+    throw new Error(`Máximo ${MAX_MENSAJES_REENVIAR} mensajes por reenvío`);
+  }
   try {
-    await apiFetch(`/whatsapp/chats/${conversacionId}/messages/${mensajeId}/forward`, {
+    return await apiFetch<ResultadoReenvioLote>(`/whatsapp/chats/${conversacionId}/messages/forward`, {
       method: "POST",
-      body: JSON.stringify({ conversacionDestinoId }),
+      body: JSON.stringify({ conversacionDestinoId, mensajeIds }),
     });
   } catch (error) {
-    fail(error, "No se pudo reenviar el mensaje");
+    fail(error, "No se pudieron reenviar los mensajes");
   }
 }
 
