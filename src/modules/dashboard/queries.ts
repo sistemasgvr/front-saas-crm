@@ -16,6 +16,7 @@ function paramsMeta(filtro: FiltroDashboard) {
   if (filtro.conjuntoAnuncioId) params.set("conjuntoAnuncioId", filtro.conjuntoAnuncioId);
   if (filtro.anuncioId) params.set("anuncioId", filtro.anuncioId);
   if (filtro.metaCuentaId) params.set("metaCuentaId", filtro.metaCuentaId);
+  if (filtro.inmuebleId) params.set("inmuebleId", filtro.inmuebleId);
   return params;
 }
 

@@ -3,11 +3,22 @@ export interface ReferenciaNombrada {
   nombre: string;
 }
 
+export interface InmuebleInteresResumen {
+  id: string;
+  codigo: string;
+  titulo: string;
+}
+
+export interface LeadEnConversacion extends ReferenciaNombrada {
+  asignadoUsuarioId: string | null;
+  inmuebleInteres: InmuebleInteresResumen | null;
+}
+
 export interface ConversacionResumen {
   id: string;
   waId: string;
   nombreContacto: string | null;
-  lead: (ReferenciaNombrada & { asignadoUsuarioId: string | null }) | null;
+  lead: LeadEnConversacion | null;
   ultimoMensajeEn: string | null;
   ventanaExpiraEn: string | null;
   noLeidos: number;

@@ -39,6 +39,21 @@ export interface InmuebleFiltroOption {
   zona: string | null;
 }
 
+export type OrigenInteresInmueble = "interes" | "visita" | "ambos";
+
+/** Lead rankeado por probabilidad de adquirir este inmueble (GET /inmuebles/:id/interesados). */
+export interface InmuebleInteresadoRankeado {
+  id: string;
+  nombre: string;
+  telefono: string | null;
+  estadoGestion: string;
+  etiquetaEstado: string;
+  tipoLead: string | null;
+  score: number;
+  motivoRanking?: string[];
+  origen: OrigenInteresInmueble;
+}
+
 export interface ListaInmueblesResultado {
   data: InmuebleRow[];
   total: number;

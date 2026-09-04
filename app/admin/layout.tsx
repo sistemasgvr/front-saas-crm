@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
-import { getMe } from "@/src/lib/auth";
+import { getMeSafe } from "@/src/lib/auth";
 import { SidebarProvider } from "@/src/components/layout/SidebarContext";
 import Sidebar, { type NavItem } from "@/src/components/layout/Sidebar";
 import Header from "@/src/components/layout/Header";
 import Backdrop from "@/src/components/layout/Backdrop";
 import AppShell from "@/src/components/layout/AppShell";
+import BackendUnavailable from "@/src/components/ui/BackendUnavailable";
 
 const ADMIN_NAV: NavItem[] = [
   { name: "Empresas", icon: "mdi:office-building-outline", path: "/admin/organizations" },
@@ -14,10 +15,15 @@ const ADMIN_NAV: NavItem[] = [
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const me = await getMe();
-  if (!me) {
+  const session = await getMeSafe();
+  if (session.status === "unavailable") {
+    return <BackendUnavailable message={session.message} />;
+  }
+  if (session.status === "unauthenticated") {
     redirect("/login");
   }
+  const me = session.me;
+
   if (!me.usuario.esAdminPlataforma) {
     redirect("/dashboard");
   }

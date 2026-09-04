@@ -18,6 +18,8 @@ import {
   getCuentasFiltro,
   getAsignables,
 } from "@/src/modules/leads/queries";
+import { getInmueblesFiltro } from "@/src/modules/inmuebles/queries";
+import { etiquetaInmuebleFiltro, type InmuebleFiltroOption } from "@/src/modules/inmuebles/types";
 import { aplicarCascadaFiltros, CASCADA_META_ADS } from "@/src/components/ui/filters/cascadeFilters";
 import type { AnuncioFiltroOpcion, CampanaFiltroOpcion, ConjuntoAnuncioFiltroOpcion, ReferenciaNombrada } from "@/src/modules/leads/types";
 import KpiCard from "./KpiCard";
@@ -69,9 +71,11 @@ function formatearHoras(horas: number | null) {
 export default function DashboardView({
   rol,
   usuarioId,
+  crmHabilitado = false,
 }: {
   rol: Rol;
   usuarioId: string;
+  crmHabilitado?: boolean;
 }) {
   const searchParams = useSearchParams();
   const esAdmin = canManageOrganization(rol);
@@ -87,6 +91,7 @@ export default function DashboardView({
     conjuntoAnuncioId: values.conjuntoAnuncioId || undefined,
     anuncioId: values.anuncioId || undefined,
     metaCuentaId: values.metaCuentaId || undefined,
+    inmuebleId: crmHabilitado ? values.inmuebleId || undefined : undefined,
     fechaDesde: values.fechaDesde || undefined,
     fechaHasta: values.fechaHasta || undefined,
     tipoLead: values.tipoLead || undefined,
@@ -113,6 +118,11 @@ export default function DashboardView({
     queryKey: queryKeys.leadsAsignables,
     queryFn: () => getAsignables(),
     enabled: esAdmin,
+  });
+  const inmueblesFiltroQuery = useQuery<InmuebleFiltroOption[]>({
+    queryKey: queryKeys.inmueblesFiltro,
+    queryFn: getInmueblesFiltro,
+    enabled: crmHabilitado,
   });
 
   const kpisQuery = useQuery<DashboardKpis>({
@@ -141,9 +151,11 @@ export default function DashboardView({
   const anunciosData: AnuncioFiltroOpcion[] = anunciosQuery.data ?? [];
   const cuentasData: ReferenciaNombrada[] = cuentasQuery.data ?? [];
   const asignablesData: ReferenciaNombrada[] = asignablesQuery.data ?? [];
+  const inmueblesFiltroData: InmuebleFiltroOption[] = inmueblesFiltroQuery.data ?? [];
   const seriesData: DashboardSeries | undefined = seriesQuery.data;
   const adsSeriesData: SeriesPublicitarias | undefined = adsSeriesQuery.data;
   const embudoData: EmbudoKpis | undefined = embudoQuery.data;
+  const topInmuebles = seriesData?.porInmueble ?? [];
 
   const campanasFiltradas = useMemo(() => {
     if (!values.metaCuentaId) return campanasData;
@@ -211,6 +223,22 @@ export default function DashboardView({
         searchPlaceholder: "Buscar anuncio...",
         options: anunciosFiltrados.map((anuncio) => ({ value: anuncio.id, label: anuncio.nombre })),
       },
+      ...(crmHabilitado
+        ? ([
+            {
+              key: "inmuebleId",
+              label: "Inmueble",
+              type: "select",
+              searchable: true,
+              placeholder: "Todos",
+              searchPlaceholder: "Buscar inmueble...",
+              options: inmueblesFiltroData.map((opt) => ({
+                value: opt.id,
+                label: etiquetaInmuebleFiltro(opt),
+              })),
+            },
+          ] satisfies DynamicFilterFieldDef[])
+        : []),
       { key: "fechaDesde", label: "Desde", type: "date" },
       { key: "fechaHasta", label: "Hasta", type: "date" },
       {
@@ -248,6 +276,8 @@ export default function DashboardView({
       campanasFiltradas,
       conjuntosFiltrados,
       anunciosFiltrados,
+      inmueblesFiltroData,
+      crmHabilitado,
       asignablesData,
       esAdmin,
       usuarioId,
@@ -488,6 +518,44 @@ export default function DashboardView({
                 />
               )}
             </div>
+
+            {crmHabilitado && (
+              <div className="rounded-xl border border-gray-200 bg-white p-3.5 dark:border-gray-800 dark:bg-white/[0.03] lg:col-span-2">
+                <h2 className="mb-2 text-theme-sm font-semibold text-gray-800 dark:text-white/90">
+                  Top inmuebles por interés
+                </h2>
+                {topInmuebles.length === 0 ? (
+                  <p className="text-theme-sm text-gray-500 dark:text-gray-400">
+                    Sin leads vinculados a inmuebles en el rango.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                    <BarChart
+                      categories={topInmuebles.map((p) => p.nombre)}
+                      data={topInmuebles.map((p) => p.total)}
+                      seriesName="Leads"
+                      height={260}
+                    />
+                    <ul className="max-h-[260px] space-y-1.5 overflow-y-auto">
+                      {topInmuebles.map((p, idx) => (
+                        <li
+                          key={p.id}
+                          className="flex items-center justify-between gap-2 text-theme-sm text-gray-700 dark:text-gray-300"
+                        >
+                          <span className="truncate">
+                            <span className="mr-2 tabular-nums text-gray-400">{idx + 1}.</span>
+                            {p.nombre}
+                          </span>
+                          <span className="shrink-0 tabular-nums text-gray-500 dark:text-gray-400">
+                            {p.total.toLocaleString("es-PE")}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )
       )}

@@ -20,6 +20,8 @@ export interface DashboardSeries {
   porDia: PuntoSerieDia[];
   porCampana: PuntoSerieNombrado[];
   porAnuncio: PuntoSerieNombrado[];
+  /** Top inmuebles por leads interesados (máx. 10). */
+  porInmueble?: PuntoSerieNombrado[];
 }
 
 export interface FiltroDashboard {
@@ -27,6 +29,8 @@ export interface FiltroDashboard {
   conjuntoAnuncioId?: string;
   anuncioId?: string;
   metaCuentaId?: string;
+  /** UUID de inmueble (`leads.inmueble_interes_id`). */
+  inmuebleId?: string;
   fechaDesde?: string;
   fechaHasta?: string;
   tipoLead?: string;

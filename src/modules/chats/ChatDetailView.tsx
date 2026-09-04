@@ -41,6 +41,7 @@ import {
   quitarFavorito,
 } from "./sticker-favoritos";
 import { getChat, getTemplates, getChats } from "./queries";
+import ChatLeadInmuebleChip from "./ChatLeadInmuebleChip";
 import type {
   ConversacionDetalle,
   ConversacionResumen,
@@ -1057,7 +1058,13 @@ function Burbuja({
   );
 }
 
-export default function ChatDetailView({ id }: { id: string }) {
+export default function ChatDetailView({
+  id,
+  crmHabilitado = false,
+}: {
+  id: string;
+  crmHabilitado?: boolean;
+}) {
   const queryClient = useQueryClient();
   const [texto, setTexto] = useState("");
   const textoRef = useRef("");
@@ -1673,6 +1680,15 @@ export default function ChatDetailView({ id }: { id: string }) {
           ) : (
             <p className="text-theme-xs text-warning-500">+{chat.waId} · Sin lead vinculado</p>
           )}
+          {crmHabilitado && chat.lead ? (
+            <div className="mt-1 min-w-0">
+              <ChatLeadInmuebleChip
+                leadId={chat.lead.id}
+                conversacionId={id}
+                inmuebleInteres={chat.lead.inmuebleInteres}
+              />
+            </div>
+          ) : null}
         </div>
         <Button
           type="button"

@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
-import { getMe } from "@/src/lib/auth";
+import { getMeSafe } from "@/src/lib/auth";
 import { getDefaultClientRoute } from "@/src/lib/modules";
 import { SidebarProvider } from "@/src/components/layout/SidebarContext";
 import Sidebar, { type NavGroup, type NavItem } from "@/src/components/layout/Sidebar";
 import Header from "@/src/components/layout/Header";
 import Backdrop from "@/src/components/layout/Backdrop";
 import AppShell from "@/src/components/layout/AppShell";
+import BackendUnavailable from "@/src/components/ui/BackendUnavailable";
 
 import { canManageOrganization } from "@/src/lib/roles";
 
@@ -59,10 +60,15 @@ function filtrarGrupo(
 }
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const me = await getMe();
-  if (!me) {
+  const session = await getMeSafe();
+  if (session.status === "unavailable") {
+    return <BackendUnavailable message={session.message} />;
+  }
+  if (session.status === "unauthenticated") {
     redirect("/login");
   }
+  const me = session.me;
+
   if (me.usuario.esAdminPlataforma) {
     redirect("/admin/organizations");
   }

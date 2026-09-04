@@ -4,6 +4,7 @@ import { apiFetch, ApiError } from "@/src/lib/api";
 import type {
   FiltroInmuebles,
   InmuebleFiltroOption,
+  InmuebleInteresadoRankeado,
   InmuebleRow,
   ListaInmueblesResultado,
 } from "./types";
@@ -26,6 +27,11 @@ export async function getInmuebles(params?: FiltroInmuebles) {
 
 export async function getInmueble(id: string) {
   return apiFetch<InmuebleRow>(`/inmuebles/${id}`);
+}
+
+/** Leads interesados ordenados de más a menos probabilidad de adquisición. */
+export async function getInmuebleInteresados(id: string) {
+  return apiFetch<InmuebleInteresadoRankeado[]>(`/inmuebles/${id}/interesados`);
 }
 
 /** Lista liviana para selects de visitas / pipeline.

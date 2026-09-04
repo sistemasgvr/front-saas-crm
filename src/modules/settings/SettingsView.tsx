@@ -11,9 +11,11 @@ import MetaSettingsEntryCard from "./meta/MetaSettingsEntryCard";
 import WhatsappSettingsEntryCard from "./whatsapp/WhatsappSettingsEntryCard";
 import LeadAutoAssignmentSettingsCard from "./leads/LeadAutoAssignmentSettingsCard";
 import PipelineConfigSettingsCard from "./pipeline/PipelineConfigSettingsCard";
+import InmueblesSettingsEntryCard from "./inmuebles/InmueblesSettingsEntryCard";
 import CollapsibleSection from "@/src/components/ui/CollapsibleSection";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import { isModuloHabilitado } from "@/src/lib/modules";
 
 export default function SettingsView() {
   const meQuery = useQuery({ queryKey: queryKeys.me, queryFn: () => getMeQuery() });
@@ -38,6 +40,7 @@ export default function SettingsView() {
   const me = meQuery.data;
   const metaLeadsHabilitado = me.modulos.some((m: ModuloEstado) => m.codigo === "META_LEADS" && m.habilitado);
   const whatsappHabilitado = me.modulos.some((m: ModuloEstado) => m.codigo === "WHATSAPP" && m.habilitado);
+  const crmHabilitado = isModuloHabilitado(me.modulos, "CRM");
 
   return (
     <div className="space-y-6">
@@ -61,6 +64,8 @@ export default function SettingsView() {
           No se pudieron cargar los datos de la empresa.
         </p>
       )}
+
+      {crmHabilitado && <InmueblesSettingsEntryCard rol={me.rol} />}
 
       {metaLeadsHabilitado && (
         <>

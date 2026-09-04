@@ -12,5 +12,5 @@ export default async function DashboardPage() {
     redirect(getDefaultClientRoute(me));
   }
 
-  return <DashboardView rol={me.rol} usuarioId={me.usuario.id} />;
+  return <DashboardView rol={me.rol} usuarioId={me.usuario.id} crmHabilitado={isModuloHabilitado(me.modulos, "CRM")} />;
 }

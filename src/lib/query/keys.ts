@@ -59,6 +59,7 @@ export const queryKeys = {
     ["inmuebles", params ?? {}] as const,
   inmueblesAll: ["inmuebles"] as const,
   inmueble: (id: string) => ["inmuebles", id] as const,
+  inmuebleInteresados: (id: string) => ["inmuebles", id, "interesados"] as const,
   inmueblesFiltro: ["inmuebles", "filtro"] as const,
   notifications: (params?: { page?: number }) => ["notifications", params ?? {}] as const,
   /** Prefijo para invalidar todas las páginas a la vez (no usar para fetch). */
