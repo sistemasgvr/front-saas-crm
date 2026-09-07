@@ -14,6 +14,8 @@ import Select from "@/src/components/form/Select";
 import Modal from "@/src/components/ui/modal/Modal";
 import { Icon } from "@/src/components/ui/Icon";
 import { Spinner } from "@/src/components/ui/Spinner";
+import { Dropdown } from "@/src/components/ui/dropdown/Dropdown";
+import { DropdownItem } from "@/src/components/ui/dropdown/DropdownItem";
 import { QueryError } from "@/src/components/ui/PageLoader";
 import { Skeleton } from "@/src/components/ui/Skeleton";
 import { queryKeys } from "@/src/lib/query/keys";
@@ -30,11 +32,17 @@ import {
   bloquearContactoAction,
   reenviarMensajesLoteAction,
   eliminarMensajeAction,
+  crearLeadDesdeChatAction,
 } from "./actions";
 import { toast } from "sonner";
 import { clearBorrador, setBorrador, useBorradorChat } from "./chat-borradores";
 import { previewUltimoMensaje } from "./preview-ultimo-mensaje";
 import { ChatBusquedaPanel } from "./ChatBusquedaPanel";
+import CrearLeadDesdeChatModal from "./CrearLeadDesdeChatModal";
+import CrearActividadAgendaModal from "@/src/modules/agenda/CrearActividadAgendaModal";
+import { canManageOrganization } from "@/src/lib/roles";
+import { crearActividadAgendaAction } from "@/src/modules/leads/actions";
+import type { CrearActividadAgendaInput } from "@/src/modules/leads/types";
 import {
   ChatMediaLightboxProvider,
   useChatMediaLightbox,
@@ -1158,9 +1166,13 @@ function Burbuja({
 export default function ChatDetailView({
   id,
   crmHabilitado = false,
+  usuarioId = "",
+  rol = null,
 }: {
   id: string;
   crmHabilitado?: boolean;
+  usuarioId?: string;
+  rol?: string | null;
 }) {
   const queryClient = useQueryClient();
   /** Borrador = store Zustand (única fuente de verdad). Sin estado local paralelo. */
@@ -1199,6 +1211,10 @@ export default function ChatDetailView({
   const [contactoOrganizacion, setContactoOrganizacion] = useState("");
   const [modalInteractivoAbierto, setModalInteractivoAbierto] = useState(false);
   const [busquedaAbierta, setBusquedaAbierta] = useState(false);
+  const [modalCrearLeadAbierto, setModalCrearLeadAbierto] = useState(false);
+  const [modalActividadAbierto, setModalActividadAbierto] = useState(false);
+  const [modalInmuebleAbierto, setModalInmuebleAbierto] = useState(false);
+  const [menuAccionesAbierto, setMenuAccionesAbierto] = useState(false);
   const [mensajeResaltadoId, setMensajeResaltadoId] = useState<string | null>(null);
   const [mostrarIrAlFondo, setMostrarIrAlFondo] = useState(false);
   const resaltadoTimerRef = useRef<number | null>(null);
@@ -1506,6 +1522,28 @@ export default function ChatDetailView({
   const bloquear = useAppMutation({
     mutationFn: (bloquearContacto: boolean) => bloquearContactoAction(id, bloquearContacto),
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
+  });
+
+  const crearLeadDesdeChat = useAppMutation({
+    mutationFn: (input: {
+      nombre?: string;
+      email?: string;
+      telefono?: string;
+      tipoLead?: string;
+    }) => crearLeadDesdeChatAction(id, input),
+    successMessage: "Lead creado y vinculado al chat",
+    invalidateKeys: [
+      queryKeys.whatsappChat(id),
+      queryKeys.whatsappChats,
+      queryKeys.leadsAll,
+      queryKeys.leadsNuevosCount,
+    ],
+  });
+
+  const crearActividad = useAppMutation({
+    mutationFn: (input: CrearActividadAgendaInput) => crearActividadAgendaAction(input),
+    successMessage: "Actividad agendada",
+    invalidateKeys: [queryKeys.leadsAgendaAll, queryKeys.leadsAll],
   });
 
   const eliminarMensaje = useAppMutation({
@@ -1972,21 +2010,51 @@ export default function ChatDetailView({
           ) : (
             <p className="text-theme-xs text-warning-500">+{chat.waId} · Sin lead vinculado</p>
           )}
-          {crmHabilitado && chat.lead ? (
-            <div className="mt-1 min-w-0">
-              <ChatLeadInmuebleChip
-                leadId={chat.lead.id}
-                conversacionId={id}
-                inmuebleInteres={chat.lead.inmuebleInteres}
-              />
-            </div>
-          ) : null}
         </div>
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+          {crmHabilitado && !chat.lead ? (
+            <button
+              type="button"
+              onClick={() => setModalCrearLeadAbierto(true)}
+              className="hidden h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 md:flex dark:text-gray-400 dark:hover:bg-white/5"
+              aria-label="Crear lead"
+              title="Crear lead"
+            >
+              <Icon name="mdi:account-plus-outline" size={22} />
+            </button>
+          ) : null}
+
+          {crmHabilitado && chat.lead ? (
+            <ChatLeadInmuebleChip
+              leadId={chat.lead.id}
+              conversacionId={id}
+              inmuebleInteres={chat.lead.inmuebleInteres}
+              open={modalInmuebleAbierto}
+              onOpenChange={setModalInmuebleAbierto}
+              triggerClassName={`hidden h-10 w-10 items-center justify-center rounded-full transition-colors md:flex ${
+                chat.lead.inmuebleInteres
+                  ? "bg-brand-500/10 text-brand-600 dark:text-brand-400"
+                  : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+              }`}
+            />
+          ) : null}
+
+          {crmHabilitado && chat.lead && usuarioId ? (
+            <button
+              type="button"
+              onClick={() => setModalActividadAbierto(true)}
+              className="hidden h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 md:flex dark:text-gray-400 dark:hover:bg-white/5"
+              aria-label="Registrar actividad"
+              title="Registrar actividad"
+            >
+              <Icon name="mdi:calendar-plus" size={22} />
+            </button>
+          ) : null}
+
           <button
             type="button"
             onClick={() => setBusquedaAbierta(true)}
-            className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+            className={`hidden h-10 w-10 items-center justify-center rounded-full transition-colors md:flex ${
               busquedaAbierta
                 ? "bg-brand-500/10 text-brand-600 dark:text-brand-400"
                 : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
@@ -1996,20 +2064,112 @@ export default function ChatDetailView({
           >
             <Icon name="mdi:magnify" size={22} />
           </button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            loading={bloquear.isPending}
-            onClick={() => {
-              const accion = chat.bloqueado ? "desbloquear" : "bloquear";
-              if (window.confirm(`¿Seguro que quieres ${accion} a este contacto en WhatsApp?`)) {
-                bloquear.mutate(!chat.bloqueado);
-              }
-            }}
-          >
-            {chat.bloqueado ? "Desbloquear" : "Bloquear"}
-          </Button>
+
+          <span className="hidden md:contents">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              loading={bloquear.isPending}
+              onClick={() => {
+                const accion = chat.bloqueado ? "desbloquear" : "bloquear";
+                if (window.confirm(`¿Seguro que quieres ${accion} a este contacto en WhatsApp?`)) {
+                  bloquear.mutate(!chat.bloqueado);
+                }
+              }}
+            >
+              {chat.bloqueado ? "Desbloquear" : "Bloquear"}
+            </Button>
+          </span>
+
+          {/* Móvil: menú ⋮ */}
+          <div className="relative md:hidden">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuAccionesAbierto((v) => !v);
+              }}
+              className="dropdown-toggle flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+              aria-label="Más acciones"
+              aria-expanded={menuAccionesAbierto}
+            >
+              <Icon name="mdi:dots-vertical" size={22} />
+            </button>
+            <Dropdown
+              isOpen={menuAccionesAbierto}
+              onClose={() => setMenuAccionesAbierto(false)}
+              className="w-56 overflow-hidden py-1"
+            >
+              {crmHabilitado && !chat.lead ? (
+                <DropdownItem
+                  onClick={() => {
+                    setMenuAccionesAbierto(false);
+                    setModalCrearLeadAbierto(true);
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2.5 text-theme-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/5"
+                >
+                  <Icon name="mdi:account-plus-outline" size={18} className="text-gray-500" />
+                  Crear lead
+                </DropdownItem>
+              ) : null}
+              {crmHabilitado && chat.lead ? (
+                <DropdownItem
+                  onClick={() => {
+                    setMenuAccionesAbierto(false);
+                    setModalInmuebleAbierto(true);
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2.5 text-theme-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/5"
+                >
+                  <Icon
+                    name={
+                      chat.lead.inmuebleInteres
+                        ? "mdi:home-outline"
+                        : "mdi:home-plus-outline"
+                    }
+                    size={18}
+                    className="text-gray-500"
+                  />
+                  {chat.lead.inmuebleInteres ? "Cambiar inmueble" : "Asignar inmueble"}
+                </DropdownItem>
+              ) : null}
+              {crmHabilitado && chat.lead && usuarioId ? (
+                <DropdownItem
+                  onClick={() => {
+                    setMenuAccionesAbierto(false);
+                    setModalActividadAbierto(true);
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2.5 text-theme-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/5"
+                >
+                  <Icon name="mdi:calendar-plus" size={18} className="text-gray-500" />
+                  Registrar actividad
+                </DropdownItem>
+              ) : null}
+              <DropdownItem
+                onClick={() => {
+                  setMenuAccionesAbierto(false);
+                  setBusquedaAbierta(true);
+                }}
+                className="flex items-center gap-2.5 px-3 py-2.5 text-theme-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/5"
+              >
+                <Icon name="mdi:magnify" size={18} className="text-gray-500" />
+                Buscar mensajes
+              </DropdownItem>
+              <DropdownItem
+                onClick={() => {
+                  setMenuAccionesAbierto(false);
+                  const accion = chat.bloqueado ? "desbloquear" : "bloquear";
+                  if (window.confirm(`¿Seguro que quieres ${accion} a este contacto en WhatsApp?`)) {
+                    bloquear.mutate(!chat.bloqueado);
+                  }
+                }}
+                className="flex items-center gap-2.5 px-3 py-2.5 text-theme-sm text-error-600 hover:bg-gray-100 dark:text-error-400 dark:hover:bg-white/5"
+              >
+                <Icon name="mdi:block-helper" size={18} />
+                {chat.bloqueado ? "Desbloquear" : "Bloquear"}
+              </DropdownItem>
+            </Dropdown>
+          </div>
         </div>
       </div>
 
@@ -2874,6 +3034,54 @@ export default function ChatDetailView({
       nombreContacto={nombre}
       onIrAlMensaje={irAlMensaje}
     />
+    <CrearLeadDesdeChatModal
+      open={modalCrearLeadAbierto}
+      onClose={() => setModalCrearLeadAbierto(false)}
+      loading={crearLeadDesdeChat.isPending}
+      defaults={{
+        nombre: chat.nombreContacto?.trim() || "",
+        telefono: chat.waId ? `+${chat.waId}` : "",
+      }}
+      onSubmit={(values) => {
+        crearLeadDesdeChat.mutate(
+          {
+            nombre: values.nombre,
+            telefono: values.telefono,
+            ...(values.email ? { email: values.email } : {}),
+            ...(values.tipoLead ? { tipoLead: values.tipoLead } : {}),
+          },
+          {
+            onSuccess: () => setModalCrearLeadAbierto(false),
+          },
+        );
+      }}
+    />
+    {chat.lead && usuarioId ? (
+      <CrearActividadAgendaModal
+        open={modalActividadAbierto}
+        onClose={() => setModalActividadAbierto(false)}
+        esAdmin={canManageOrganization(rol)}
+        usuarioId={usuarioId}
+        loading={crearActividad.isPending}
+        leadFijo={{
+          id: chat.lead.id,
+          nombre: chat.lead.nombre?.trim() || nombre,
+        }}
+        inmueblePrefill={
+          chat.lead.inmuebleInteres
+            ? {
+                id: chat.lead.inmuebleInteres.id,
+                etiqueta: `${chat.lead.inmuebleInteres.codigo} — ${chat.lead.inmuebleInteres.titulo}`,
+              }
+            : null
+        }
+        onCrear={(input) => {
+          crearActividad.mutate(input, {
+            onSuccess: () => setModalActividadAbierto(false),
+          });
+        }}
+      />
+    ) : null}
     </div>
     </ChatMediaLightboxProvider>
   );

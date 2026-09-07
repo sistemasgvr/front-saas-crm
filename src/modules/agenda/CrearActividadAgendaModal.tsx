@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Button from "@/src/components/ui/button/Button";
 import Modal from "@/src/components/ui/modal/Modal";
@@ -51,6 +51,8 @@ export default function CrearActividadAgendaModal({
   esAdmin,
   usuarioId,
   initialStart,
+  leadFijo,
+  inmueblePrefill,
   loading,
   onClose,
   onCrear,
@@ -59,6 +61,10 @@ export default function CrearActividadAgendaModal({
   esAdmin: boolean;
   usuarioId: string;
   initialStart?: string | null;
+  /** Si viene, el lead ya está elegido (p. ej. desde el chat) y no se busca. */
+  leadFijo?: { id: string; nombre: string } | null;
+  /** Prefill de inmueble cuando el lead ya tiene uno de interés (solo VISITA). */
+  inmueblePrefill?: { id: string; etiqueta: string } | null;
   loading?: boolean;
   onClose: () => void;
   onCrear: (input: CrearActividadAgendaInput) => void;
@@ -66,7 +72,7 @@ export default function CrearActividadAgendaModal({
   const [tipo, setTipo] = useState("LLAMADA");
   const [titulo, setTitulo] = useState("");
   const [q, setQ] = useState("");
-  const [leadId, setLeadId] = useState("");
+  const [leadId, setLeadId] = useState(leadFijo?.id ?? "");
   const [programadaEn, setProgramadaEn] = useState(() =>
     aDatetimeLocal(initialStart ?? undefined),
   );
@@ -78,6 +84,32 @@ export default function CrearActividadAgendaModal({
   const [asignadoUsuarioId, setAsignadoUsuarioId] = useState(usuarioId);
 
   const esVisita = tipo === "VISITA";
+  const leadBloqueado = Boolean(leadFijo?.id);
+
+  useEffect(() => {
+    if (!open) return;
+    setTipo("LLAMADA");
+    setTitulo("");
+    setQ("");
+    setLeadId(leadFijo?.id ?? "");
+    setProgramadaEn(
+      aDatetimeLocal(initialStart ?? undefined) ||
+        aDatetimeLocal(new Date().toISOString()),
+    );
+    setDuracionMinutos("60");
+    setReferenciaInmueble(inmueblePrefill?.etiqueta ?? "");
+    setInmuebleId(inmueblePrefill?.id ?? "");
+    setModalidad("PRESENCIAL");
+    setNota("");
+    setAsignadoUsuarioId(usuarioId);
+  }, [
+    open,
+    leadFijo?.id,
+    inmueblePrefill?.id,
+    inmueblePrefill?.etiqueta,
+    initialStart,
+    usuarioId,
+  ]);
 
   const leadsQuery = useQuery({
     queryKey: queryKeys.leads({ q, page: 1 }),
@@ -87,7 +119,7 @@ export default function CrearActividadAgendaModal({
         page: 1,
         asignado: esAdmin ? undefined : "mios",
       }),
-    enabled: open,
+    enabled: open && !leadBloqueado,
   });
 
   const asignablesQuery = useQuery({
@@ -143,6 +175,7 @@ export default function CrearActividadAgendaModal({
     <Modal
       open={open}
       onClose={onClose}
+      className="max-w-lg sm:max-w-2xl"
       header={
         <div className="p-5 pb-4 pr-14 sm:p-6 sm:pb-4 sm:pr-16">
           <p className="text-theme-sm font-semibold text-gray-800 dark:text-white/90">
@@ -173,7 +206,7 @@ export default function CrearActividadAgendaModal({
         </div>
       }
     >
-      <div className="space-y-3 p-5 pt-4 sm:p-6 sm:pt-4">
+      <div className="grid grid-cols-1 gap-3 p-5 pt-4 sm:grid-cols-2 sm:p-6 sm:pt-4">
         <div>
           <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
             Tipo <span className="text-error-500">*</span>
@@ -193,28 +226,39 @@ export default function CrearActividadAgendaModal({
             onChange={(e) => setTitulo(e.target.value)}
           />
         </div>
-        <div>
-          <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
-            Buscar lead
-          </label>
-          <Input
-            type="search"
-            placeholder="Nombre, teléfono o correo…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
-            Lead <span className="text-error-500">*</span>
-          </label>
-          <Select
-            options={opcionesLead}
-            value={leadId}
-            onChange={setLeadId}
-            placeholder={leadsQuery.isLoading ? "Cargando…" : "Elige un lead"}
-          />
-        </div>
+        {leadBloqueado && leadFijo ? (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 sm:col-span-2 dark:border-gray-700 dark:bg-white/[0.03]">
+            <p className="text-theme-xs text-gray-500 dark:text-gray-400">Lead</p>
+            <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">
+              {leadFijo.nombre}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div>
+              <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
+                Buscar lead
+              </label>
+              <Input
+                type="search"
+                placeholder="Nombre, teléfono o correo…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
+                Lead <span className="text-error-500">*</span>
+              </label>
+              <Select
+                options={opcionesLead}
+                value={leadId}
+                onChange={setLeadId}
+                placeholder={leadsQuery.isLoading ? "Cargando…" : "Elige un lead"}
+              />
+            </div>
+          </>
+        )}
         <div>
           <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
             Fecha y hora <span className="text-error-500">*</span>
@@ -226,24 +270,35 @@ export default function CrearActividadAgendaModal({
             required
           />
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
-              Duración
-            </label>
-            <Select options={DURACIONES} value={duracionMinutos} onChange={setDuracionMinutos} />
-          </div>
-          {esVisita ? (
-            <div>
-              <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
-                Modalidad
-              </label>
-              <Select options={MODALIDADES} value={modalidad} onChange={setModalidad} />
-            </div>
-          ) : null}
+        <div>
+          <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
+            Duración
+          </label>
+          <Select options={DURACIONES} value={duracionMinutos} onChange={setDuracionMinutos} />
         </div>
         {esVisita ? (
           <div>
+            <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
+              Modalidad
+            </label>
+            <Select options={MODALIDADES} value={modalidad} onChange={setModalidad} />
+          </div>
+        ) : null}
+        {esAdmin ? (
+          <div className={esVisita ? undefined : "sm:col-span-1"}>
+            <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
+              Asesor
+            </label>
+            <Select
+              options={opcionesAsignado}
+              value={asignadoUsuarioId}
+              onChange={setAsignadoUsuarioId}
+              placeholder="Asesor responsable"
+            />
+          </div>
+        ) : null}
+        {esVisita ? (
+          <div className="sm:col-span-2">
             <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
               Inmueble o proyecto <span className="text-error-500">*</span>
             </label>
@@ -258,20 +313,7 @@ export default function CrearActividadAgendaModal({
             />
           </div>
         ) : null}
-        {esAdmin ? (
-          <div>
-            <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
-              Asesor
-            </label>
-            <Select
-              options={opcionesAsignado}
-              value={asignadoUsuarioId}
-              onChange={setAsignadoUsuarioId}
-              placeholder="Asesor responsable"
-            />
-          </div>
-        ) : null}
-        <div>
+        <div className="sm:col-span-2">
           <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
             Nota (opcional)
           </label>

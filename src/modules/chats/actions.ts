@@ -190,3 +190,25 @@ export async function iniciarChatDesdeLeadAction(leadId: string): Promise<{ conv
     fail(error, "No se pudo iniciar el chat");
   }
 }
+
+export async function crearLeadDesdeChatAction(
+  conversacionId: string,
+  input: {
+    nombre?: string;
+    email?: string;
+    telefono?: string;
+    tipoLead?: string;
+  },
+): Promise<{ leadId: string; creado: boolean }> {
+  try {
+    return await apiFetch<{ leadId: string; creado: boolean }>(
+      `/whatsapp/chats/${conversacionId}/crear-lead`,
+      {
+        method: "POST",
+        body: JSON.stringify(input),
+      },
+    );
+  } catch (error) {
+    fail(error, "No se pudo crear el lead desde el chat");
+  }
+}
