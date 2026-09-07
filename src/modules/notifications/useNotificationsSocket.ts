@@ -6,6 +6,7 @@ import { io, type Socket } from "socket.io-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { queryKeys } from "@/src/lib/query/keys";
+import type { ConversacionResumen } from "@/src/modules/chats/types";
 import { getSocketTicket, getVapidPublicKey } from "./queries";
 import { subscribePushAction, unsubscribePushAction } from "./actions";
 import { reproducirSonidoNotificacion } from "./notification-sounds";
@@ -23,12 +24,79 @@ import {
 } from "./web-push";
 import { resolverRutaNotificacion, type NotificacionEventoSocket } from "./types";
 
+/** Sube el chat al tope, suma no leídos y refresca preview sin esperar el GET. */
+function parchearListaChatsWhatsapp(
+  queryClient: ReturnType<typeof useQueryClient>,
+  conversacionId: string,
+  preview: string | null,
+): void {
+  const enChatActivo =
+    typeof window !== "undefined" &&
+    (window.location.pathname === `/chats/${conversacionId}` ||
+      window.location.pathname.startsWith(`/chats/${conversacionId}/`));
+
+  let sumoNoLeido = false;
+
+  queryClient.setQueryData<ConversacionResumen[]>(queryKeys.whatsappChats, (prev) => {
+    if (!Array.isArray(prev) || prev.length === 0) return prev;
+    const idx = prev.findIndex((c) => c.id === conversacionId);
+    if (idx < 0) return prev;
+
+    const actual = prev[idx];
+    const noLeidos = enChatActivo ? 0 : (actual.noLeidos ?? 0) + 1;
+    if (!enChatActivo) sumoNoLeido = true;
+
+    const actualizado: ConversacionResumen = {
+      ...actual,
+      ultimoMensajeEn: new Date().toISOString(),
+      ultimoMensajeTexto: preview?.trim() || actual.ultimoMensajeTexto,
+      noLeidos,
+    };
+    return [actualizado, ...prev.filter((c) => c.id !== conversacionId)];
+  });
+
+  if (sumoNoLeido) {
+    queryClient.setQueryData<{ count: number }>(queryKeys.whatsappChatsUnreadCount, (prev) => ({
+      count: (prev?.count ?? 0) + 1,
+    }));
+  }
+}
+
 function invalidarCachesNotificacion(
   queryClient: ReturnType<typeof useQueryClient>,
+  payload?: Record<string, unknown> | null,
+  tipo?: string,
 ): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsAll });
   void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
   void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChatsUnreadCount });
+
+  const conversacionId =
+    typeof payload?.whatsappConversacionId === "string"
+      ? payload.whatsappConversacionId
+      : null;
+  const esWhatsapp = Boolean(conversacionId) || tipo === "WHATSAPP_MENSAJE";
+
+  if (!esWhatsapp) return;
+
+  const preview =
+    typeof payload?.ultimoMensajeTexto === "string" ? payload.ultimoMensajeTexto : null;
+
+  // 1) UI inmediata en la lista (aunque el detalle no esté abierto).
+  if (conversacionId) {
+    parchearListaChatsWhatsapp(queryClient, conversacionId, preview);
+  }
+
+  // 2) Sync con servidor (lista + detalle si aplica) en paralelo.
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.whatsappChats,
+    exact: true,
+  });
+  if (conversacionId) {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.whatsappChat(conversacionId),
+    });
+  }
 }
 
 function pintarNotificacionEnVivo(
@@ -49,7 +117,7 @@ function pintarNotificacionEnVivo(
       if (ruta) router.push(ruta);
     },
   });
-  invalidarCachesNotificacion(queryClient);
+  invalidarCachesNotificacion(queryClient, data.payload, data.tipo);
 }
 
 /**
