@@ -97,7 +97,7 @@ export default function ChatsSidebar() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
+      <div className="thin-scrollbar flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
         {chatsQuery.isLoading ? (
           <ChatsListSkeleton />
         ) : chatsQuery.isError ? (

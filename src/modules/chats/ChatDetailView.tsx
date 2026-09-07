@@ -67,6 +67,7 @@ const THROTTLE_ESCRIBIENDO_MS = 10_000;
 // "entregado" para siempre — no es un bug de acá, es una opción del usuario
 // de WhatsApp del otro lado).
 const ICONO_ESTADO: Record<string, { icon: string; className?: string }> = {
+  pending: { icon: "mdi:clock-outline", className: "opacity-70" },
   enviado: { icon: "mdi:check" },
   entregado: { icon: "mdi:check-all" },
   leido: { icon: "mdi:check-all", className: "text-sky-300" },
@@ -1242,23 +1243,27 @@ export default function ChatDetailView({
   const parametrosCompletos = variables.every((nombre) => (valoresVariables[nombre] ?? "").trim().length > 0);
 
   const enviar = useAppMutation({
-    mutationFn: async () => {
-      if (dentroDeVentana) {
-        // El "responder a" solo aplica al texto de sesión — Meta no admite
-        // context en el envío de plantillas.
-        await enviarMensajeAction(id, { texto, respondeAMensajeId: respondiendoA?.id });
-      } else {
-        if (!plantilla) throw new Error("Elige una plantilla aprobada");
+    mutationFn: async (vars: {
+      texto?: string;
+      respondeAMensajeId?: string;
+      plantillaNombre?: string;
+      plantillaIdioma?: string;
+      plantillaFormatoParametros?: string;
+      parametros?: { nombre: string; valor: string }[];
+    }) => {
+      if (vars.plantillaNombre) {
         await enviarMensajeAction(id, {
-          plantillaNombre: plantilla.nombre,
-          plantillaIdioma: plantilla.idioma,
-          plantillaFormatoParametros: plantilla.formatoParametros,
-          parametros:
-            variables.length > 0
-              ? variables.map((nombre) => ({ nombre, valor: valoresVariables[nombre] ?? "" }))
-              : undefined,
+          plantillaNombre: vars.plantillaNombre,
+          plantillaIdioma: vars.plantillaIdioma,
+          plantillaFormatoParametros: vars.plantillaFormatoParametros,
+          parametros: vars.parametros,
         });
+        return;
       }
+      await enviarMensajeAction(id, {
+        texto: vars.texto,
+        respondeAMensajeId: vars.respondeAMensajeId,
+      });
     },
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
     // Loading solo en el botón enviar — no el overlay global "Procesando…".
@@ -1266,12 +1271,17 @@ export default function ChatDetailView({
   });
 
   const enviarArchivo = useAppMutation({
-    mutationFn: async () => {
-      if (!archivo) return;
+    mutationFn: async (vars: {
+      archivo: File;
+      caption?: string;
+      respondeAMensajeId?: string;
+    }) => {
       const formData = new FormData();
-      formData.append("archivo", archivo);
-      if (texto.trim()) formData.append("caption", texto.trim());
-      if (respondiendoA) formData.append("respondeAMensajeId", respondiendoA.id);
+      formData.append("archivo", vars.archivo);
+      if (vars.caption?.trim()) formData.append("caption", vars.caption.trim());
+      if (vars.respondeAMensajeId) {
+        formData.append("respondeAMensajeId", vars.respondeAMensajeId);
+      }
       await enviarMediaAction(id, formData);
     },
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
@@ -1697,6 +1707,89 @@ export default function ChatDetailView({
     };
   }
 
+  /** Limpia el composer al instante (no esperar POST + refetch). */
+  function limpiarComposerTexto() {
+    textoRef.current = "";
+    setTexto("");
+    clearBorrador(id);
+    setRespondiendoA(null);
+    setPickerEmojiAbierto(false);
+  }
+
+  function restaurarComposerTexto(snapshot: {
+    texto: string;
+    respondiendoA: Mensaje | null;
+  }) {
+    textoRef.current = snapshot.texto;
+    setTexto(snapshot.texto);
+    setBorrador(id, snapshot.texto);
+    setRespondiendoA(snapshot.respondiendoA);
+  }
+
+  function appendMensajeOptimista(mensaje: Mensaje) {
+    pegarAlFondoRef.current = true;
+    queryClient.setQueryData<ConversacionDetalle>(queryKeys.whatsappChat(id), (prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        mensajes: [...prev.mensajes, mensaje],
+        ultimoMensajeTexto: mensaje.texto ?? mensaje.mediaCaption ?? prev.ultimoMensajeTexto,
+        ultimoMensajeEn: mensaje.fechaMensaje,
+      };
+    });
+    queryClient.setQueryData<ConversacionResumen[]>(queryKeys.whatsappChats, (prev) => {
+      if (!Array.isArray(prev)) return prev;
+      return prev.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              ultimoMensajeTexto: mensaje.texto ?? mensaje.mediaCaption ?? c.ultimoMensajeTexto,
+              ultimoMensajeEn: mensaje.fechaMensaje,
+            }
+          : c,
+      );
+    });
+  }
+
+  function mensajeTextoOptimista(
+    draft: string,
+    cita: Mensaje | null,
+  ): Mensaje {
+    const tempId = `optimistic-${crypto.randomUUID()}`;
+    return {
+      id: tempId,
+      wamid: tempId,
+      direccion: "saliente",
+      tipo: "text",
+      texto: draft,
+      plantillaNombre: null,
+      estadoEntrega: "pending",
+      fechaMensaje: new Date().toISOString(),
+      tieneMedia: false,
+      mediaMimeType: null,
+      mediaNombreArchivo: null,
+      mediaCaption: null,
+      mediaEsVoz: null,
+      mediaTamanoBytes: null,
+      reaccionAgente: null,
+      reaccionCliente: null,
+      respondeA: cita
+        ? {
+            id: cita.id,
+            direccion: cita.direccion,
+            tipo: cita.tipo,
+            texto: cita.texto,
+            tieneMedia: cita.tieneMedia,
+            mediaCaption: cita.mediaCaption,
+          }
+        : null,
+      ubicacion: null,
+      contactos: null,
+      fechaEdicion: null,
+      interactivo: null,
+    };
+  }
+
   useEffect(() => {
     return () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChats });
@@ -1789,7 +1882,7 @@ export default function ChatDetailView({
       <div
         ref={listaRef}
         onScroll={actualizarPegarAlFondo}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 [-webkit-overflow-scrolling:touch] sm:px-5 sm:py-4"
+        className="thin-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 [-webkit-overflow-scrolling:touch] sm:px-5 sm:py-4"
       >
         <div ref={contenidoListaRef} className="space-y-3">
           {chat.mensajes.length === 0 ? (
@@ -1863,27 +1956,54 @@ export default function ChatDetailView({
             onSubmit={(event) => {
               event.preventDefault();
               if (archivo) {
-                enviarArchivo.mutate(undefined, {
-                  onSuccess: alEnviarConFeedback(() => {
-                    setArchivo(null);
-                    textoRef.current = "";
-                    setTexto("");
-                    clearBorrador(id);
-                    setRespondiendoA(null);
-                    setPickerEmojiAbierto(false);
-                    if (inputArchivoRef.current) inputArchivoRef.current.value = "";
-                  }),
-                });
+                const file = archivo;
+                const caption = texto;
+                const cita = respondiendoA;
+                const snapshot = { texto: caption, respondiendoA: cita, archivo: file };
+                setArchivo(null);
+                limpiarComposerTexto();
+                if (inputArchivoRef.current) inputArchivoRef.current.value = "";
+                enviarArchivo.mutate(
+                  {
+                    archivo: file,
+                    caption: caption.trim() || undefined,
+                    respondeAMensajeId: cita?.id,
+                  },
+                  {
+                    onSuccess: alEnviarConFeedback(),
+                    onError: () => {
+                      setArchivo(snapshot.archivo);
+                      restaurarComposerTexto(snapshot);
+                    },
+                  },
+                );
               } else if (texto.trim()) {
-                enviar.mutate(undefined, {
-                  onSuccess: alEnviarConFeedback(() => {
-                    textoRef.current = "";
-                    setTexto("");
-                    clearBorrador(id);
-                    setRespondiendoA(null);
-                    setPickerEmojiAbierto(false);
-                  }),
-                });
+                const draft = texto.trim();
+                const cita = respondiendoA;
+                const snapshot = { texto, respondiendoA: cita };
+                const optimista = mensajeTextoOptimista(draft, cita);
+                limpiarComposerTexto();
+                appendMensajeOptimista(optimista);
+                mensajesVistosRef.current.add(optimista.id);
+                enviar.mutate(
+                  { texto: draft, respondeAMensajeId: cita?.id },
+                  {
+                    onSuccess: alEnviarConFeedback(),
+                    onError: () => {
+                      restaurarComposerTexto(snapshot);
+                      queryClient.setQueryData<ConversacionDetalle>(
+                        queryKeys.whatsappChat(id),
+                        (prev) => {
+                          if (!prev) return prev;
+                          return {
+                            ...prev,
+                            mensajes: prev.mensajes.filter((m) => m.id !== optimista.id),
+                          };
+                        },
+                      );
+                    },
+                  },
+                );
               }
             }}
             className="space-y-2"
@@ -2071,10 +2191,10 @@ export default function ChatDetailView({
                   placeholder={archivo ? "Agrega un texto (opcional)…" : "Escribe un mensaje…"}
                   rows={1}
                   enterKeyHint="send"
-                  className="max-h-32 min-h-11 flex-1 resize-none bg-transparent px-1.5 py-2.5 text-base text-gray-800 outline-none sm:text-theme-sm dark:text-white/90"
+                  className="thin-scrollbar max-h-32 min-h-11 flex-1 resize-none bg-transparent px-1.5 py-2.5 text-base text-gray-800 outline-none sm:text-theme-sm dark:text-white/90"
                 />
               </div>
-              {!archivo && !texto.trim() ? (
+              {!archivo && !texto.trim() && !enviar.isPending && !enviarArchivo.isPending ? (
                 <motion.button
                   type="button"
                   onClick={() => void iniciarGrabacionVoz()}
@@ -2089,7 +2209,7 @@ export default function ChatDetailView({
               <motion.button
                 type="submit"
                 disabled={
-                  (!archivo && !texto.trim()) ||
+                  (!archivo && !texto.trim() && !enviar.isPending && !enviarArchivo.isPending) ||
                   enviar.isPending ||
                   enviarArchivo.isPending ||
                   enviarMediaDirecto.isPending
@@ -2139,14 +2259,22 @@ export default function ChatDetailView({
                   size="sm"
                   loading={enviar.isPending}
                   disabled={!plantillaSeleccionada}
-                  onClick={() =>
-                    enviar.mutate(undefined, {
-                      onSuccess: alEnviarConFeedback(() => {
-                        setPlantillaSeleccionada("");
-                        setValoresVariables({});
-                      }),
-                    })
-                  }
+                  onClick={() => {
+                    if (!plantilla) return;
+                    enviar.mutate(
+                      {
+                        plantillaNombre: plantilla.nombre,
+                        plantillaIdioma: plantilla.idioma,
+                        plantillaFormatoParametros: plantilla.formatoParametros,
+                      },
+                      {
+                        onSuccess: alEnviarConFeedback(() => {
+                          setPlantillaSeleccionada("");
+                          setValoresVariables({});
+                        }),
+                      },
+                    );
+                  }}
                 >
                   Enviar plantilla
                 </Button>
@@ -2174,14 +2302,26 @@ export default function ChatDetailView({
                   size="sm"
                   loading={enviar.isPending}
                   disabled={!plantillaSeleccionada || !parametrosCompletos}
-                  onClick={() =>
-                    enviar.mutate(undefined, {
-                      onSuccess: alEnviarConFeedback(() => {
-                        setPlantillaSeleccionada("");
-                        setValoresVariables({});
-                      }),
-                    })
-                  }
+                  onClick={() => {
+                    if (!plantilla) return;
+                    enviar.mutate(
+                      {
+                        plantillaNombre: plantilla.nombre,
+                        plantillaIdioma: plantilla.idioma,
+                        plantillaFormatoParametros: plantilla.formatoParametros,
+                        parametros: variables.map((nombre) => ({
+                          nombre,
+                          valor: valoresVariables[nombre] ?? "",
+                        })),
+                      },
+                      {
+                        onSuccess: alEnviarConFeedback(() => {
+                          setPlantillaSeleccionada("");
+                          setValoresVariables({});
+                        }),
+                      },
+                    );
+                  }}
                 >
                   Enviar plantilla
                 </Button>

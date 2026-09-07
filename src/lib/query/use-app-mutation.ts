@@ -27,10 +27,24 @@ export function useAppMutation<TData, TVariables = void>(options: UseAppMutation
     meta: { silent: options.silent ?? false },
     onSuccess: async () => {
       if (options.successMessage) toast.success(options.successMessage);
-      if (options.invalidateKeys?.length) {
-        await Promise.all(options.invalidateKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+
+      // No await la invalidación salvo que haya redirect: si esperamos el
+      // refetch, isPending se queda true y la UI (p. ej. composer de chat)
+      // parece “colgada” aunque el POST ya terminó.
+      const invalidar = options.invalidateKeys?.length
+        ? Promise.all(
+            options.invalidateKeys.map((queryKey) =>
+              queryClient.invalidateQueries({ queryKey }),
+            ),
+          )
+        : Promise.resolve();
+
+      if (options.redirectTo) {
+        await invalidar;
+        router.push(options.redirectTo);
+      } else {
+        void invalidar;
       }
-      if (options.redirectTo) router.push(options.redirectTo);
       if (options.refresh) router.refresh();
     },
   });

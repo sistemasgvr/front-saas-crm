@@ -207,7 +207,7 @@ export function ComposerMediaPicker({
 
         {tab === "sticker" && (
           <div className="flex h-full flex-col">
-            <div className="min-h-0 flex-1 overflow-y-auto p-2">
+            <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
               {favoritos.length > 0 && (
                 <div className="mb-3">
                   <p className="mb-1.5 px-1 text-theme-xs font-medium text-gray-500 dark:text-gray-400">

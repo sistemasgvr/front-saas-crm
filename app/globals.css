@@ -181,36 +181,39 @@
   scrollbar-width: none;
 }
 
-/* Scrollbar delgada y discreta (vs. la gorda por defecto del navegador) —
-   usada en el tablero kanban, tanto en el scroll horizontal de columnas
-   como en el vertical de cada columna. */
+/* Scrollbar ultra delgada / minimalista — kanban, chats, modales. */
 @utility thin-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #d1d5db transparent;
+  scrollbar-color: rgb(156 163 175 / 0.45) transparent;
 
   &::-webkit-scrollbar {
-    height: 6px;
-    width: 6px;
+    height: 3px;
+    width: 3px;
   }
   &::-webkit-scrollbar-track {
     background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background-color: #d1d5db;
+    background-color: rgb(156 163 175 / 0.45);
     border-radius: 9999px;
   }
   &::-webkit-scrollbar-thumb:hover {
-    background-color: #9ca3af;
+    background-color: rgb(156 163 175 / 0.75);
+  }
+  &::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   &:is(.dark *) {
-    scrollbar-color: #374151 transparent;
+    scrollbar-color: rgb(255 255 255 / 0.18) transparent;
   }
   &:is(.dark *)::-webkit-scrollbar-thumb {
-    background-color: #374151;
+    background-color: rgb(255 255 255 / 0.18);
   }
   &:is(.dark *)::-webkit-scrollbar-thumb:hover {
-    background-color: #4b5563;
+    background-color: rgb(255 255 255 / 0.32);
   }
 }
 
