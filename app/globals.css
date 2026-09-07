@@ -350,3 +350,199 @@
   }
 }
 
+/* Visor de media del chat — estilo cercano a WhatsApp Desktop */
+.yarl__chat-whatsapp.yarl__portal,
+.yarl__chat-whatsapp.yarl__root {
+  --yarl__portal_zindex: 1000000;
+  --yarl__color_backdrop: #e9edef;
+  --yarl__color_button: #54656f;
+  --yarl__color_button_active: #111b21;
+  --yarl__color_button_disabled: #aebac1;
+  --yarl__button_filter: none;
+  --yarl__thumbnails_container_background_color: #e9edef;
+  --yarl__container_background_color: #e9edef;
+  z-index: 1000000 !important;
+  /* Cubre TODO el viewport; evita ver el CRM / escritorio debajo */
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100vh !important;
+  background-color: #e9edef !important;
+  opacity: 1 !important;
+}
+
+/* Con plugin Thumbnails la clase va en el mismo nodo del portal */
+.yarl__chat-whatsapp.yarl__thumbnails,
+.yarl__chat-whatsapp .yarl__thumbnails_wrapper {
+  background-color: #e9edef !important;
+}
+
+.yarl__chat-whatsapp .yarl__container {
+  background-color: #e9edef !important;
+  color: #111b21;
+}
+
+.yarl__chat-whatsapp .yarl__toolbar {
+  background: transparent;
+  padding: 12px 16px;
+  gap: 4px;
+  z-index: 2;
+}
+
+.yarl__chat-whatsapp .yarl__button {
+  color: #54656f !important;
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+.yarl__chat-whatsapp .yarl__button:hover,
+.yarl__chat-whatsapp .yarl__button:focus,
+.yarl__chat-whatsapp .yarl__button:focus-visible {
+  color: #111b21 !important;
+  background-color: rgba(11, 20, 26, 0.08);
+}
+
+/* Zoom out deshabilitado (mínimo): no dejarlo blanco sobre fondo claro */
+.yarl__chat-whatsapp .yarl__button:disabled {
+  color: #8696a0 !important;
+  opacity: 0.45 !important;
+  cursor: default;
+  filter: none !important;
+}
+
+/*
+  Flechas: el contenedor del slide YA excluye la franja de miniaturas,
+  así que top:50% es el centro real. Hay que centrar el ícono dentro del círculo.
+*/
+.yarl__chat-whatsapp .yarl__navigation_prev,
+.yarl__chat-whatsapp .yarl__navigation_next {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: rgba(11, 20, 26, 0.55) !important;
+  color: #fff !important;
+  border-radius: 9999px !important;
+  width: 48px !important;
+  height: 48px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  filter: none !important;
+  box-shadow: 0 2px 10px rgba(11, 20, 26, 0.28);
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  line-height: 0 !important;
+}
+
+.yarl__chat-whatsapp .yarl__navigation_prev {
+  left: 20px !important;
+}
+
+.yarl__chat-whatsapp .yarl__navigation_next {
+  right: 20px !important;
+}
+
+.yarl__chat-whatsapp .yarl__navigation_prev:hover,
+.yarl__chat-whatsapp .yarl__navigation_next:hover {
+  background-color: rgba(11, 20, 26, 0.75) !important;
+  color: #fff !important;
+}
+
+.yarl__chat-whatsapp .yarl__navigation_prev .yarl__icon,
+.yarl__chat-whatsapp .yarl__navigation_next .yarl__icon {
+  display: block !important;
+  width: 28px !important;
+  height: 28px !important;
+  color: #fff !important;
+  filter: none !important;
+  flex-shrink: 0;
+}
+
+.yarl__chat-whatsapp .yarl__slide_image {
+  object-fit: contain !important;
+  max-width: min(100%, 1100px);
+  max-height: calc(100dvh - 180px);
+  width: auto !important;
+  height: auto !important;
+}
+
+.yarl__chat-whatsapp .yarl__slide_video {
+  max-width: min(100%, 1100px);
+  max-height: calc(100dvh - 180px);
+}
+
+.yarl__chat-whatsapp .yarl__thumbnails_container {
+  background-color: #e9edef !important;
+  width: 100% !important;
+  padding: 12px 16px 20px !important;
+  box-sizing: border-box;
+}
+
+.yarl__chat-whatsapp .yarl__thumbnails_track {
+  background: transparent !important;
+}
+
+.yarl__chat-whatsapp .yarl__thumbnails_vignette {
+  display: none !important;
+}
+
+.yarl__chat-whatsapp .yarl__thumbnails_thumbnail {
+  border-color: transparent !important;
+  opacity: 0.75;
+  background: #d1d7db !important;
+}
+
+.yarl__chat-whatsapp .yarl__thumbnails_thumbnail_active {
+  border-color: #25d366 !important;
+  opacity: 1;
+  box-shadow: 0 0 0 1px #25d366;
+}
+
+.yarl__chat-whatsapp .yarl__counter {
+  color: #54656f !important;
+  filter: none !important;
+  top: 18px;
+  left: 18px;
+}
+
+.dark .yarl__chat-whatsapp.yarl__portal,
+.dark .yarl__chat-whatsapp.yarl__root {
+  --yarl__color_backdrop: #0b141a;
+  --yarl__color_button: #aebac1;
+  --yarl__color_button_active: #e9edef;
+  --yarl__color_button_disabled: #667781;
+  --yarl__thumbnails_container_background_color: #0b141a;
+  --yarl__container_background_color: #0b141a;
+  background-color: #0b141a !important;
+}
+
+.dark .yarl__chat-whatsapp.yarl__thumbnails,
+.dark .yarl__chat-whatsapp .yarl__thumbnails_wrapper,
+.dark .yarl__chat-whatsapp .yarl__container,
+.dark .yarl__chat-whatsapp .yarl__thumbnails_container {
+  background-color: #0b141a !important;
+  color: #e9edef;
+}
+
+.dark .yarl__chat-whatsapp .yarl__button {
+  color: #aebac1 !important;
+}
+
+.dark .yarl__chat-whatsapp .yarl__button:hover,
+.dark .yarl__chat-whatsapp .yarl__button:focus-visible {
+  color: #e9edef !important;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark .yarl__chat-whatsapp .yarl__button:disabled {
+  color: #667781 !important;
+}
+
+.dark .yarl__chat-whatsapp .yarl__counter {
+  color: #aebac1 !important;
+}
+
+.dark .yarl__chat-whatsapp .yarl__thumbnails_thumbnail {
+  background: #1f2c33 !important;
+}
+

@@ -152,7 +152,7 @@ export default function ChatsSidebar() {
                         </p>
                       ) : (
                         <p className="truncate text-theme-xs text-gray-500 dark:text-gray-400">
-                          {chat.ultimoMensajeTexto ?? "Sin mensajes de texto"}
+                          {chat.ultimoMensajeTexto ?? "Sin mensajes"}
                         </p>
                       )}
                       {chat.noLeidos > 0 && (

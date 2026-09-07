@@ -33,6 +33,12 @@ import {
 } from "./actions";
 import { toast } from "sonner";
 import { clearBorrador, setBorrador, useBorradorChat } from "./chat-borradores";
+import { previewUltimoMensaje } from "./preview-ultimo-mensaje";
+import {
+  ChatMediaLightboxProvider,
+  useChatMediaLightbox,
+  urlMedia,
+} from "./ChatMediaLightbox";
 import { ComposerMediaPicker, type StickerPackItem } from "./ComposerMediaPicker";
 import { desbloquearAudioChat, feedbackMensajeEnviado } from "./chat-feedback";
 import { GrabadorNotaVoz } from "./grabar-nota-voz";
@@ -167,10 +173,6 @@ function formatearTamano(bytes: number | null) {
   if (!bytes) return "";
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function urlMedia(conversacionId: string, mensajeId: string) {
-  return `/api/whatsapp/media/${conversacionId}/${mensajeId}`;
 }
 
 const ETIQUETA_TIPO_MEDIA: Record<string, string> = {
@@ -348,6 +350,8 @@ function ContenidoInteractivo({ interactivo }: { interactivo: Interactivo }) {
 const TIPOS_MEDIA = new Set(["image", "video", "audio", "document", "sticker"]);
 
 function ContenidoMedia({ mensaje, conversacionId }: { mensaje: Mensaje; conversacionId: string }) {
+  const visor = useChatMediaLightbox();
+
   if (!mensaje.tieneMedia) {
     // Media que no se pudo descargar (caducó el media_id de Meta, etc.) —
     // no dejar "(sin texto)": mostrar etiqueta del tipo.
@@ -366,30 +370,60 @@ function ContenidoMedia({ mensaje, conversacionId }: { mensaje: Mensaje; convers
 
   if (mensaje.tipo === "sticker") {
     return (
-      <a href={src} target="_blank" rel="noopener noreferrer" className="block w-fit">
+      <button
+        type="button"
+        onClick={() => visor?.abrirMedia(mensaje.id)}
+        className="block w-fit cursor-zoom-in text-left"
+        aria-label="Ver sticker"
+      >
         {/* eslint-disable-next-line @next/next/no-img-element -- viene de un proxy propio, no de un dominio remoto configurable */}
         <img
           src={src}
           alt="Sticker"
           className="max-h-56 max-w-56 object-contain drop-shadow-sm"
         />
-      </a>
+      </button>
     );
   }
   if (mensaje.tipo === "image") {
     return (
-      <a href={src} target="_blank" rel="noopener noreferrer" className="block w-fit max-w-full">
+      <button
+        type="button"
+        onClick={() => visor?.abrirMedia(mensaje.id)}
+        className="block max-w-full cursor-zoom-in overflow-hidden rounded-xl text-left"
+        aria-label="Ver imagen"
+      >
         {/* eslint-disable-next-line @next/next/no-img-element -- viene de un proxy propio, no de un dominio remoto configurable */}
         <img
           src={src}
           alt={mensaje.mediaCaption ?? "Imagen"}
-          className="max-h-48 max-w-[min(100%,280px)] rounded-lg object-contain"
+                  className="max-h-72 w-full max-w-[min(100%,320px)] object-contain bg-black/5 dark:bg-black/20"
         />
-      </a>
+      </button>
     );
   }
   if (mensaje.tipo === "video") {
-    return <video src={src} controls className="max-h-48 max-w-[min(100%,280px)] rounded-lg" />;
+    return (
+      <button
+        type="button"
+        onClick={() => visor?.abrirMedia(mensaje.id)}
+        className="group relative block max-w-full cursor-pointer overflow-hidden rounded-xl text-left"
+        aria-label="Reproducir video"
+      >
+        <video
+          src={src}
+          preload="metadata"
+          muted
+          playsInline
+          className="max-h-72 w-full max-w-[min(100%,320px)] bg-black object-cover"
+        />
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25 transition group-hover:bg-black/35">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur-sm">
+            <Icon name="mdi:play" size={32} className="translate-x-0.5" />
+          </span>
+        </span>
+      </button>
+    );
   }
   if (mensaje.tipo === "audio") {
     return (
@@ -893,6 +927,10 @@ function Burbuja({
   ) : null;
 
   const esSticker = !eliminado && mensaje.tipo === "sticker" && mensaje.tieneMedia;
+  const esMediaVisual =
+    !eliminado &&
+    mensaje.tieneMedia &&
+    (mensaje.tipo === "image" || mensaje.tipo === "video");
   const preferirMenosMovimiento = useReducedMotion();
 
   return (
@@ -919,14 +957,20 @@ function Burbuja({
       {checkboxSeleccion}
       {esSaliente && grupoAcciones}
       <div
-        className={`relative max-w-[85%] space-y-1.5 text-theme-sm sm:max-w-[75%] ${
+        className={`relative max-w-[85%] text-theme-sm sm:max-w-[75%] ${
           esSticker
-            ? "px-1 py-1"
-            : `rounded-2xl px-4 py-2.5 ${
-                esSaliente
-                  ? "bg-brand-500 text-white"
-                  : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
-              }`
+            ? "space-y-1 px-1 py-1"
+            : esMediaVisual
+              ? `space-y-1 overflow-hidden rounded-2xl p-1 ${
+                  esSaliente
+                    ? "bg-brand-500 text-white"
+                    : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
+                }`
+              : `space-y-1.5 rounded-2xl px-4 py-2.5 ${
+                  esSaliente
+                    ? "bg-brand-500 text-white"
+                    : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
+                }`
         } ${tieneReaccion || reaccionar.isPending ? "mb-2.5" : ""} ${
           modoSeleccion && seleccionado ? "ring-2 ring-brand-400/70" : ""
         }`}
@@ -939,7 +983,7 @@ function Burbuja({
         ) : (
           <>
         {mensaje.tipo === "template" && mensaje.plantillaNombre ? (
-          <p className="flex items-center gap-1 text-theme-xs opacity-80">
+          <p className="flex items-center gap-1 px-2 pt-1 text-theme-xs opacity-80">
             <Icon name="mdi:script-text-outline" size={14} />
             Plantilla: {mensaje.plantillaNombre}
           </p>
@@ -954,7 +998,7 @@ function Burbuja({
           <div
             className={`rounded-md border-l-4 px-2 py-1 text-theme-xs ${
               esSaliente ? "border-white/50 bg-white/10" : "border-brand-500 bg-black/5 dark:bg-white/5"
-            }`}
+            } ${esMediaVisual ? "mx-1 mt-1" : ""}`}
           >
             <p className={`font-medium ${esSaliente ? "text-white/90" : "text-brand-500"}`}>
               {mensaje.respondeA.direccion === "saliente" ? "Tú" : nombreContacto}
@@ -970,7 +1014,9 @@ function Burbuja({
           <ContenidoContactos contactos={mensaje.contactos} />
         )}
         {(mensaje.texto || mensaje.mediaCaption) && (
-          <p className="whitespace-pre-wrap break-words">{mensaje.texto ?? mensaje.mediaCaption}</p>
+          <p className={`whitespace-pre-wrap break-words ${esMediaVisual ? "px-2 pt-0.5" : ""}`}>
+            {mensaje.texto ?? mensaje.mediaCaption}
+          </p>
         )}
         {mensaje.interactivo && <ContenidoInteractivo interactivo={mensaje.interactivo} />}
         {!mensaje.tieneMedia &&
@@ -983,7 +1029,11 @@ function Burbuja({
         )}
         <div
           className={`flex items-center justify-end gap-1 text-theme-xs ${
-            esSticker ? "text-gray-500 dark:text-gray-400" : "opacity-70"
+            esSticker
+              ? "text-gray-500 dark:text-gray-400"
+              : esMediaVisual
+                ? "px-2 pb-0.5 opacity-70"
+                : "opacity-70"
           }`}
         >
           {!eliminado && mensaje.fechaEdicion && (
@@ -1218,17 +1268,31 @@ export default function ChatDetailView({
 
   // Al abrir el chat el backend pone noLeidos=0 — reflejamos ya en la lista
   // para que el badge azul desaparezca sin esperar el poll de 15s.
+  // También sincronizamos el preview (Imagen/Audio/…) cuando llegan ecos.
   useEffect(() => {
-    if (!chatQuery.isSuccess) return;
+    if (!chatQuery.isSuccess || !chatQuery.data) return;
+    const mensajes = chatQuery.data.mensajes;
+    const ultimo = mensajes.length > 0 ? mensajes[mensajes.length - 1] : null;
+    const preview = ultimo ? previewUltimoMensaje(ultimo) : chatQuery.data.ultimoMensajeTexto;
+
     queryClient.setQueryData(
       queryKeys.whatsappChats,
       (prev: ConversacionResumen[] | undefined) => {
         if (!Array.isArray(prev)) return prev;
-        return prev.map((c) => (c.id === id ? { ...c, noLeidos: 0 } : c));
+        return prev.map((c) =>
+          c.id === id
+            ? {
+                ...c,
+                noLeidos: 0,
+                ultimoMensajeTexto: preview ?? c.ultimoMensajeTexto,
+                ultimoMensajeEn: ultimo?.fechaMensaje ?? c.ultimoMensajeEn,
+              }
+            : c,
+        );
       },
     );
     void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChatsUnreadCount });
-  }, [chatQuery.isSuccess, id, queryClient]);
+  }, [chatQuery.isSuccess, chatQuery.data, id, queryClient]);
 
   const dentroDeVentana = estaDentroDeVentana(chatQuery.data?.ventanaExpiraEn);
 
@@ -1724,12 +1788,13 @@ export default function ChatDetailView({
 
   function appendMensajeOptimista(mensaje: Mensaje) {
     pegarAlFondoRef.current = true;
+    const preview = previewUltimoMensaje(mensaje);
     queryClient.setQueryData<ConversacionDetalle>(queryKeys.whatsappChat(id), (prev) => {
       if (!prev) return prev;
       return {
         ...prev,
         mensajes: [...prev.mensajes, mensaje],
-        ultimoMensajeTexto: mensaje.texto ?? mensaje.mediaCaption ?? prev.ultimoMensajeTexto,
+        ultimoMensajeTexto: preview ?? prev.ultimoMensajeTexto,
         ultimoMensajeEn: mensaje.fechaMensaje,
       };
     });
@@ -1739,7 +1804,7 @@ export default function ChatDetailView({
         c.id === id
           ? {
               ...c,
-              ultimoMensajeTexto: mensaje.texto ?? mensaje.mediaCaption ?? c.ultimoMensajeTexto,
+              ultimoMensajeTexto: preview ?? c.ultimoMensajeTexto,
               ultimoMensajeEn: mensaje.fechaMensaje,
             }
           : c,
@@ -1830,6 +1895,7 @@ export default function ChatDetailView({
   }
 
   return (
+    <ChatMediaLightboxProvider conversacionId={id} mensajes={chat.mensajes}>
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center gap-3 border-b border-gray-100 px-3 py-3 dark:border-gray-800 sm:px-4">
         <Link
@@ -2088,7 +2154,7 @@ export default function ChatDetailView({
                 </motion.button>
               </div>
             ) : (
-            <div className="flex items-end gap-2">
+            <div className="flex items-center gap-1.5">
               <input
                 ref={inputArchivoRef}
                 type="file"
@@ -2107,7 +2173,7 @@ export default function ChatDetailView({
                   elegirArchivo(file);
                 }}
               />
-              <div className="relative shrink-0">
+              <div className="relative shrink-0 self-center">
                 <button
                   type="button"
                   onClick={() => {
@@ -2140,8 +2206,8 @@ export default function ChatDetailView({
                   }}
                 />
               </div>
-              <div className="flex flex-1 items-end gap-0.5 rounded-3xl border border-gray-200 bg-white pl-1 pr-1.5 py-1 dark:border-gray-700 dark:bg-gray-900">
-                <div className="relative shrink-0">
+              <div className="flex min-h-11 flex-1 items-center gap-0.5 rounded-3xl border border-gray-200 bg-white py-0.5 pl-0.5 pr-1.5 dark:border-gray-700 dark:bg-gray-900">
+                <div className="relative shrink-0 self-center">
                   <button
                     ref={botonEmojiRef}
                     type="button"
@@ -2149,7 +2215,7 @@ export default function ChatDetailView({
                       setMenuAdjuntarAbierto(false);
                       setPickerEmojiAbierto((v) => !v);
                     }}
-                    className={`flex h-11 w-11 items-center justify-center rounded-full transition hover:bg-gray-100 dark:hover:bg-white/5 ${
+                    className={`flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-gray-100 dark:hover:bg-white/5 ${
                       pickerEmojiAbierto
                         ? "text-brand-500"
                         : "text-gray-500 dark:text-gray-400"
@@ -2157,7 +2223,7 @@ export default function ChatDetailView({
                     aria-label="Emojis, GIFs y stickers"
                     aria-expanded={pickerEmojiAbierto}
                   >
-                    <Icon name="mdi:emoticon-outline" size={24} />
+                    <Icon name="mdi:emoticon-outline" size={22} />
                   </button>
                   <SelectorComposerMedia
                     abierto={pickerEmojiAbierto}
@@ -2195,7 +2261,7 @@ export default function ChatDetailView({
                   placeholder={archivo ? "Agrega un texto (opcional)…" : "Escribe un mensaje…"}
                   rows={1}
                   enterKeyHint="send"
-                  className="thin-scrollbar max-h-32 min-h-11 flex-1 resize-none bg-transparent px-1.5 py-2.5 text-base text-gray-800 outline-none sm:text-theme-sm dark:text-white/90"
+                  className="thin-scrollbar max-h-32 min-h-10 flex-1 resize-none self-center bg-transparent px-1.5 py-2 text-base leading-5 text-gray-800 outline-none sm:text-theme-sm dark:text-white/90"
                 />
               </div>
               {!archivo && !texto.trim() && !enviar.isPending && !enviarArchivo.isPending ? (
@@ -2205,7 +2271,7 @@ export default function ChatDetailView({
                   disabled={enviarMediaDirecto.isPending}
                   aria-label="Grabar nota de voz"
                   whileTap={{ scale: 0.88 }}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-brand-300 dark:disabled:bg-brand-500/40"
+                  className="flex h-11 w-11 shrink-0 self-center items-center justify-center rounded-full bg-brand-500 text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-brand-300 dark:disabled:bg-brand-500/40"
                 >
                   <Icon name="mdi:microphone" size={22} />
                 </motion.button>
@@ -2222,7 +2288,7 @@ export default function ChatDetailView({
                 whileTap={{ scale: 0.88 }}
                 animate={pulsarEnviar ? { scale: [1, 0.84, 1] } : { scale: 1 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-brand-300 dark:disabled:bg-brand-500/40"
+                className="flex h-11 w-11 shrink-0 self-center items-center justify-center rounded-full bg-brand-500 text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-brand-300 dark:disabled:bg-brand-500/40"
               >
                 {enviar.isPending || enviarArchivo.isPending || enviarMediaDirecto.isPending ? (
                   <Spinner size={18} />
@@ -2714,5 +2780,6 @@ export default function ChatDetailView({
         </div>
       </Modal>
     </div>
+    </ChatMediaLightboxProvider>
   );
 }
