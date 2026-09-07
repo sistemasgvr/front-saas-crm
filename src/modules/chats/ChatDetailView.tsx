@@ -32,7 +32,7 @@ import {
   eliminarMensajeAction,
 } from "./actions";
 import { toast } from "sonner";
-import { clearBorrador, getBorrador, setBorrador } from "./chat-borradores";
+import { clearBorrador, setBorrador, useBorradorChat } from "./chat-borradores";
 import { ComposerMediaPicker, type StickerPackItem } from "./ComposerMediaPicker";
 import { desbloquearAudioChat, feedbackMensajeEnviado } from "./chat-feedback";
 import { GrabadorNotaVoz } from "./grabar-nota-voz";
@@ -1106,8 +1106,10 @@ export default function ChatDetailView({
   crmHabilitado?: boolean;
 }) {
   const queryClient = useQueryClient();
-  const [texto, setTexto] = useState("");
-  const textoRef = useRef("");
+  /** Borrador = store Zustand (única fuente de verdad). Sin estado local paralelo. */
+  const texto = useBorradorChat(id);
+  const textoRef = useRef(texto);
+  textoRef.current = texto;
   const [plantillaSeleccionada, setPlantillaSeleccionada] = useState("");
   const [valoresVariables, setValoresVariables] = useState<Record<string, string>>({});
   const [archivo, setArchivo] = useState<File | null>(null);
@@ -1162,35 +1164,33 @@ export default function ChatDetailView({
   const ultimoEscribiendoRef = useRef(0);
 
   function actualizarTexto(valor: string) {
-    textoRef.current = valor;
-    setTexto(valor);
-    // Best-effort: si falla (sin conexión, rate limit de Meta) no debe
-    // interrumpir para nada al usuario mientras escribe — por eso no se
-    // espera ni se muestra ningún error acá.
+    // Persistencia inmediata en el store — vacío elimina la clave.
+    setBorrador(id, valor);
     if (valor.trim() && Date.now() - ultimoEscribiendoRef.current > THROTTLE_ESCRIBIENDO_MS) {
       ultimoEscribiendoRef.current = Date.now();
       notificarEscribiendoAction(id).catch(() => undefined);
     }
-    // Vacío = sin borrador. Guardamos de inmediato para que al cambiar de
-    // chat el cleanup no vuelva a persistir texto ya borrado.
-    setBorrador(id, valor);
   }
 
+  // Al cambiar de chat solo reseteamos UI auxiliar — el texto vive en el store.
   useEffect(() => {
-    const borrador = getBorrador(id) ?? "";
-    textoRef.current = borrador;
-    setTexto(borrador);
     setRespondiendoA(null);
     setArchivo(null);
     setErrorArchivo(null);
     setMenuAdjuntarAbierto(false);
     setPickerEmojiAbierto(false);
+  }, [id]);
+
+  /**
+   * Red de seguridad al salir del chat: si el composer está vacío en el DOM,
+   * el borrador NO puede sobrevivir en el store (cubre desync / races).
+   */
+  useEffect(() => {
+    const conversacionId = id;
     return () => {
-      const restante = textoRef.current.trim();
-      if (restante) {
-        setBorrador(id, restante);
-      } else {
-        clearBorrador(id);
+      const valorDom = textareaRef.current?.value;
+      if (valorDom !== undefined && !valorDom.trim()) {
+        clearBorrador(conversacionId);
       }
     };
   }, [id]);
@@ -1709,8 +1709,6 @@ export default function ChatDetailView({
 
   /** Limpia el composer al instante (no esperar POST + refetch). */
   function limpiarComposerTexto() {
-    textoRef.current = "";
-    setTexto("");
     clearBorrador(id);
     setRespondiendoA(null);
     setPickerEmojiAbierto(false);
@@ -1720,8 +1718,6 @@ export default function ChatDetailView({
     texto: string;
     respondiendoA: Mensaje | null;
   }) {
-    textoRef.current = snapshot.texto;
-    setTexto(snapshot.texto);
     setBorrador(id, snapshot.texto);
     setRespondiendoA(snapshot.respondiendoA);
   }
@@ -2182,6 +2178,14 @@ export default function ChatDetailView({
                   value={texto}
                   onFocus={() => desbloquearAudioChat()}
                   onChange={(event) => actualizarTexto(event.target.value)}
+                  onInput={(event) =>
+                    actualizarTexto((event.target as HTMLTextAreaElement).value)
+                  }
+                  onBlur={() => {
+                    if (!(textareaRef.current?.value.trim() ?? texto.trim())) {
+                      clearBorrador(id);
+                    }
+                  }}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" && !event.shiftKey) {
                       event.preventDefault();
