@@ -34,6 +34,7 @@ import {
 import { toast } from "sonner";
 import { clearBorrador, setBorrador, useBorradorChat } from "./chat-borradores";
 import { previewUltimoMensaje } from "./preview-ultimo-mensaje";
+import { ChatBusquedaPanel } from "./ChatBusquedaPanel";
 import {
   ChatMediaLightboxProvider,
   useChatMediaLightbox,
@@ -800,6 +801,7 @@ function Burbuja({
   conversacionId,
   nombreContacto,
   animarEntrada,
+  resaltado,
   onResponder,
   onReenviar,
   onEliminar,
@@ -812,6 +814,7 @@ function Burbuja({
   conversacionId: string;
   nombreContacto: string;
   animarEntrada?: boolean;
+  resaltado?: boolean;
   onResponder: (mensaje: Mensaje) => void;
   onReenviar: (mensaje: Mensaje) => void;
   onEliminar: (mensaje: Mensaje) => void;
@@ -935,8 +938,12 @@ function Burbuja({
 
   return (
     <motion.div
-      className={`group flex items-center gap-2 ${esSaliente ? "justify-end" : "justify-start"} ${
-        modoSeleccion ? "cursor-pointer" : ""
+      id={`mensaje-${mensaje.id}`}
+      data-mensaje-id={mensaje.id}
+      className={`group flex items-center gap-2 scroll-mt-4 rounded-2xl transition-[background-color,box-shadow] duration-500 ${
+        esSaliente ? "justify-end" : "justify-start"
+      } ${modoSeleccion ? "cursor-pointer" : ""} ${
+        resaltado ? "bg-brand-500/15 ring-2 ring-brand-500/50 dark:bg-brand-500/20" : ""
       }`}
       style={{ transformOrigin: esSaliente ? "bottom right" : "bottom left" }}
       initial={
@@ -1191,6 +1198,10 @@ export default function ChatDetailView({
   const [contactoTelefono, setContactoTelefono] = useState("");
   const [contactoOrganizacion, setContactoOrganizacion] = useState("");
   const [modalInteractivoAbierto, setModalInteractivoAbierto] = useState(false);
+  const [busquedaAbierta, setBusquedaAbierta] = useState(false);
+  const [mensajeResaltadoId, setMensajeResaltadoId] = useState<string | null>(null);
+  const [mostrarIrAlFondo, setMostrarIrAlFondo] = useState(false);
+  const resaltadoTimerRef = useRef<number | null>(null);
   const [interSubtipo, setInterSubtipo] = useState<Interactivo["subtipo"]>("button");
   const [interCuerpo, setInterCuerpo] = useState("");
   const [interPie, setInterPie] = useState("");
@@ -1679,19 +1690,52 @@ export default function ChatDetailView({
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
   });
 
-  function scrollListaAlFondo() {
+  function scrollListaAlFondo(suave = false) {
     const lista = listaRef.current;
     if (!lista) return;
     // Asignar scrollTop (no scrollIntoView): evita desplazar el layout
     // padre y no deja animaciones smooth a medias cuando crece el contenido.
-    lista.scrollTop = lista.scrollHeight;
+    if (suave) {
+      lista.scrollTo({ top: lista.scrollHeight, behavior: "smooth" });
+    } else {
+      lista.scrollTop = lista.scrollHeight;
+    }
+    pegarAlFondoRef.current = true;
+    setMostrarIrAlFondo(false);
+  }
+
+  function irAlMensaje(mensajeId: string) {
+    const lista = listaRef.current;
+    const nodo = lista?.querySelector<HTMLElement>(`[data-mensaje-id="${CSS.escape(mensajeId)}"]`);
+    if (!lista || !nodo) return;
+
+    pegarAlFondoRef.current = false;
+    setMostrarIrAlFondo(true);
+    const listaRect = lista.getBoundingClientRect();
+    const nodoRect = nodo.getBoundingClientRect();
+    const top = Math.max(
+      0,
+      lista.scrollTop + (nodoRect.top - listaRect.top) - Math.max(48, lista.clientHeight * 0.28),
+    );
+    lista.scrollTo({ top, behavior: "smooth" });
+
+    if (resaltadoTimerRef.current != null) {
+      window.clearTimeout(resaltadoTimerRef.current);
+    }
+    setMensajeResaltadoId(mensajeId);
+    resaltadoTimerRef.current = window.setTimeout(() => {
+      setMensajeResaltadoId(null);
+      resaltadoTimerRef.current = null;
+    }, 2200);
   }
 
   function actualizarPegarAlFondo() {
     const lista = listaRef.current;
     if (!lista) return;
     const distancia = lista.scrollHeight - lista.scrollTop - lista.clientHeight;
-    pegarAlFondoRef.current = distancia <= 96;
+    const cercaDelFondo = distancia <= 96;
+    pegarAlFondoRef.current = cercaDelFondo;
+    setMostrarIrAlFondo(!cercaDelFondo);
   }
 
   // Al abrir el chat o llegar mensajes nuevos: ir al fondo antes de pintar.
@@ -1706,6 +1750,9 @@ export default function ChatDetailView({
     if (cambioConversacion) {
       conversacionScrollRef.current = id;
       pegarAlFondoRef.current = true;
+      setMostrarIrAlFondo(false);
+      setBusquedaAbierta(false);
+      setMensajeResaltadoId(null);
       scrollListaAlFondo();
       return;
     }
@@ -1714,6 +1761,14 @@ export default function ChatDetailView({
       scrollListaAlFondo();
     }
   }, [chatQuery.data?.mensajes, id]);
+
+  useEffect(() => {
+    return () => {
+      if (resaltadoTimerRef.current != null) {
+        window.clearTimeout(resaltadoTimerRef.current);
+      }
+    };
+  }, []);
 
   // Cuando carga media (img/audio/video) el contenido crece: re-pegar al
   // fondo solo si el usuario no se fue a leer historial más arriba.
@@ -1788,6 +1843,7 @@ export default function ChatDetailView({
 
   function appendMensajeOptimista(mensaje: Mensaje) {
     pegarAlFondoRef.current = true;
+    setMostrarIrAlFondo(false);
     const preview = previewUltimoMensaje(mensaje);
     queryClient.setQueryData<ConversacionDetalle>(queryKeys.whatsappChat(id), (prev) => {
       if (!prev) return prev;
@@ -1896,7 +1952,8 @@ export default function ChatDetailView({
 
   return (
     <ChatMediaLightboxProvider conversacionId={id} mensajes={chat.mensajes}>
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="relative flex h-full min-h-0">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-3 border-b border-gray-100 px-3 py-3 dark:border-gray-800 sm:px-4">
         <Link
           href="/chats"
@@ -1925,26 +1982,42 @@ export default function ChatDetailView({
             </div>
           ) : null}
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          loading={bloquear.isPending}
-          onClick={() => {
-            const accion = chat.bloqueado ? "desbloquear" : "bloquear";
-            if (window.confirm(`¿Seguro que quieres ${accion} a este contacto en WhatsApp?`)) {
-              bloquear.mutate(!chat.bloqueado);
-            }
-          }}
-        >
-          {chat.bloqueado ? "Desbloquear" : "Bloquear"}
-        </Button>
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <button
+            type="button"
+            onClick={() => setBusquedaAbierta(true)}
+            className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+              busquedaAbierta
+                ? "bg-brand-500/10 text-brand-600 dark:text-brand-400"
+                : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+            }`}
+            aria-label="Buscar mensajes"
+            title="Buscar mensajes"
+          >
+            <Icon name="mdi:magnify" size={22} />
+          </button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            loading={bloquear.isPending}
+            onClick={() => {
+              const accion = chat.bloqueado ? "desbloquear" : "bloquear";
+              if (window.confirm(`¿Seguro que quieres ${accion} a este contacto en WhatsApp?`)) {
+                bloquear.mutate(!chat.bloqueado);
+              }
+            }}
+          >
+            {chat.bloqueado ? "Desbloquear" : "Bloquear"}
+          </Button>
+        </div>
       </div>
 
+      <div className="relative min-h-0 flex-1">
       <div
         ref={listaRef}
         onScroll={actualizarPegarAlFondo}
-        className="thin-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 [-webkit-overflow-scrolling:touch] sm:px-5 sm:py-4"
+        className="thin-scrollbar h-full overflow-y-auto overscroll-contain px-3 py-3 [-webkit-overflow-scrolling:touch] sm:px-5 sm:py-4"
       >
         <div ref={contenidoListaRef} className="space-y-3">
           {chat.mensajes.length === 0 ? (
@@ -1959,6 +2032,7 @@ export default function ChatDetailView({
                 conversacionId={id}
                 nombreContacto={nombre}
                 animarEntrada={idsAnimarEntrada.has(mensaje.id)}
+                resaltado={mensajeResaltadoId === mensaje.id}
                 modoSeleccion={modoSeleccionReenvio}
                 seleccionado={idsReenvio.includes(mensaje.id)}
                 onToggleSeleccion={() => toggleSeleccionReenvio(mensaje.id)}
@@ -1985,7 +2059,20 @@ export default function ChatDetailView({
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-gray-100 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-gray-800 sm:p-4">
+      {mostrarIrAlFondo ? (
+        <button
+          type="button"
+          onClick={() => scrollListaAlFondo(true)}
+          className="absolute bottom-3 right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-md transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+          aria-label="Ir al último mensaje"
+          title="Ir al último mensaje"
+        >
+          <Icon name="mdi:chevron-down" size={22} className="block" />
+        </button>
+      ) : null}
+      </div>
+
+      <div className="shrink-0 border-t border-gray-100 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-gray-800 dark:bg-gray-900 sm:p-4">
         {modoSeleccionReenvio && (
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-white/[0.03]">
             <p className="text-theme-sm text-gray-700 dark:text-gray-200">
@@ -2779,6 +2866,14 @@ export default function ChatDetailView({
           />
         </div>
       </Modal>
+    </div>
+    <ChatBusquedaPanel
+      open={busquedaAbierta}
+      onClose={() => setBusquedaAbierta(false)}
+      mensajes={chat.mensajes}
+      nombreContacto={nombre}
+      onIrAlMensaje={irAlMensaje}
+    />
     </div>
     </ChatMediaLightboxProvider>
   );
