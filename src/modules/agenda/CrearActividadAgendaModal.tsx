@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Button from "@/src/components/ui/button/Button";
 import Modal from "@/src/components/ui/modal/Modal";
@@ -85,9 +85,16 @@ export default function CrearActividadAgendaModal({
 
   const esVisita = tipo === "VISITA";
   const leadBloqueado = Boolean(leadFijo?.id);
+  const estabaAbierto = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      estabaAbierto.current = false;
+      return;
+    }
+    // Solo reset al abrir (evita pisar el formulario si cambian props mid-edit).
+    if (estabaAbierto.current) return;
+    estabaAbierto.current = true;
     setTipo("LLAMADA");
     setTitulo("");
     setQ("");

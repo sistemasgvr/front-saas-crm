@@ -5,6 +5,21 @@ import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { ActionLoader } from "@/src/components/ui/ActionLoader";
 
+/** Next/React en prod reemplazan errores de Server Actions por #441/digest. */
+function mensajeToastError(error: unknown): string {
+  const raw = error instanceof Error ? error.message.trim() : "";
+  if (
+    !raw ||
+    /minified react error/i.test(raw) ||
+    /server components render/i.test(raw) ||
+    /\bdigest\b/i.test(raw) ||
+    /#4\d{2}\b/.test(raw)
+  ) {
+    return "No se pudo completar la acción. Intenta de nuevo.";
+  }
+  return raw;
+}
+
 function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
@@ -25,7 +40,7 @@ function makeQueryClient() {
     },
     mutationCache: new MutationCache({
       onError: (error) => {
-        toast.error(error instanceof Error ? error.message : "No se pudo completar la acción");
+        toast.error(mensajeToastError(error));
       },
     }),
   });

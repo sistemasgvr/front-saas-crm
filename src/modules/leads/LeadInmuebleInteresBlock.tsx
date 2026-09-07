@@ -5,6 +5,7 @@ import Link from "next/link";
 import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
 import { queryKeys } from "@/src/lib/query/keys";
+import { unwrapAction } from "@/src/lib/action-result";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import InmuebleSelect from "@/src/modules/inmuebles/InmuebleSelect";
 import { gestionarLeadAction } from "./actions";
@@ -33,8 +34,8 @@ export default function LeadInmuebleInteresBlock({
   );
 
   const guardar = useAppMutation({
-    mutationFn: (nextId: string | null) =>
-      gestionarLeadAction(leadId, { inmuebleInteresId: nextId }),
+    mutationFn: async (nextId: string | null) =>
+      unwrapAction(await gestionarLeadAction(leadId, { inmuebleInteresId: nextId })),
     successMessage: "Inmueble de interés actualizado",
     invalidateKeys: [queryKeys.lead(leadId), queryKeys.leadsAll],
   });

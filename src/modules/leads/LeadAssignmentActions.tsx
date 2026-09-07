@@ -6,6 +6,7 @@ import { Dropdown } from "@/src/components/ui/dropdown/Dropdown";
 import { DropdownItem } from "@/src/components/ui/dropdown/DropdownItem";
 import TableAction from "@/src/components/ui/TableAction";
 import { queryKeys } from "@/src/lib/query/keys";
+import { unwrapAction } from "@/src/lib/action-result";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
 import { asignarLeadAction, liberarLeadAction, tomarLeadAction } from "./actions";
@@ -31,17 +32,18 @@ export default function LeadAssignmentActions({
   });
 
   const tomar = useAppMutation({
-    mutationFn: () => tomarLeadAction(leadId),
+    mutationFn: async () => unwrapAction(await tomarLeadAction(leadId)),
     successMessage: "Lead tomado",
     invalidateKeys: [queryKeys.leadsAll],
   });
   const liberar = useAppMutation({
-    mutationFn: () => liberarLeadAction(leadId),
+    mutationFn: async () => unwrapAction(await liberarLeadAction(leadId)),
     successMessage: "Lead liberado",
     invalidateKeys: [queryKeys.leadsAll],
   });
   const asignar = useAppMutation({
-    mutationFn: (usuarioId: string) => asignarLeadAction(leadId, usuarioId),
+    mutationFn: async (usuarioId: string) =>
+      unwrapAction(await asignarLeadAction(leadId, usuarioId)),
     successMessage: "Lead asignado",
     invalidateKeys: [queryKeys.leadsAll],
   });

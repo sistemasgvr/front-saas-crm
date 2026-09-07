@@ -5,6 +5,7 @@ import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
 import Modal from "@/src/components/ui/modal/Modal";
 import { queryKeys } from "@/src/lib/query/keys";
+import { unwrapAction } from "@/src/lib/action-result";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import InmuebleSelect from "@/src/modules/inmuebles/InmuebleSelect";
 import type { InmuebleInteresResumen } from "./types";
@@ -47,8 +48,8 @@ export default function ChatLeadInmuebleChip({
   }
 
   const guardar = useAppMutation({
-    mutationFn: (nextId: string | null) =>
-      gestionarLeadAction(leadId, { inmuebleInteresId: nextId }),
+    mutationFn: async (nextId: string | null) =>
+      unwrapAction(await gestionarLeadAction(leadId, { inmuebleInteresId: nextId })),
     successMessage: inmuebleInteres
       ? "Inmueble de interés actualizado"
       : "Inmueble de interés asignado",

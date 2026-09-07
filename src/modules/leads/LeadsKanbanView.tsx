@@ -23,6 +23,7 @@ import { QueryError } from "@/src/components/ui/PageLoader";
 import { KanbanBoardSkeleton } from "@/src/components/ui/skeletons";
 import EmptyState from "@/src/components/ui/EmptyState";
 import { queryKeys } from "@/src/lib/query/keys";
+import { unwrapAction } from "@/src/lib/action-result";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
 import { toast } from "sonner";
@@ -116,7 +117,7 @@ function LeadCardBody({
   const router = useRouter();
   const sinClasificar = !tipoLeadClasificado(lead.tipoLead);
   const tomar = useAppMutation({
-    mutationFn: () => tomarLeadAction(lead.id),
+    mutationFn: async () => unwrapAction(await tomarLeadAction(lead.id)),
     successMessage: "Lead tomado",
     invalidateKeys: [queryKeys.leadsAll],
   });
@@ -376,7 +377,7 @@ export default function LeadsKanbanView({
     tipoOverride ?? lead?.tipoLead ?? tipoFiltro ?? "OTRO";
 
   const gestionar = useAppMutation({
-    mutationFn: ({
+    mutationFn: async ({
       leadId,
       ...input
     }: {
@@ -389,7 +390,7 @@ export default function LeadsKanbanView({
       notaCierre?: string;
       notaTransicion?: string;
       metadata?: Record<string, string>;
-    }) => gestionarLeadAction(leadId, input),
+    }) => unwrapAction(await gestionarLeadAction(leadId, input)),
     successMessage: "Lead movido",
     invalidateKeys: [queryKeys.leadsAll, queryKeys.leadsNuevosCount, queryKeys.leadsAgendaAll],
   });

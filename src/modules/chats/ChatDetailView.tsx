@@ -41,6 +41,7 @@ import { ChatBusquedaPanel } from "./ChatBusquedaPanel";
 import CrearLeadDesdeChatModal from "./CrearLeadDesdeChatModal";
 import CrearActividadAgendaModal from "@/src/modules/agenda/CrearActividadAgendaModal";
 import { canManageOrganization } from "@/src/lib/roles";
+import { unwrapAction } from "@/src/lib/action-result";
 import { crearActividadAgendaAction } from "@/src/modules/leads/actions";
 import type { CrearActividadAgendaInput } from "@/src/modules/leads/types";
 import {
@@ -1541,7 +1542,8 @@ export default function ChatDetailView({
   });
 
   const crearActividad = useAppMutation({
-    mutationFn: (input: CrearActividadAgendaInput) => crearActividadAgendaAction(input),
+    mutationFn: async (input: CrearActividadAgendaInput) =>
+      unwrapAction(await crearActividadAgendaAction(input)),
     successMessage: "Actividad agendada",
     invalidateKeys: [queryKeys.leadsAgendaAll, queryKeys.leadsAll],
   });

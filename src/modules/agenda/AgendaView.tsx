@@ -22,6 +22,7 @@ import PageHeader from "@/src/components/ui/PageHeader";
 import { QueryError } from "@/src/components/ui/PageLoader";
 import { CalendarSkeleton } from "@/src/components/ui/skeletons";
 import { queryKeys } from "@/src/lib/query/keys";
+import { unwrapAction } from "@/src/lib/action-result";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
 import {
@@ -198,31 +199,32 @@ export default function AgendaView({
   });
 
   const crearActividad = useAppMutation({
-    mutationFn: (input: CrearActividadAgendaInput) => crearActividadAgendaAction(input),
+    mutationFn: async (input: CrearActividadAgendaInput) =>
+      unwrapAction(await crearActividadAgendaAction(input)),
     successMessage: "Actividad agendada",
     invalidateKeys: [queryKeys.leadsAgendaAll, queryKeys.leadsAll],
   });
 
   const actualizarVisita = useAppMutation({
-    mutationFn: ({
+    mutationFn: async ({
       visitaId,
       input,
     }: {
       visitaId: string;
       input: ActualizarVisitaAgendaInput;
-    }) => actualizarVisitaAgendaAction(visitaId, input),
+    }) => unwrapAction(await actualizarVisitaAgendaAction(visitaId, input)),
     successMessage: "Visita actualizada",
     invalidateKeys: [queryKeys.leadsAgendaAll, queryKeys.leadsAll],
   });
 
   const actualizarActividad = useAppMutation({
-    mutationFn: ({
+    mutationFn: async ({
       actividadId,
       input,
     }: {
       actividadId: string;
       input: ActualizarActividadAgendaInput;
-    }) => actualizarActividadAgendaAction(actividadId, input),
+    }) => unwrapAction(await actualizarActividadAgendaAction(actividadId, input)),
     successMessage: "Actividad actualizada",
     invalidateKeys: [queryKeys.leadsAgendaAll, queryKeys.leadsAll],
   });
