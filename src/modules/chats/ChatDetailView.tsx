@@ -1307,16 +1307,22 @@ export default function ChatDetailView({
       queryKeys.whatsappChats,
       (prev: ConversacionResumen[] | undefined) => {
         if (!Array.isArray(prev)) return prev;
-        return prev.map((c) =>
-          c.id === id
-            ? {
-                ...c,
-                noLeidos: 0,
-                ultimoMensajeTexto: preview ?? c.ultimoMensajeTexto,
-                ultimoMensajeEn: ultimo?.fechaMensaje ?? c.ultimoMensajeEn,
-              }
-            : c,
-        );
+        return prev
+          .map((c) =>
+            c.id === id
+              ? {
+                  ...c,
+                  noLeidos: 0,
+                  ultimoMensajeTexto: preview ?? c.ultimoMensajeTexto,
+                  ultimoMensajeEn: ultimo?.fechaMensaje ?? c.ultimoMensajeEn,
+                }
+              : c,
+          )
+          .sort((a, b) => {
+            const ta = a.ultimoMensajeEn ? new Date(a.ultimoMensajeEn).getTime() : 0;
+            const tb = b.ultimoMensajeEn ? new Date(b.ultimoMensajeEn).getTime() : 0;
+            return tb - ta;
+          });
       },
     );
     void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChatsUnreadCount });
@@ -1896,15 +1902,21 @@ export default function ChatDetailView({
     });
     queryClient.setQueryData<ConversacionResumen[]>(queryKeys.whatsappChats, (prev) => {
       if (!Array.isArray(prev)) return prev;
-      return prev.map((c) =>
-        c.id === id
-          ? {
-              ...c,
-              ultimoMensajeTexto: preview ?? c.ultimoMensajeTexto,
-              ultimoMensajeEn: mensaje.fechaMensaje,
-            }
-          : c,
-      );
+      return prev
+        .map((c) =>
+          c.id === id
+            ? {
+                ...c,
+                ultimoMensajeTexto: preview ?? c.ultimoMensajeTexto,
+                ultimoMensajeEn: mensaje.fechaMensaje,
+              }
+            : c,
+        )
+        .sort((a, b) => {
+          const ta = a.ultimoMensajeEn ? new Date(a.ultimoMensajeEn).getTime() : 0;
+          const tb = b.ultimoMensajeEn ? new Date(b.ultimoMensajeEn).getTime() : 0;
+          return tb - ta;
+        });
     });
   }
 
