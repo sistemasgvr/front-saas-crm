@@ -1297,6 +1297,8 @@ export default function ChatDetailView({
   // Al abrir el chat el backend pone noLeidos=0 — reflejamos ya en la lista
   // para que el badge azul desaparezca sin esperar el poll de 15s.
   // También sincronizamos el preview (Imagen/Audio/…) cuando llegan ecos.
+  // No invalidar unread-count en cada poll del chat (saturaba el pool Prisma).
+  const unreadInvalidadoParaId = useRef<string | null>(null);
   useEffect(() => {
     if (!chatQuery.isSuccess || !chatQuery.data) return;
     const mensajes = chatQuery.data.mensajes;
@@ -1325,7 +1327,10 @@ export default function ChatDetailView({
           });
       },
     );
-    void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChatsUnreadCount });
+    if (unreadInvalidadoParaId.current !== id) {
+      unreadInvalidadoParaId.current = id;
+      void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChatsUnreadCount });
+    }
   }, [chatQuery.isSuccess, chatQuery.data, id, queryClient]);
 
   const dentroDeVentana = estaDentroDeVentana(chatQuery.data?.ventanaExpiraEn);
