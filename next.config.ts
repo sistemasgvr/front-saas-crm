@@ -5,6 +5,8 @@ import path from "path";
 const projectRoot = path.resolve(__dirname);
 
 const nextConfig: NextConfig = {
+  // Imagen Docker más liviana (EasyPanel / contenedores).
+  output: "standalone",
   outputFileTracingRoot: projectRoot,
   turbopack: {
     root: projectRoot,
