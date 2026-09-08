@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import type { Gif } from "gif-picker-react";
 import Avatar from "@/src/components/ui/avatar/Avatar";
 import Button from "@/src/components/ui/button/Button";
 import Input from "@/src/components/form/input/InputField";
+import Checkbox from "@/src/components/form/input/Checkbox";
 import Select from "@/src/components/form/Select";
 import Modal from "@/src/components/ui/modal/Modal";
 import { Icon } from "@/src/components/ui/Icon";
@@ -71,6 +72,7 @@ import type {
 
 /** Alineado con multi-forward de WhatsApp y con la validación del action. */
 const MAX_MENSAJES_REENVIAR = 30;
+const MAX_DESTINOS_REENVIAR = 5;
 const INTERVALO_REFRESCO_MS = 10_000;
 // El indicador de "escribiendo…" de Meta dura hasta 25s en el WhatsApp del
 // contacto — refrescarlo cada 10s lo mantiene vivo sin gaps mientras el
@@ -1188,7 +1190,8 @@ export default function ChatDetailView({
   const [modoSeleccionReenvio, setModoSeleccionReenvio] = useState(false);
   const [idsReenvio, setIdsReenvio] = useState<string[]>([]);
   const [modalReenvioAbierto, setModalReenvioAbierto] = useState(false);
-  const [destinoReenvio, setDestinoReenvio] = useState("");
+  const [destinoReenvioIds, setDestinoReenvioIds] = useState<string[]>([]);
+  const [busquedaDestinoReenvio, setBusquedaDestinoReenvio] = useState("");
   const [menuAdjuntarAbierto, setMenuAdjuntarAbierto] = useState(false);
   const [pickerEmojiAbierto, setPickerEmojiAbierto] = useState(false);
   const [idsAnimarEntrada, setIdsAnimarEntrada] = useState<Set<string>>(() => new Set());
@@ -1531,6 +1534,29 @@ export default function ChatDetailView({
     enabled: modalReenvioAbierto,
   });
 
+  const destiniosReenvioLista = useMemo(() => {
+    const term = busquedaDestinoReenvio.trim().toLowerCase();
+    return (chatsQuery.data ?? [])
+      .filter((c) => c.id !== id)
+      .map((chat) => {
+        const etiqueta = chat.lead?.nombre ?? chat.nombreContacto ?? `+${chat.waId}`;
+        const enVentana = !chat.bloqueado && estaDentroDeVentana(chat.ventanaExpiraEn);
+        return { chat, etiqueta, enVentana };
+      })
+      .filter(({ etiqueta, chat }) => {
+        if (!term) return true;
+        return (
+          etiqueta.toLowerCase().includes(term) ||
+          chat.waId.toLowerCase().includes(term)
+        );
+      })
+      .sort((a, b) => {
+        // Seleccionables (ventana 24h) primero
+        if (a.enVentana !== b.enVentana) return a.enVentana ? -1 : 1;
+        return a.etiqueta.localeCompare(b.etiqueta, "es");
+      });
+  }, [busquedaDestinoReenvio, chatsQuery.data, id]);
+
   const bloquear = useAppMutation({
     mutationFn: (bloquearContacto: boolean) => bloquearContactoAction(id, bloquearContacto),
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
@@ -1573,10 +1599,21 @@ export default function ChatDetailView({
 
   const reenviar = useAppMutation({
     mutationFn: () => {
-      if (!destinoReenvio || idsReenvio.length === 0) {
-        return Promise.resolve({ enviados: 0, fallidos: [] as { mensajeId: string; error: string }[] });
+      if (destinoReenvioIds.length === 0 || idsReenvio.length === 0) {
+        return Promise.resolve({
+          enviados: 0,
+          fallidos: [] as {
+            conversacionDestinoId: string;
+            mensajeId: string;
+            error: string;
+          }[],
+        });
       }
-      return reenviarMensajesLoteAction(id, ordenarIdsPorChat(idsReenvio), destinoReenvio);
+      return reenviarMensajesLoteAction(
+        id,
+        ordenarIdsPorChat(idsReenvio),
+        destinoReenvioIds,
+      );
     },
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
   });
@@ -1588,7 +1625,8 @@ export default function ChatDetailView({
 
   function cerrarModalReenvio() {
     setModalReenvioAbierto(false);
-    setDestinoReenvio("");
+    setDestinoReenvioIds([]);
+    setBusquedaDestinoReenvio("");
     if (!modoSeleccionReenvio) setIdsReenvio([]);
   }
 
@@ -1596,8 +1634,20 @@ export default function ChatDetailView({
     const seleccion = ids ?? idsReenvio;
     if (seleccion.length === 0) return;
     setIdsReenvio(ordenarIdsPorChat(seleccion));
-    setDestinoReenvio("");
+    setDestinoReenvioIds([]);
+    setBusquedaDestinoReenvio("");
     setModalReenvioAbierto(true);
+  }
+
+  function toggleDestinoReenvio(chatId: string) {
+    setDestinoReenvioIds((prev) => {
+      if (prev.includes(chatId)) return prev.filter((x) => x !== chatId);
+      if (prev.length >= MAX_DESTINOS_REENVIAR) {
+        toast.error(`Máximo ${MAX_DESTINOS_REENVIAR} chats a la vez`);
+        return prev;
+      }
+      return [...prev, chatId];
+    });
   }
 
   function toggleSeleccionReenvio(mensajeId: string) {
@@ -2994,7 +3044,11 @@ export default function ChatDetailView({
               Reenviar {idsReenvio.length} mensaje{idsReenvio.length === 1 ? "" : "s"}
             </h3>
             <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
-              Elige otro chat (debe estar dentro de la ventana de 24h).
+              Elige hasta {MAX_DESTINOS_REENVIAR} chats dentro de la ventana de 24h
+              {destinoReenvioIds.length > 0
+                ? ` · ${destinoReenvioIds.length} seleccionado${destinoReenvioIds.length === 1 ? "" : "s"}`
+                : ""}
+              .
             </p>
           </div>
         }
@@ -3007,17 +3061,22 @@ export default function ChatDetailView({
               type="button"
               size="sm"
               loading={reenviar.isPending}
-              disabled={!destinoReenvio || idsReenvio.length === 0}
+              disabled={destinoReenvioIds.length === 0 || idsReenvio.length === 0}
               onClick={() =>
                 reenviar.mutate(undefined, {
                   onSuccess: (resultado) => {
                     if (resultado) {
+                      const chatsOk = destinoReenvioIds.length;
                       if (resultado.fallidos.length > 0) {
                         toast.success(
                           `Reenviados ${resultado.enviados}; ${resultado.fallidos.length} fallaron`,
                         );
                       } else {
-                        toast.success("Mensajes reenviados");
+                        toast.success(
+                          chatsOk > 1
+                            ? `Mensajes reenviados a ${chatsOk} chats`
+                            : "Mensajes reenviados",
+                        );
                       }
                     }
                     cerrarModalReenvio();
@@ -3027,22 +3086,61 @@ export default function ChatDetailView({
               }
             >
               Reenviar
+              {destinoReenvioIds.length > 0 ? ` (${destinoReenvioIds.length})` : ""}
             </Button>
           </div>
         }
       >
-        <div className="px-5 py-4">
-          <Select
-            options={(chatsQuery.data ?? [])
-              .filter((c: ConversacionResumen) => c.id !== id && !c.bloqueado)
-              .map((c: ConversacionResumen) => ({
-                value: c.id,
-                label: c.lead?.nombre ?? c.nombreContacto ?? `+${c.waId}`,
-              }))}
-            placeholder={chatsQuery.isLoading ? "Cargando chats…" : "Elige el chat destino"}
-            value={destinoReenvio}
-            onChange={setDestinoReenvio}
+        <div className="flex max-h-[min(60vh,420px)] flex-col gap-3 px-5 py-4">
+          <Input
+            type="search"
+            placeholder="Buscar chat…"
+            value={busquedaDestinoReenvio}
+            onChange={(e) => setBusquedaDestinoReenvio(e.target.value)}
           />
+          <div className="min-h-0 flex-1 space-y-1 overflow-y-auto rounded-lg border border-gray-200 p-2 dark:border-gray-700">
+            {chatsQuery.isLoading ? (
+              <p className="px-2 py-3 text-theme-xs text-gray-500">Cargando chats…</p>
+            ) : destiniosReenvioLista.length === 0 ? (
+              <p className="px-2 py-3 text-theme-xs text-gray-500">
+                No hay chats para mostrar con ese filtro.
+              </p>
+            ) : (
+              destiniosReenvioLista.map(({ chat, enVentana, etiqueta }) => {
+                const checked = destinoReenvioIds.includes(chat.id);
+                const disabled = !enVentana || chat.bloqueado;
+                return (
+                  <div
+                    key={chat.id}
+                    className={`rounded-md px-2 py-1.5 ${
+                      disabled ? "opacity-55" : "hover:bg-gray-50 dark:hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <Checkbox
+                      id={`reenvio-dest-${chat.id}`}
+                      checked={checked}
+                      disabled={disabled || (destinoReenvioIds.length >= MAX_DESTINOS_REENVIAR && !checked)}
+                      onChange={() => {
+                        if (!disabled) toggleDestinoReenvio(chat.id);
+                      }}
+                      label={
+                        enVentana
+                          ? etiqueta
+                          : `${etiqueta} · fuera de ventana 24h`
+                      }
+                    />
+                  </div>
+                );
+              })
+            )}
+          </div>
+          {(chatsQuery.data ?? []).some(
+            (c) => c.id !== id && !c.bloqueado && !estaDentroDeVentana(c.ventanaExpiraEn),
+          ) ? (
+            <p className="text-theme-xs text-gray-500 dark:text-gray-400">
+              Los chats fuera de la ventana de 24h no se pueden seleccionar (solo plantilla).
+            </p>
+          ) : null}
         </div>
       </Modal>
     </div>

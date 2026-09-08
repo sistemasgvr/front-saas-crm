@@ -141,30 +141,35 @@ export async function reenviarMensajeAction(
   mensajeId: string,
   conversacionDestinoId: string,
 ): Promise<void> {
-  await reenviarMensajesLoteAction(conversacionId, [mensajeId], conversacionDestinoId);
+  await reenviarMensajesLoteAction(conversacionId, [mensajeId], [conversacionDestinoId]);
 }
 
 export type ResultadoReenvioLote = {
   enviados: number;
-  fallidos: { mensajeId: string; error: string }[];
+  fallidos: { conversacionDestinoId: string; mensajeId: string; error: string }[];
 };
 
 /** Máximo alineado con multi-forward de WhatsApp (~30). No exportar const
  * desde este archivo ("use server" solo permite funciones async). */
 const MAX_MENSAJES_REENVIAR = 30;
+const MAX_DESTINOS_REENVIAR = 5;
 
 export async function reenviarMensajesLoteAction(
   conversacionId: string,
   mensajeIds: string[],
-  conversacionDestinoId: string,
+  conversacionDestinoIds: string[],
 ): Promise<ResultadoReenvioLote> {
   if (mensajeIds.length > MAX_MENSAJES_REENVIAR) {
     throw new Error(`Máximo ${MAX_MENSAJES_REENVIAR} mensajes por reenvío`);
   }
+  const destinaciones = [...new Set(conversacionDestinoIds.filter(Boolean))];
+  if (destinaciones.length < 1 || destinaciones.length > MAX_DESTINOS_REENVIAR) {
+    throw new Error(`Elige entre 1 y ${MAX_DESTINOS_REENVIAR} chats destino`);
+  }
   try {
     return await apiFetch<ResultadoReenvioLote>(`/whatsapp/chats/${conversacionId}/messages/forward`, {
       method: "POST",
-      body: JSON.stringify({ conversacionDestinoId, mensajeIds }),
+      body: JSON.stringify({ conversacionDestinoIds: destinaciones, mensajeIds }),
     });
   } catch (error) {
     fail(error, "No se pudieron reenviar los mensajes");
