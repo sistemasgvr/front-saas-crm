@@ -73,7 +73,8 @@ import type {
 /** Alineado con multi-forward de WhatsApp y con la validación del action. */
 const MAX_MENSAJES_REENVIAR = 30;
 const MAX_DESTINOS_REENVIAR = 5;
-const INTERVALO_REFRESCO_MS = 10_000;
+/** Respaldo si el socket falla; el vivo llega por notificacion:nueva. */
+const INTERVALO_REFRESCO_MS = 30_000;
 // El indicador de "escribiendo…" de Meta dura hasta 25s en el WhatsApp del
 // contacto — refrescarlo cada 10s lo mantiene vivo sin gaps mientras el
 // usuario sigue escribiendo, sin mandar una llamada por cada tecla.
@@ -157,6 +158,12 @@ async function descargarComoArchivo(url: string, nombre: string, mime: string): 
 
 function estaDentroDeVentana(ventanaExpiraEn: string | null | undefined): boolean {
   return !!ventanaExpiraEn && new Date(ventanaExpiraEn).getTime() > Date.now();
+}
+
+/** Poll solo con pestaña visible — el socket cubre mensajes en vivo. */
+function intervaloSiVisible(ms: number): number | false {
+  if (typeof document === "undefined") return ms;
+  return document.visibilityState === "visible" ? ms : false;
 }
 
 /** Nombres de variable {{nombre_cliente}} (o {{1}}, {{2}} en plantillas
@@ -1294,8 +1301,13 @@ export default function ChatDetailView({
   const chatQuery = useQuery<ConversacionDetalle>({
     queryKey: queryKeys.whatsappChat(id),
     queryFn: () => getChat(id),
-    refetchInterval: INTERVALO_REFRESCO_MS,
+    // Mensajes en vivo vía socket + refetch forzado; stale corto para no
+    // bloquear actualizaciones tras notificaciones.
+    staleTime: 5_000,
+    refetchInterval: () => intervaloSiVisible(INTERVALO_REFRESCO_MS),
   });
+
+  const sincronizandoMensajes = chatQuery.isFetching && !chatQuery.isLoading;
 
   // Al abrir el chat el backend pone noLeidos=0 — reflejamos ya en la lista
   // para que el badge azul desaparezca sin esperar el poll de 15s.
@@ -2243,6 +2255,20 @@ export default function ChatDetailView({
       </div>
 
       <div className="relative min-h-0 flex-1">
+      {sincronizandoMensajes ? (
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-center gap-2 bg-white/80 py-1.5 text-theme-xs text-gray-600 backdrop-blur-sm dark:bg-gray-900/80 dark:text-gray-300"
+          role="status"
+          aria-live="polite"
+        >
+          <Icon
+            name="mdi:loading"
+            size={14}
+            className="animate-spin text-brand-500"
+          />
+          Actualizando mensajes…
+        </div>
+      ) : null}
       <div
         ref={listaRef}
         onScroll={actualizarPegarAlFondo}

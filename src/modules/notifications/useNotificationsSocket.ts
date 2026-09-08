@@ -24,24 +24,27 @@ import {
 } from "./web-push";
 import { resolverRutaNotificacion, type NotificacionEventoSocket } from "./types";
 
-/** Sube el chat al tope, suma no leídos y refresca preview sin esperar el GET. */
+/** Sube el chat al tope, suma no leídos y refresca preview sin esperar el GET.
+ * @returns true si el chat ya estaba en la lista y se pudo parchear. */
 function parchearListaChatsWhatsapp(
   queryClient: ReturnType<typeof useQueryClient>,
   conversacionId: string,
   preview: string | null,
-): void {
+): boolean {
   const enChatActivo =
     typeof window !== "undefined" &&
     (window.location.pathname === `/chats/${conversacionId}` ||
       window.location.pathname.startsWith(`/chats/${conversacionId}/`));
 
   let sumoNoLeido = false;
+  let parcheado = false;
 
   queryClient.setQueryData<ConversacionResumen[]>(queryKeys.whatsappChats, (prev) => {
     if (!Array.isArray(prev) || prev.length === 0) return prev;
     const idx = prev.findIndex((c) => c.id === conversacionId);
     if (idx < 0) return prev;
 
+    parcheado = true;
     const actual = prev[idx];
     const noLeidos = enChatActivo ? 0 : (actual.noLeidos ?? 0) + 1;
     if (!enChatActivo) sumoNoLeido = true;
@@ -60,6 +63,8 @@ function parchearListaChatsWhatsapp(
       count: (prev?.count ?? 0) + 1,
     }));
   }
+
+  return parcheado;
 }
 
 function invalidarCachesNotificacion(
@@ -69,7 +74,6 @@ function invalidarCachesNotificacion(
 ): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsAll });
   void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
-  void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChatsUnreadCount });
 
   const conversacionId =
     typeof payload?.whatsappConversacionId === "string"
@@ -82,18 +86,21 @@ function invalidarCachesNotificacion(
   const preview =
     typeof payload?.ultimoMensajeTexto === "string" ? payload.ultimoMensajeTexto : null;
 
-  // 1) UI inmediata en la lista (aunque el detalle no esté abierto).
+  let listaParcheada = false;
   if (conversacionId) {
-    parchearListaChatsWhatsapp(queryClient, conversacionId, preview);
+    listaParcheada = parchearListaChatsWhatsapp(queryClient, conversacionId, preview);
   }
 
-  // 2) Sync con servidor (lista + detalle si aplica) en paralelo.
-  void queryClient.invalidateQueries({
-    queryKey: queryKeys.whatsappChats,
-    exact: true,
-  });
+  if (conversacionId && !listaParcheada) {
+    void queryClient.refetchQueries({
+      queryKey: queryKeys.whatsappChats,
+      type: "active",
+    });
+  }
+
+  // Forzar descarga del hilo YA (invalidate + staleTime 30s a veces no alcanza).
   if (conversacionId) {
-    void queryClient.invalidateQueries({
+    void queryClient.refetchQueries({
       queryKey: queryKeys.whatsappChat(conversacionId),
     });
   }
@@ -104,19 +111,23 @@ function pintarNotificacionEnVivo(
   router: ReturnType<typeof useRouter>,
   queryClient: ReturnType<typeof useQueryClient>,
 ): void {
-  if (notificacionYaVistaReciente(data.id)) return;
-  marcarNotificacionVistaReciente(data.id);
+  const yaVista = notificacionYaVistaReciente(data.id);
+  if (!yaVista) {
+    marcarNotificacionVistaReciente(data.id);
+    toast.info(data.titulo, { description: data.mensaje });
+    reproducirSonidoNotificacion(data.tipo);
+    mostrarNotificacionSistema(data.titulo, {
+      body: data.mensaje,
+      tag: data.id,
+      onClick: () => {
+        const ruta = resolverRutaNotificacion(data.payload);
+        if (ruta) router.push(ruta);
+      },
+    });
+  }
 
-  toast.info(data.titulo, { description: data.mensaje });
-  reproducirSonidoNotificacion(data.tipo);
-  mostrarNotificacionSistema(data.titulo, {
-    body: data.mensaje,
-    tag: data.id,
-    onClick: () => {
-      const ruta = resolverRutaNotificacion(data.payload);
-      if (ruta) router.push(ruta);
-    },
-  });
+  // Siempre refrescar chats aunque push + socket disparen el mismo id
+  // (antes el 2.º evento salía antes y el mensaje no cargaba).
   invalidarCachesNotificacion(queryClient, data.payload, data.tipo);
 }
 

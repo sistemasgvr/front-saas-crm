@@ -6,6 +6,9 @@ import { getApiUrl } from "@/src/lib/api-url";
  * no puede mandar un header Authorization, así que este Route Handler lee
  * el access token de la cookie httpOnly (invisible para el JS del cliente)
  * y reenvía la descarga al backend, streameando la respuesta tal cual.
+ *
+ * Cache: el navegador guarda private/immutable 24h. Upstream al Nest usa
+ * revalidate corto para no martillar Postgres con el mismo mediaId.
  */
 export async function GET(
   _req: Request,
@@ -23,7 +26,8 @@ export async function GET(
       `${getApiUrl()}/whatsapp/chats/${conversacionId}/messages/${mensajeId}/media`,
       {
         headers: { Authorization: `Bearer ${accessToken}` },
-        cache: "no-store",
+        // Media es inmutable por mensajeId — revalidar 1h reduce hits a Prisma.
+        next: { revalidate: 3600, tags: [`wa-media-${mensajeId}`] },
         signal: AbortSignal.timeout(30_000),
       },
     );
@@ -40,7 +44,7 @@ export async function GET(
     headers: {
       "Content-Type": res.headers.get("Content-Type") ?? "application/octet-stream",
       "Content-Disposition": res.headers.get("Content-Disposition") ?? "inline",
-      "Cache-Control": "private, max-age=86400",
+      "Cache-Control": "private, max-age=86400, immutable",
     },
   });
 }

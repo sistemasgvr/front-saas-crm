@@ -14,7 +14,13 @@ import { filtrarConversaciones } from "./filtrar-conversaciones";
 import { useChatBorradores } from "./chat-borradores";
 import { getChats } from "./queries";
 
-const INTERVALO_REFRESCO_MS = 15_000;
+const INTERVALO_REFRESCO_MS = 45_000;
+
+/** Poll solo con la pestaña visible — evita saturar Prisma con pestañas en background. */
+function intervaloSiVisible(ms: number): number | false {
+  if (typeof document === "undefined") return ms;
+  return document.visibilityState === "visible" ? ms : false;
+}
 
 function formatearFecha(iso: string | null) {
   if (!iso) return "";
@@ -57,7 +63,7 @@ export default function ChatsSidebar() {
   const chatsQuery = useQuery({
     queryKey: queryKeys.whatsappChats,
     queryFn: getChats,
-    refetchInterval: INTERVALO_REFRESCO_MS,
+    refetchInterval: () => intervaloSiVisible(INTERVALO_REFRESCO_MS),
   });
 
   const chatsFiltrados = useMemo(

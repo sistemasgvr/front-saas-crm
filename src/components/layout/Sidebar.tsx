@@ -92,7 +92,10 @@ export default function Sidebar({
     queryKey: queryKeys.whatsappChatsUnreadCount,
     queryFn: () => getChatsUnreadCount(),
     enabled: tieneChats,
-    refetchInterval: 60_000,
+    refetchInterval: () =>
+      typeof document !== "undefined" && document.visibilityState === "hidden"
+        ? false
+        : 90_000,
   });
   const chatsNoLeidos = chatsUnreadQuery.data?.count ?? 0;
 
