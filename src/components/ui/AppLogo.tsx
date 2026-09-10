@@ -42,8 +42,8 @@ export default function AppLogo({
         height={height}
         priority={priority}
         unoptimized
-        className={`h-auto max-w-full object-contain ${className}`}
-        style={{ width, height: "auto" }}
+        className={`h-auto max-h-full max-w-full object-contain object-center ${className}`}
+        style={{ width, height: "auto", maxHeight: height }}
       />
     );
 

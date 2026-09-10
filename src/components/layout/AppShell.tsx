@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "./SidebarContext";
 import NotificationPermissionGate from "@/src/modules/notifications/NotificationPermissionGate";
@@ -8,18 +8,7 @@ import NotificationPermissionGate from "@/src/modules/notifications/Notification
 export default function AppShell({ header, children }: { header: ReactNode; children: ReactNode }) {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
   const pathname = usePathname();
-  // Chats: ocupar exactamente el alto bajo el header (sin padding ni calc dvh
-  // que en iOS Safari solapa el sticky header).
   const esChats = pathname === "/chats" || pathname.startsWith("/chats/");
-
-  useEffect(() => {
-    if (!esChats) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [esChats]);
 
   const mainContentMargin = isMobileOpen
     ? "ml-0"
@@ -30,7 +19,11 @@ export default function AppShell({ header, children }: { header: ReactNode; chil
   return (
     <div
       className={`min-w-0 flex-1 transition-all duration-300 ease-in-out ${mainContentMargin} ${
-        esChats ? "flex h-dvh max-h-dvh flex-col overflow-hidden" : ""
+        esChats
+          ? // Móvil: panel fijo al viewport visible (svh). Evita el corte del header
+            // que provoca h-dvh + overflow en Safari/Chrome iOS.
+            "fixed inset-0 z-40 flex flex-col overflow-hidden overscroll-none bg-gray-50 dark:bg-gray-900 md:static md:inset-auto md:z-auto md:h-auto md:max-h-none md:overflow-visible md:overscroll-auto md:bg-transparent"
+          : ""
       }`}
     >
       <NotificationPermissionGate />

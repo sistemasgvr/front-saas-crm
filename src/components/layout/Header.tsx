@@ -39,9 +39,9 @@ export default function Header({
   };
 
   return (
-    <header className="sticky top-0 z-99999 flex w-full shrink-0 bg-white border-gray-200 dark:border-gray-800 dark:bg-gray-900 lg:border-b">
+    <header className="relative z-99999 flex w-full shrink-0 bg-white border-gray-200 dark:border-gray-800 dark:bg-gray-900 lg:sticky lg:top-0 lg:border-b">
       <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
-        <div className="flex w-full items-center justify-between gap-2 px-3 py-2.5 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
+        <div className="flex w-full items-center justify-between gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
           <button
             type="button"
             className="z-99999 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-500 dark:border-gray-800 dark:text-gray-400 lg:flex lg:h-11 lg:w-11 lg:border lg:border-gray-200"
@@ -51,7 +51,13 @@ export default function Header({
             <Icon name={isMobileOpen ? "mdi:close" : "mdi:menu"} size={isMobileOpen ? 24 : 20} />
           </button>
 
-          <AppLogo href={homeHref} variant="full" width={154} height={36} className="lg:hidden" />
+          <AppLogo
+            href={homeHref}
+            variant="full"
+            width={140}
+            height={32}
+            className="max-h-8 w-auto lg:hidden"
+          />
 
           <button
             type="button"
