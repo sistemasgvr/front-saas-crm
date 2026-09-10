@@ -49,9 +49,19 @@ export async function unsubscribePushAction(endpoint: string): Promise<void> {
 }
 
 /** Diagnóstico: solo Web Push al dispositivo actual (sin historial ni socket). */
-export async function testPushAction(): Promise<{ enabled: boolean; sent: number }> {
+export async function testPushAction(): Promise<{
+  enabled: boolean;
+  attempted: number;
+  delivered: number;
+  failed: number;
+}> {
   try {
-    return await apiFetch<{ enabled: boolean; sent: number }>("/notifications/push/test", {
+    return await apiFetch<{
+      enabled: boolean;
+      attempted: number;
+      delivered: number;
+      failed: number;
+    }>("/notifications/push/test", {
       method: "POST",
     });
   } catch (error) {

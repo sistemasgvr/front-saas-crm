@@ -16,15 +16,16 @@ export async function getSocketTicket() {
 }
 
 export async function getVapidPublicKey() {
-  const fromEnv = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
   try {
     const remote = await apiFetch<{ enabled: boolean; publicKey: string | null }>(
       "/notifications/push/vapid-public-key",
     );
+    // Preferir siempre la clave del backend (evita mismatch con .env del front).
     if (remote.enabled && remote.publicKey) return remote;
+    return { enabled: false, publicKey: null };
   } catch {
-    // Si el API falla, usamos la clave pública del .env del front si existe.
+    const fromEnv = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
+    if (fromEnv) return { enabled: true, publicKey: fromEnv };
+    return { enabled: false, publicKey: null };
   }
-  if (fromEnv) return { enabled: true, publicKey: fromEnv };
-  return { enabled: false, publicKey: null };
 }

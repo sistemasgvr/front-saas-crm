@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
 import { getVapidPublicKey } from "./queries";
-import { subscribePushAction, testPushAction } from "./actions";
+import { subscribePushAction, testPushAction, unsubscribePushAction } from "./actions";
 import { pedirPermisoNotificacionesSistema, useNotificacionesSistemaPermiso } from "./system-notifications";
 import { asegurarSuscripcionPush, debeRegistrarPushEnEsteOrigen, soportaWebPush } from "./web-push";
 
@@ -29,6 +29,7 @@ export default function NotificationPermissionCard() {
         const push = await asegurarSuscripcionPush({
           getVapidPublicKey,
           saveSubscription: subscribePushAction,
+          removeOnServer: unsubscribePushAction,
         });
         if (push === "ok") {
           toast.success("Dispositivo listo para avisos en segundo plano");
@@ -38,6 +39,8 @@ export default function NotificationPermissionCard() {
           );
         } else if (push === "sin-vapid") {
           toast.message("Permiso OK; el servidor aún no tiene claves VAPID configuradas");
+        } else if (push === "error") {
+          toast.error("No se pudo registrar Web Push en este dispositivo");
         }
       }
     } finally {
@@ -53,14 +56,20 @@ export default function NotificationPermissionCard() {
         toast.error("Web Push deshabilitado: faltan VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY en el backend");
         return;
       }
-      if (res.sent === 0) {
+      if (res.attempted === 0) {
         toast.error(
-          "No hay suscripciones push activas para tu usuario. Activa notificaciones en este dispositivo (origen de producción).",
+          "No hay suscripciones push activas. Activa notificaciones en este dispositivo (origen de producción).",
+        );
+        return;
+      }
+      if (res.delivered === 0) {
+        toast.error(
+          `Ningún envío OK (${res.failed} fallido/s). Re-activa notificaciones o revisa VAPID.`,
         );
         return;
       }
       toast.success(
-        `Push enviado a ${res.sent} dispositivo(s). Pon la app en segundo plano si no ves el aviso del SO.`,
+        `Entregado a ${res.delivered}/${res.attempted} dispositivo(s). Pon el CRM en segundo plano: con la app enfocada no aparece el toast del SO.`,
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo enviar el push de prueba");

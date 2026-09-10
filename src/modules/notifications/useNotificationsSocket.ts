@@ -151,6 +151,7 @@ export function useNotificationsSocket(enabled: boolean) {
       void asegurarSuscripcionPush({
         getVapidPublicKey,
         saveSubscription: subscribePushAction,
+        removeOnServer: unsubscribePushAction,
       });
     } else if (permiso === "denied" && permisoAnterior.current === "granted") {
       void desactivarSuscripcionPushLocal({ removeOnServer: unsubscribePushAction });
@@ -184,6 +185,7 @@ export function useNotificationsSocket(enabled: boolean) {
         void asegurarSuscripcionPush({
           getVapidPublicKey,
           saveSubscription: subscribePushAction,
+          removeOnServer: unsubscribePushAction,
           forceResubscribe: true,
         });
         return;

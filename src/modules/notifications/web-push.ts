@@ -19,6 +19,21 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return out;
 }
 
+function applicationServerKeyCoincide(
+  sub: PushSubscription,
+  vapidPublicKey: string,
+): boolean {
+  const key = sub.options?.applicationServerKey;
+  if (!key) return false;
+  const expected = urlBase64ToUint8Array(vapidPublicKey);
+  const actual = new Uint8Array(key);
+  if (actual.length !== expected.length) return false;
+  for (let i = 0; i < actual.length; i += 1) {
+    if (actual[i] !== expected[i]) return false;
+  }
+  return true;
+}
+
 export function soportaServiceWorker(): boolean {
   return typeof window !== "undefined" && "serviceWorker" in navigator;
 }
@@ -35,7 +50,7 @@ export function soportaWebPush(): boolean {
 export function debeRegistrarPushEnEsteOrigen(): boolean {
   if (typeof window === "undefined") return false;
   const host = window.location.hostname;
-  if (host === "localhost" || host === "127.0.0.1") {
+  if (host === "localhost" || host === "127.0.0.1" || host === "::1") {
     return process.env.NEXT_PUBLIC_ENABLE_PUSH_ON_LOCALHOST === "true";
   }
   return true;
@@ -65,6 +80,8 @@ export async function asegurarSuscripcionPush(opts: {
     keys: { p256dh: string; auth: string };
     userAgent?: string;
   }) => Promise<void>;
+  /** Baja el endpoint viejo en el servidor (JWT) al rotar suscripción. */
+  removeOnServer?: (endpoint: string) => Promise<void>;
   /** Tras pushsubscriptionchange: baja la sub actual y vuelve a suscribir. */
   forceResubscribe?: boolean;
 }): Promise<ResultadoSuscripcionPush> {
@@ -81,11 +98,22 @@ export async function asegurarSuscripcionPush(opts: {
   await navigator.serviceWorker.ready;
 
   let sub = await reg.pushManager.getSubscription();
-  if (opts.forceResubscribe && sub) {
+  const keyMismatch = Boolean(sub && !applicationServerKeyCoincide(sub, vapid.publicKey));
+  const debeRenovar = Boolean(opts.forceResubscribe || keyMismatch);
+
+  if (debeRenovar && sub) {
+    const oldEndpoint = sub.endpoint;
     try {
       await sub.unsubscribe();
     } catch {
       // continuar a re-suscribir
+    }
+    if (opts.removeOnServer && oldEndpoint) {
+      try {
+        await opts.removeOnServer(oldEndpoint);
+      } catch {
+        // no bloquear re-suscripción
+      }
     }
     sub = null;
   }

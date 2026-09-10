@@ -6,7 +6,7 @@ import Button from "@/src/components/ui/button/Button";
 import Modal from "@/src/components/ui/modal/Modal";
 import { Icon } from "@/src/components/ui/Icon";
 import { getVapidPublicKey } from "./queries";
-import { subscribePushAction } from "./actions";
+import { subscribePushAction, unsubscribePushAction } from "./actions";
 import {
   pedirPermisoNotificacionesSistema,
   soportaNotificacionesSistema,
@@ -55,6 +55,7 @@ export default function NotificationPermissionGate() {
         const push = await asegurarSuscripcionPush({
           getVapidPublicKey,
           saveSubscription: subscribePushAction,
+          removeOnServer: unsubscribePushAction,
         });
         if (push === "ok") {
           toast.success("Notificaciones activadas (también en segundo plano)");
@@ -62,6 +63,8 @@ export default function NotificationPermissionGate() {
           toast.success("Notificaciones activadas en esta pestaña (push omitido en localhost)");
         } else if (push === "sin-vapid") {
           toast.success("Notificaciones activadas en esta pestaña");
+        } else if (push === "error") {
+          toast.error("Permiso OK, pero no se pudo registrar Web Push. Reintenta en Perfil.");
         } else {
           toast.success("Notificaciones del sistema activadas");
         }

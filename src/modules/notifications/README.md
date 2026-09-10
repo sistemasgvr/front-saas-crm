@@ -8,13 +8,25 @@
 
 No uses el socket para garantizar entrega: push despierta el dispositivo; la BD guarda el historial.
 
+## Límites del SO (vs WhatsApp nativo)
+
+Web Push **no puede**:
+- Usar la foto del contacto como icono de la notificación.
+- Quitar del todo `CRM • crm.proyectosgvr.com` / `from CRM` (lo pone el SO / PWA).
+- Sonar o agrupar exactamente como la app WhatsApp.
+
+**Sí hace** el CRM:
+- Título = nombre del contacto/lead.
+- Cuerpo = texto del mensaje (o “Envió un sticker…”) truncado con `…`.
+- Icono = marca (sin texto “CRM” en `/icon.png`).
+
 ## Env frontend
 
 | Variable | Uso |
 |----------|-----|
 | `NEXT_PUBLIC_SOCKET_URL` | Base URL del API/socket (ej. `https://back-….vercel.app`) |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Fallback si falla `GET /notifications/push/vapid-public-key`. **Debe ser igual** a `VAPID_PUBLIC_KEY` del backend. |
-| `NEXT_PUBLIC_ENABLE_PUSH_ON_LOCALHOST` | Solo `"true"` si quieres suscribir Web Push en `localhost` (por defecto no se registra). |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Fallback **solo si falla** el GET del API. Debe ser igual a `VAPID_PUBLIC_KEY`. |
+| `NEXT_PUBLIC_ENABLE_PUSH_ON_LOCALHOST` | Solo `"true"` si quieres suscribir Web Push en `localhost`. |
 
 ## Env backend
 
@@ -23,67 +35,48 @@ No uses el socket para garantizar entrega: push despierta el dispositivo; la BD 
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Par VAPID (si faltan, push deshabilitado) |
 | `VAPID_SUBJECT` | Contacto VAPID (default `mailto:…`) |
 
-Generar claves: `npx web-push generate-vapid-keys`.
-
-### Reglas VAPID (revisar primero en prod)
-
-- El **mismo par** público/privado debe usarse al suscribir y al enviar.
-- No mezclar VAPID A en local y VAPID B en prod si reutilizas filas de `suscripciones_push`.
-- Rotar claves ⇒ hay que re-activar notificaciones en cada dispositivo.
-- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` = `VAPID_PUBLIC_KEY`. La **privada jamás** va al front ni a `NEXT_PUBLIC_*`.
-- Comprobar: `GET /api/notifications/push/vapid-public-key` → `{ enabled: true, publicKey: "…" }`.
+Generar: `npx web-push generate-vapid-keys`. Mismo par en todos los entornos que compartan `suscripciones_push`.
 
 ## Ciclo de permiso
 
-- Pre-prompt en el CRM → click → `Notification.requestPermission()` (gesto).
-- `granted` → Service Worker + `PushManager.subscribe` → POST `/notifications/push/subscribe`.
-- Logout / permiso `denied` → unsubscribe local + DELETE en servidor.
-- “Ahora no” en el gate: no vuelve a mostrar en la misma sesión; se puede activar en Perfil.
-- En **localhost** no se registra push salvo `NEXT_PUBLIC_ENABLE_PUSH_ON_LOCALHOST=true` (evita clicks que abren localhost).
+- Pre-prompt → gesto → `Notification.requestPermission()`.
+- `granted` → SW + subscribe → POST `/notifications/push/subscribe`.
+- Si la `applicationServerKey` local no coincide con VAPID actual → re-suscribe y DELETE del endpoint viejo.
+- Logout / `denied` → unsubscribe local + DELETE.
+- Localhost: no registra push salvo flag.
 
-## Diagnóstico móvil (antes de tocar Socket.IO)
+## Quién recibe qué
 
-### 1. Service Worker
+| Evento | Destinatarios |
+|--------|----------------|
+| WhatsApp con lead **asignado** | Solo el asignado |
+| WhatsApp sin lead / sin asignar | Toda la org (usuarios activos) |
+| Lead nuevo con auto-asignación | El asignado |
+| Lead nuevo **sin** asignado | Toda la org activa |
+| Agenda | El destinatario del recordatorio |
 
-Android Chrome → `chrome://inspect` sobre el origen de **producción**:
+## Diagnóstico: “a este usuario no le llega”
 
-- Service Worker → `/sw.js` → **activated**
+1. Permiso `granted` en el origen de **producción** (no localhost).
+2. SW `/sw.js` **activated** (`chrome://inspect` en Android).
+3. `getSubscription()` no es `null`.
+4. Fila activa en `suscripciones_push` para ese `usuarioId`.
+5. Si el lead está asignado a **otro** usuario → no debe llegarle (esperado).
+6. iOS: solo PWA en pantalla de inicio, abierta desde el icono.
+7. App **enfocada**: el SW no muestra toast del SO (usa socket/toast in-app). Probar en background.
+8. Perfil → **Probar push** → `{ enabled, attempted, delivered, failed }`.
 
-Sin SW activated no hay push aunque Nest y Socket estén bien.
+## Prueba aislada
 
-### 2. PushSubscription
+`POST /notifications/push/test` o botón en Perfil.
 
-En consola del origen prod:
+- Solo Web Push (sin historial ni socket).
+- Respuesta honesta: `delivered` / `failed`, no “sent” inflado.
 
-```js
-const registration = await navigator.serviceWorker.ready;
-const subscription = await registration.pushManager.getSubscription();
-console.log(subscription);
-```
-
-- Objeto con `endpoint` → OK para enviar.
-- `null` → problema antes de Nest (permiso, VAPID, subscribe). Activar en Perfil y revisar fila en `suscripciones_push`.
-
-### 3. Prueba aislada
-
-`POST /notifications/push/test` (JWT) o botón **Probar push** en Perfil.
-
-- Solo Web Push al usuario actual (sin historial in-app ni Socket).
-- Respuesta: `{ enabled, sent }`.
-  - `enabled: false` → faltan VAPID en backend.
-  - `sent: 0` → no hay suscripciones activas.
-  - Llega al teléfono → VAPID + SW + permiso + suscripción OK → entonces probar WhatsApp / `CrearNotificacionUseCase`.
-
-## Matriz de prueba real
+## Matriz de prueba
 
 | Escenario | Esperado |
 |-----------|----------|
-| App abierta / enfocada | Socket → toast/sonido; SW no muestra toast del SO |
-| App en background | Web Push → notificación SO |
-| Teléfono bloqueado | Web Push → notificación SO |
-| PWA cerrada | Web Push → SO; al abrir, campana/unread sincroniza desde BD |
-| Tap en notificación | Abre origen prod + ruta (`/chats/…`, `/leads/…`, o `payload.url`) |
-
-### iOS (Safari 16.4+)
-
-Solo con PWA en **Pantalla de inicio**, abierta desde el icono, permiso en HTTPS. Safari en pestaña = “no-soportado” (esperado).
+| App abierta / enfocada | Socket → toast; SW sin toast SO |
+| Background / bloqueado / PWA cerrada | Web Push → notificación SO |
+| Tap | Origen prod + ruta (`/chats/…`, `/leads/…`) |

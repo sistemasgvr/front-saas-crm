@@ -17,8 +17,8 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
   icons: {
-    icon: "/images/logo/logo-crm.png",
-    apple: "/images/logo/logo-crm.png",
+    icon: "/icon.png",
+    apple: "/images/logo/escudo-gvr-512.png",
   },
 };
 
