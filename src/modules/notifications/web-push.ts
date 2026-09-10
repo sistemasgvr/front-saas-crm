@@ -2,11 +2,12 @@
 
 /**
  * Helpers de Web Push + Service Worker.
- * Requiere VAPID configurado en el backend y HTTPS (o localhost).
+ * Requiere VAPID configurado en el backend y HTTPS (o localhost con flag).
  *
  * Env front relevantes:
  * - NEXT_PUBLIC_SOCKET_URL — Socket.IO (toasts en vivo)
- * - NEXT_PUBLIC_VAPID_PUBLIC_KEY — fallback si GET /push/vapid-public-key falla
+ * - NEXT_PUBLIC_VAPID_PUBLIC_KEY — fallback; debe = VAPID_PUBLIC_KEY del back
+ * - NEXT_PUBLIC_ENABLE_PUSH_ON_LOCALHOST — "true" para suscribir en localhost
  */
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -30,6 +31,16 @@ export function soportaWebPush(): boolean {
   );
 }
 
+/** Evita registrar push en localhost (clicks a localhost + contaminar BD prod). */
+export function debeRegistrarPushEnEsteOrigen(): boolean {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1") {
+    return process.env.NEXT_PUBLIC_ENABLE_PUSH_ON_LOCALHOST === "true";
+  }
+  return true;
+}
+
 export async function registrarServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!soportaServiceWorker()) return null;
   try {
@@ -39,6 +50,14 @@ export async function registrarServiceWorker(): Promise<ServiceWorkerRegistratio
   }
 }
 
+export type ResultadoSuscripcionPush =
+  | "ok"
+  | "no-soportado"
+  | "sin-vapid"
+  | "sin-permiso"
+  | "omitido-localhost"
+  | "error";
+
 export async function asegurarSuscripcionPush(opts: {
   getVapidPublicKey: () => Promise<{ enabled: boolean; publicKey: string | null }>;
   saveSubscription: (sub: {
@@ -46,8 +65,11 @@ export async function asegurarSuscripcionPush(opts: {
     keys: { p256dh: string; auth: string };
     userAgent?: string;
   }) => Promise<void>;
-}): Promise<"ok" | "no-soportado" | "sin-vapid" | "sin-permiso" | "error"> {
+  /** Tras pushsubscriptionchange: baja la sub actual y vuelve a suscribir. */
+  forceResubscribe?: boolean;
+}): Promise<ResultadoSuscripcionPush> {
   if (!soportaWebPush()) return "no-soportado";
+  if (!debeRegistrarPushEnEsteOrigen()) return "omitido-localhost";
   if (Notification.permission !== "granted") return "sin-permiso";
 
   const vapid = await opts.getVapidPublicKey();
@@ -59,6 +81,15 @@ export async function asegurarSuscripcionPush(opts: {
   await navigator.serviceWorker.ready;
 
   let sub = await reg.pushManager.getSubscription();
+  if (opts.forceResubscribe && sub) {
+    try {
+      await sub.unsubscribe();
+    } catch {
+      // continuar a re-suscribir
+    }
+    sub = null;
+  }
+
   if (!sub) {
     try {
       sub = await reg.pushManager.subscribe({

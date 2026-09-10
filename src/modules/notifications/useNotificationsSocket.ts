@@ -180,6 +180,15 @@ export function useNotificationsSocket(enabled: boolean) {
         return;
       }
 
+      if (msg?.type === "crm-pushsubscriptionchange") {
+        void asegurarSuscripcionPush({
+          getVapidPublicKey,
+          saveSubscription: subscribePushAction,
+          forceResubscribe: true,
+        });
+        return;
+      }
+
       // Fallback si el socket está caído pero llegó push con pestaña enfocada.
       if (msg?.type === "crm-push-foreground" && msg.data?.id) {
         pintarNotificacionEnVivo(

@@ -5,9 +5,9 @@ import { toast } from "sonner";
 import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
 import { getVapidPublicKey } from "./queries";
-import { subscribePushAction } from "./actions";
+import { subscribePushAction, testPushAction } from "./actions";
 import { pedirPermisoNotificacionesSistema, useNotificacionesSistemaPermiso } from "./system-notifications";
-import { asegurarSuscripcionPush, soportaWebPush } from "./web-push";
+import { asegurarSuscripcionPush, debeRegistrarPushEnEsteOrigen, soportaWebPush } from "./web-push";
 
 /**
  * Preferencia por dispositivo — en Perfil. Activa permiso + suscripción Web Push.
@@ -15,6 +15,7 @@ import { asegurarSuscripcionPush, soportaWebPush } from "./web-push";
 export default function NotificationPermissionCard() {
   const permiso = useNotificacionesSistemaPermiso();
   const [pidiendo, setPidiendo] = useState(false);
+  const [probando, setProbando] = useState(false);
 
   async function activar() {
     setPidiendo(true);
@@ -31,12 +32,40 @@ export default function NotificationPermissionCard() {
         });
         if (push === "ok") {
           toast.success("Dispositivo listo para avisos en segundo plano");
+        } else if (push === "omitido-localhost") {
+          toast.message(
+            "Permiso OK; push no se registra en localhost (usa producción o NEXT_PUBLIC_ENABLE_PUSH_ON_LOCALHOST)",
+          );
         } else if (push === "sin-vapid") {
           toast.message("Permiso OK; el servidor aún no tiene claves VAPID configuradas");
         }
       }
     } finally {
       setPidiendo(false);
+    }
+  }
+
+  async function probarPush() {
+    setProbando(true);
+    try {
+      const res = await testPushAction();
+      if (!res.enabled) {
+        toast.error("Web Push deshabilitado: faltan VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY en el backend");
+        return;
+      }
+      if (res.sent === 0) {
+        toast.error(
+          "No hay suscripciones push activas para tu usuario. Activa notificaciones en este dispositivo (origen de producción).",
+        );
+        return;
+      }
+      toast.success(
+        `Push enviado a ${res.sent} dispositivo(s). Pon la app en segundo plano si no ves el aviso del SO.`,
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo enviar el push de prueba");
+    } finally {
+      setProbando(false);
     }
   }
 
@@ -77,15 +106,32 @@ export default function NotificationPermissionCard() {
               {soportaWebPush()
                 ? " — también con el CRM cerrado o en segundo plano."
                 : " mientras la pestaña esté abierta."}
+              {!debeRegistrarPushEnEsteOrigen()
+                ? " En localhost no se registra Web Push (evita avisos que abren localhost)."
+                : null}
             </p>
           </div>
         </div>
 
         {permiso === "granted" ? (
-          <span className="flex shrink-0 items-center gap-1.5 text-theme-xs font-medium text-success-600 dark:text-success-500">
-            <Icon name="mdi:check-circle" size={16} />
-            Activadas
-          </span>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <span className="flex items-center gap-1.5 text-theme-xs font-medium text-success-600 dark:text-success-500">
+              <Icon name="mdi:check-circle" size={16} />
+              Activadas
+            </span>
+            {soportaWebPush() ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                loading={probando}
+                onClick={probarPush}
+                startIcon={<Icon name="mdi:cellphone-message" size={18} />}
+              >
+                Probar push
+              </Button>
+            ) : null}
+          </div>
         ) : permiso === "denied" ? (
           <span className="shrink-0 text-theme-xs text-gray-400">
             Bloqueadas — habilítalas en los ajustes del navegador para este sitio.

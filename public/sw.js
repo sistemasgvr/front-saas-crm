@@ -14,8 +14,17 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+function rutaSegura(url) {
+  return (
+    typeof url === "string" &&
+    url.startsWith("/") &&
+    !url.startsWith("//")
+  );
+}
+
 function resolverRuta(payload) {
   if (!payload || typeof payload !== "object") return "/notifications";
+  if (rutaSegura(payload.url)) return payload.url;
   if (typeof payload.whatsappConversacionId === "string") {
     return `/chats/${payload.whatsappConversacionId}`;
   }
@@ -103,6 +112,21 @@ self.addEventListener("notificationclick", (event) => {
       }
       if (self.clients.openWindow) {
         await self.clients.openWindow(destino);
+      }
+    })(),
+  );
+});
+
+/** El navegador rotó el endpoint: pedir a la app abierta que re-suscriba con JWT. */
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil(
+    (async () => {
+      const windowClients = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      for (const client of windowClients) {
+        client.postMessage({ type: "crm-pushsubscriptionchange" });
       }
     })(),
   );

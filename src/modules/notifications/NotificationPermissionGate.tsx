@@ -58,6 +58,8 @@ export default function NotificationPermissionGate() {
         });
         if (push === "ok") {
           toast.success("Notificaciones activadas (también en segundo plano)");
+        } else if (push === "omitido-localhost") {
+          toast.success("Notificaciones activadas en esta pestaña (push omitido en localhost)");
         } else if (push === "sin-vapid") {
           toast.success("Notificaciones activadas en esta pestaña");
         } else {

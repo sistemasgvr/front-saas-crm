@@ -47,3 +47,14 @@ export async function unsubscribePushAction(endpoint: string): Promise<void> {
     fail(error, "No se pudo desactivar las notificaciones push");
   }
 }
+
+/** Diagnóstico: solo Web Push al dispositivo actual (sin historial ni socket). */
+export async function testPushAction(): Promise<{ enabled: boolean; sent: number }> {
+  try {
+    return await apiFetch<{ enabled: boolean; sent: number }>("/notifications/push/test", {
+      method: "POST",
+    });
+  } catch (error) {
+    fail(error, "No se pudo enviar el push de prueba");
+  }
+}

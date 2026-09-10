@@ -29,6 +29,13 @@ export interface NotificacionEventoSocket {
 /** Deep link por tipo de notificación. */
 export function resolverRutaNotificacion(payload: Record<string, unknown> | null): string | null {
   if (!payload) return null;
+  if (
+    typeof payload.url === "string" &&
+    payload.url.startsWith("/") &&
+    !payload.url.startsWith("//")
+  ) {
+    return payload.url;
+  }
   if (typeof payload.whatsappConversacionId === "string") {
     return `/chats/${payload.whatsappConversacionId}`;
   }
