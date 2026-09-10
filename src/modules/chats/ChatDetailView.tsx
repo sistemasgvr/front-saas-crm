@@ -894,7 +894,7 @@ function Burbuja({
         setMenuAbierto(false);
         setSelectorAbierto((v) => !v);
       }}
-      className="flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-full text-gray-400 transition hover:bg-gray-100 md:h-7 md:w-7 md:opacity-0 md:group-hover:opacity-100 dark:text-gray-500 dark:hover:bg-white/10"
+      className="flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full text-gray-400 transition hover:bg-gray-100 md:h-7 md:w-7 md:opacity-0 md:group-hover:opacity-100 dark:text-gray-500 dark:hover:bg-white/10"
       aria-label="Reaccionar"
       title="Reaccionar"
     >
@@ -910,7 +910,7 @@ function Burbuja({
         setSelectorAbierto(false);
         setMenuAbierto((v) => !v);
       }}
-      className="flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-full text-gray-400 transition hover:bg-gray-100 md:h-7 md:w-7 md:opacity-0 md:group-hover:opacity-100 dark:text-gray-500 dark:hover:bg-white/10"
+      className="flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full text-gray-400 transition hover:bg-gray-100 md:h-7 md:w-7 md:opacity-0 md:group-hover:opacity-100 dark:text-gray-500 dark:hover:bg-white/10"
       aria-label="Más acciones"
       title="Más acciones"
     >
@@ -960,7 +960,7 @@ function Burbuja({
     <motion.div
       id={`mensaje-${mensaje.id}`}
       data-mensaje-id={mensaje.id}
-      className={`group flex items-center gap-2 scroll-mt-4 rounded-2xl transition-[background-color,box-shadow] duration-500 ${
+      className={`group flex w-full min-w-0 max-w-full items-center gap-1 scroll-mt-4 rounded-2xl transition-[background-color,box-shadow] duration-500 sm:gap-2 ${
         esSaliente ? "justify-end" : "justify-start"
       } ${modoSeleccion ? "cursor-pointer" : ""} ${
         resaltado ? "bg-brand-500/15 ring-2 ring-brand-500/50 dark:bg-brand-500/20" : ""
@@ -984,7 +984,7 @@ function Burbuja({
       {checkboxSeleccion}
       {esSaliente && grupoAcciones}
       <div
-        className={`relative max-w-[85%] text-theme-sm sm:max-w-[75%] ${
+        className={`relative min-w-0 max-w-[calc(100%-4.5rem)] text-theme-sm sm:max-w-[75%] ${
           esSticker
             ? "space-y-1 px-1 py-1"
             : esMediaVisual
@@ -993,7 +993,7 @@ function Burbuja({
                     ? "bg-brand-500 text-white"
                     : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
                 }`
-              : `space-y-1.5 rounded-2xl px-4 py-2.5 ${
+              : `space-y-1.5 rounded-2xl px-3 py-2.5 sm:px-4 ${
                   esSaliente
                     ? "bg-brand-500 text-white"
                     : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
@@ -1041,7 +1041,7 @@ function Burbuja({
           <ContenidoContactos contactos={mensaje.contactos} />
         )}
         {(mensaje.texto || mensaje.mediaCaption) && (
-          <p className={`whitespace-pre-wrap break-words ${esMediaVisual ? "px-2 pt-0.5" : ""}`}>
+          <p className={`whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${esMediaVisual ? "px-2 pt-0.5" : ""}`}>
             {mensaje.texto ?? mensaje.mediaCaption}
           </p>
         )}
@@ -2085,8 +2085,8 @@ export default function ChatDetailView({
 
   return (
     <ChatMediaLightboxProvider conversacionId={id} mensajes={chat.mensajes}>
-    <div className="relative flex h-full min-h-0">
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+    <div className="relative flex h-full min-h-0 max-w-full overflow-x-hidden">
+    <div className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-hidden">
       <div className="flex shrink-0 items-center gap-2 border-b border-gray-100 bg-white px-2 py-2.5 dark:border-gray-800 dark:bg-gray-900 sm:gap-3 sm:px-4 sm:py-3">
         <Link
           href="/chats"
@@ -2286,9 +2286,9 @@ export default function ChatDetailView({
       <div
         ref={listaRef}
         onScroll={actualizarPegarAlFondo}
-        className="thin-scrollbar h-full overflow-y-auto overscroll-contain px-3 py-3 [-webkit-overflow-scrolling:touch] sm:px-5 sm:py-4"
+        className="thin-scrollbar h-full overflow-y-auto overflow-x-hidden overscroll-contain px-2 py-3 [-webkit-overflow-scrolling:touch] sm:px-5 sm:py-4"
       >
-        <div ref={contenidoListaRef} className="space-y-3">
+        <div ref={contenidoListaRef} className="w-full min-w-0 max-w-full space-y-3">
           {chat.mensajes.length === 0 ? (
             <p className="text-center text-theme-sm text-gray-500 dark:text-gray-400">
               Todavía no hay mensajes en esta conversación.

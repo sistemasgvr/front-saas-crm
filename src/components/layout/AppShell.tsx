@@ -22,7 +22,7 @@ export default function AppShell({ header, children }: { header: ReactNode; chil
         esChats
           ? // Móvil: panel fijo al viewport visible (svh). Evita el corte del header
             // que provoca h-dvh + overflow en Safari/Chrome iOS.
-            "fixed inset-0 z-40 flex flex-col overflow-hidden overscroll-none bg-gray-50 dark:bg-gray-900 md:static md:inset-auto md:z-auto md:h-auto md:max-h-none md:overflow-visible md:overscroll-auto md:bg-transparent"
+            "fixed inset-0 z-30 flex flex-col overflow-hidden overscroll-none bg-gray-50 dark:bg-gray-900 md:static md:inset-auto md:z-auto md:h-auto md:max-h-none md:overflow-visible md:overscroll-auto md:bg-transparent"
           : ""
       }`}
     >

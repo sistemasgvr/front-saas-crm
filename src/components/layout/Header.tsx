@@ -39,7 +39,7 @@ export default function Header({
   };
 
   return (
-    <header className="relative z-99999 flex w-full shrink-0 bg-white border-gray-200 dark:border-gray-800 dark:bg-gray-900 lg:sticky lg:top-0 lg:border-b">
+    <header className="sticky top-0 z-99999 flex w-full shrink-0 bg-white border-b border-gray-200 dark:border-gray-800 dark:bg-gray-900">
       <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
         <div className="flex w-full items-center justify-between gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
           <button

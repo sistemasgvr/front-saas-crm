@@ -120,14 +120,14 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 left-0 h-screen px-5 bg-white text-gray-900 border-r border-gray-200 transition-all duration-300 ease-in-out z-50 dark:border-gray-800 dark:bg-gray-900
+      className={`fixed left-0 top-16 bottom-0 z-50 flex flex-col overflow-hidden border-r border-gray-200 bg-white px-5 text-gray-900 transition-transform duration-300 ease-in-out dark:border-gray-800 dark:bg-gray-900 lg:top-0 lg:h-screen lg:bottom-auto
         ${isExpanded || isMobileOpen ? "w-[290px]" : isHovered ? "w-[290px]" : "w-[90px]"}
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0`}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className={`flex py-8 ${!expanded ? "lg:justify-center" : "justify-start"}`}>
+      <div className={`flex shrink-0 py-6 lg:py-8 ${!expanded ? "lg:justify-center" : "justify-start"}`}>
         {expanded ? (
           <AppLogo href={homeHref} variant="full" width={150} height={40} priority />
         ) : (
@@ -135,7 +135,7 @@ export default function Sidebar({
         )}
       </div>
 
-      <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain duration-300 ease-linear no-scrollbar">
         <nav className="mb-6">
           <div className="flex flex-col gap-6">
             {resolvedGroups.map((group) => (
