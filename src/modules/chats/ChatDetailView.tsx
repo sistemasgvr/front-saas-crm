@@ -2049,7 +2049,7 @@ export default function ChatDetailView({
   if (chatQuery.isLoading) {
     return (
       <div className="flex h-full min-h-0 flex-col" role="status" aria-label="Cargando conversación">
-        <div className="flex shrink-0 items-center gap-3 border-b border-gray-100 px-3 py-3 dark:border-gray-800 sm:px-4">
+        <div className="flex shrink-0 items-center gap-2 border-b border-gray-100 px-2 py-2.5 dark:border-gray-800 sm:gap-3 sm:px-4 sm:py-3">
           <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
           <div className="min-w-0 flex-1 space-y-2">
             <Skeleton className="h-4 w-40" />
@@ -2087,7 +2087,7 @@ export default function ChatDetailView({
     <ChatMediaLightboxProvider conversacionId={id} mensajes={chat.mensajes}>
     <div className="relative flex h-full min-h-0">
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-center gap-3 border-b border-gray-100 px-3 py-3 dark:border-gray-800 sm:px-4">
+      <div className="flex shrink-0 items-center gap-2 border-b border-gray-100 bg-white px-2 py-2.5 dark:border-gray-800 dark:bg-gray-900 sm:gap-3 sm:px-4 sm:py-3">
         <Link
           href="/chats"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 md:hidden dark:hover:bg-white/5"
@@ -2099,11 +2099,11 @@ export default function ChatDetailView({
         <div className="min-w-0 flex-1">
           <p className="truncate text-theme-sm font-medium text-gray-800 dark:text-white/90">{nombre}</p>
           {chat.bloqueado ? (
-            <p className="text-theme-xs text-error-500">+{chat.waId} · Bloqueado</p>
+            <p className="truncate text-theme-xs text-error-500">+{chat.waId} · Bloqueado</p>
           ) : chat.lead ? (
-            <p className="text-theme-xs text-gray-500 dark:text-gray-400">+{chat.waId} · Lead vinculado</p>
+            <p className="truncate text-theme-xs text-gray-500 dark:text-gray-400">+{chat.waId} · Lead vinculado</p>
           ) : (
-            <p className="text-theme-xs text-warning-500">+{chat.waId} · Sin lead vinculado</p>
+            <p className="truncate text-theme-xs text-warning-500">+{chat.waId} · Sin lead vinculado</p>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
