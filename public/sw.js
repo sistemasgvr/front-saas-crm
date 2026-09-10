@@ -1,10 +1,13 @@
 /* global self, clients, registration */
 /**
  * Service Worker del CRM — Web Push + click en notificación.
+ * Asset version: 20260910gvr3 (bump: agrupar WhatsApp por chat + dismiss).
  * Si hay una ventana del CRM enfocada, no muestra el toast del SO (el socket
  * ya cubre toast/sonido; si el socket falla, postMessage crm-push-foreground);
  * si está en segundo plano o cerrada, sí muestra.
  */
+
+const ICON_URL = "/icon.png?v=20260910gvr";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());
@@ -22,24 +25,40 @@ function rutaSegura(url) {
   );
 }
 
-function resolverRuta(payload) {
-  if (!payload || typeof payload !== "object") return "/notifications";
-  if (rutaSegura(payload.url)) return payload.url;
-  if (typeof payload.whatsappConversacionId === "string") {
+function resolverRuta(payload, tipo) {
+  if (payload && typeof payload === "object" && typeof payload.whatsappConversacionId === "string") {
     return `/chats/${payload.whatsappConversacionId}`;
   }
+  if (tipo === "WHATSAPP_MENSAJE") return "/chats";
+
   if (
-    payload.origen === "VISITA" ||
-    payload.origen === "ACTIVIDAD" ||
-    payload.visitaId ||
-    payload.actividadId
+    tipo === "AGENDA_PROXIMA" ||
+    tipo === "AGENDA_ASIGNADA" ||
+    (payload &&
+      typeof payload === "object" &&
+      (payload.origen === "VISITA" ||
+        payload.origen === "ACTIVIDAD" ||
+        payload.visitaId ||
+        payload.actividadId))
   ) {
+    if (payload && rutaSegura(payload.url) && String(payload.url).startsWith("/agenda")) {
+      return payload.url;
+    }
+    if (payload && typeof payload.visitaId === "string") {
+      return `/agenda?visitaId=${payload.visitaId}`;
+    }
+    if (payload && typeof payload.actividadId === "string") {
+      return `/agenda?actividadId=${payload.actividadId}`;
+    }
     return "/agenda";
   }
+
+  if (!payload || typeof payload !== "object") return "/notifications";
   if (typeof payload.leadId === "string") return `/leads/${payload.leadId}`;
   if (typeof payload.metaPaginaId === "string") {
     return `/settings/meta/pages/${payload.metaPaginaId}`;
   }
+  if (rutaSegura(payload.url)) return payload.url;
   return "/notifications";
 }
 
@@ -49,6 +68,26 @@ function urlAbsoluta(ruta) {
   } catch {
     return self.location.origin + (ruta.startsWith("/") ? ruta : `/${ruta}`);
   }
+}
+
+function tagWhatsapp(conversacionId) {
+  return `wa-${conversacionId}`;
+}
+
+function cuerpoWhatsapp(mensaje, payload) {
+  const preview = mensaje || "";
+  const n =
+    payload && typeof payload === "object" && typeof payload.noLeidos === "number"
+      ? payload.noLeidos
+      : 0;
+  if (n > 1) return `${n} mensajes · ${preview}`;
+  return preview;
+}
+
+function cerrarPorTag(tag) {
+  return self.registration.getNotifications({ tag }).then((list) => {
+    for (const n of list) n.close();
+  });
 }
 
 self.addEventListener("push", (event) => {
@@ -73,18 +112,36 @@ self.addEventListener("push", (event) => {
         return;
       }
 
+      const payload =
+        data.payload && typeof data.payload === "object" ? data.payload : null;
+      const conversacionId =
+        payload && typeof payload.whatsappConversacionId === "string"
+          ? payload.whatsappConversacionId
+          : null;
+      const esWhatsapp =
+        data.tipo === "WHATSAPP_MENSAJE" || Boolean(conversacionId);
+
       const titulo = data.titulo || "CRM";
-      const tag = data.id || `crm-${Date.now()}`;
+      const tag =
+        esWhatsapp && conversacionId
+          ? tagWhatsapp(conversacionId)
+          : data.id || `crm-${Date.now()}`;
+      const body = esWhatsapp
+        ? cuerpoWhatsapp(data.mensaje, payload)
+        : data.mensaje || "";
+
       await self.registration.showNotification(titulo, {
-        body: data.mensaje || "",
+        body,
         tag,
         renotify: true,
-        icon: "/icon.png",
-        badge: "/icon.png",
+        icon: ICON_URL,
+        badge: ICON_URL,
         data: {
-          ruta: resolverRuta(data.payload),
+          ruta: resolverRuta(payload, data.tipo),
           notificacionId: data.id,
           tipo: data.tipo,
+          conversacionId: conversacionId || undefined,
+          payload,
         },
       });
     })(),
@@ -115,6 +172,21 @@ self.addEventListener("notificationclick", (event) => {
       }
     })(),
   );
+});
+
+/** App → SW: cerrar toasts del SO al leer un chat / notificación. */
+self.addEventListener("message", (event) => {
+  const msg = event.data;
+  if (!msg || typeof msg !== "object") return;
+
+  if (msg.type === "crm-dismiss-whatsapp" && typeof msg.conversacionId === "string") {
+    event.waitUntil(cerrarPorTag(tagWhatsapp(msg.conversacionId)));
+    return;
+  }
+
+  if (msg.type === "crm-dismiss-notification" && typeof msg.tag === "string") {
+    event.waitUntil(cerrarPorTag(msg.tag));
+  }
 });
 
 /** El navegador rotó el endpoint: pedir a la app abierta que re-suscriba con JWT. */

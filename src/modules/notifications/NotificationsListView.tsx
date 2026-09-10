@@ -14,6 +14,7 @@ import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { getNotifications } from "./queries";
 import { markAllNotificationsReadAction, markNotificationReadAction } from "./actions";
 import { resolverRutaNotificacion, type NotificacionItem } from "./types";
+import { dismissAllOsNotifications, dismissOsNotificationByTag, dismissWhatsappOsNotification } from "./system-notifications";
 
 function formatearFecha(iso: string) {
   return new Date(iso).toLocaleString("es-PE", { timeZone: "America/Lima", dateStyle: "short", timeStyle: "short" });
@@ -35,7 +36,19 @@ export default function NotificationsListView() {
 
   function abrirNotificacion(item: NotificacionItem) {
     if (!item.leida) marcarLeida.mutate(item.id);
-    const ruta = resolverRutaNotificacion(item.payload);
+    const conversacionId =
+      item.payload && typeof item.payload.whatsappConversacionId === "string"
+        ? item.payload.whatsappConversacionId
+        : null;
+    if (
+      (item.tipo === "WHATSAPP_MENSAJE" || conversacionId) &&
+      conversacionId
+    ) {
+      dismissWhatsappOsNotification(conversacionId);
+    } else {
+      dismissOsNotificationByTag(item.id);
+    }
+    const ruta = resolverRutaNotificacion(item.payload, item.tipo);
     if (ruta) router.push(ruta);
   }
 
@@ -44,7 +57,10 @@ export default function NotificationsListView() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-title-sm font-semibold text-gray-800 dark:text-white/90">Notificaciones</h1>
         <ActionButton
-          action={() => markAllNotificationsReadAction()}
+          action={async () => {
+            await markAllNotificationsReadAction();
+            dismissAllOsNotifications();
+          }}
           successMessage="Notificaciones marcadas como leídas"
           loadingText="Marcando…"
           variant="outline"

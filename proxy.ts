@@ -40,10 +40,15 @@ function withUpdatedCookies(
   return response;
 }
 
-/** Corre en (casi) cada navegación — ver `config.matcher` abajo. Si el
- * refresh al backend se cuelga (backend lento, cold-start de Neon, red),
- * SIN timeout esto congelaba la navegación entera, sin nada visible en el
- * Network tab del navegador (corre server-side, en el proxy de Next). */
+function clearAuthCookies(response: NextResponse) {
+  const clear = { path: "/" as const };
+  response.cookies.set(ACCESS_COOKIE, "", { ...clear, maxAge: 0 });
+  response.cookies.set(REFRESH_COOKIE, "", { ...clear, maxAge: 0 });
+  response.cookies.set(REMEMBER_COOKIE, "", { ...clear, maxAge: 0 });
+  return response;
+}
+
+/** Corre en (casi) cada navegación — ver `config.matcher` abajo. */
 const TIMEOUT_REFRESH_MS = 8_000;
 
 export async function proxy(request: NextRequest) {
@@ -63,18 +68,20 @@ export async function proxy(request: NextRequest) {
       signal: AbortSignal.timeout(TIMEOUT_REFRESH_MS),
     });
 
+    // Solo cerrar sesión si el refresh es definitivamente inválido.
+    // 5xx/429: conservar cookies para reintentar en la siguiente navegación.
     if (!res.ok) {
-      const response = NextResponse.next();
-      response.cookies.delete(ACCESS_COOKIE);
-      response.cookies.delete(REFRESH_COOKIE);
-      response.cookies.delete(REMEMBER_COOKIE);
-      return response;
+      if (res.status === 401 || res.status === 403) {
+        return clearAuthCookies(NextResponse.next());
+      }
+      return NextResponse.next();
     }
 
     const data = (await res.json()) as { accessToken: string; refreshToken: string };
-    const persist = request.cookies.get(REMEMBER_COOKIE)?.value !== "0";
-    return withUpdatedCookies(request, sessionCookies(data.accessToken, data.refreshToken, persist));
+    // Siempre renovar con maxAge (sesión persistente ~24h).
+    return withUpdatedCookies(request, sessionCookies(data.accessToken, data.refreshToken, true));
   } catch {
+    // Timeout/red: no borrar cookies; la página puede fallar un request y reintentar.
     return NextResponse.next();
   }
 }

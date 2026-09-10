@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import type {
   DateSelectArg,
   DatesSetArg,
@@ -69,10 +70,12 @@ const ETIQUETA_ESTADO: Record<string, string> = {
   CANCELADA: "Cancelada",
 };
 
-function rangoInicial(): { desde: string; hasta: string } {
-  const ahora = new Date();
-  const desde = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-  const hasta = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0, 23, 59, 59, 999);
+function rangoInicial(cuandoIso?: string | null): { desde: string; hasta: string } {
+  const parseado = cuandoIso ? new Date(cuandoIso) : null;
+  const ancla =
+    parseado && !Number.isNaN(parseado.getTime()) ? parseado : new Date();
+  const desde = new Date(ancla.getFullYear(), ancla.getMonth(), 1);
+  const hasta = new Date(ancla.getFullYear(), ancla.getMonth() + 1, 0, 23, 59, 59, 999);
   return { desde: desde.toISOString(), hasta: hasta.toISOString() };
 }
 
@@ -94,11 +97,20 @@ function itemAEvento(item: AgendaItemRow): EventInput {
     asesor,
   ].filter(Boolean);
 
+  const start = item.programadaEn;
+  let end = item.programadaFin || undefined;
+  if (end && start && new Date(end).getTime() <= new Date(start).getTime()) {
+    end = new Date(
+      new Date(start).getTime() + Math.max(1, item.duracionMinutos) * 60_000,
+    ).toISOString();
+  }
+
   return {
     id: `${item.origen}:${item.id}`,
     title: `${item.titulo} · ${lead}`,
-    start: item.programadaEn,
-    end: item.programadaFin,
+    start,
+    end,
+    allDay: false,
     backgroundColor: COLOR_ESTADO[item.estado] ?? COLOR_ESTADO.PROGRAMADA,
     borderColor: COLOR_ESTADO[item.estado] ?? COLOR_ESTADO.PROGRAMADA,
     extendedProps: {
@@ -119,6 +131,7 @@ function itemAEvento(item: AgendaItemRow): EventInput {
 function EventoContenido({ arg }: { arg: EventContentArg }) {
   const p = arg.event.extendedProps;
   const vistaLista = arg.view.type.startsWith("list");
+  const vistaMes = arg.view.type.startsWith("dayGrid");
   if (vistaLista) {
     return (
       <div className="flex min-w-0 flex-col gap-0.5 py-0.5">
@@ -135,6 +148,17 @@ function EventoContenido({ arg }: { arg: EventContentArg }) {
       </div>
     );
   }
+  // Mes/semana/día: contenido compacto para no ocultar eventos bajo "+más".
+  if (vistaMes) {
+    return (
+      <div className="fc-event-main-frame overflow-hidden px-0.5 leading-tight">
+        <div className="fc-event-title truncate text-[10px] font-semibold">
+          {arg.timeText ? `${arg.timeText} ` : ""}
+          {String(p.titulo ?? "")}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="fc-event-main-frame overflow-hidden px-0.5 leading-tight">
       {arg.timeText ? <div className="fc-event-time text-[10px] opacity-90">{arg.timeText}</div> : null}
@@ -143,7 +167,6 @@ function EventoContenido({ arg }: { arg: EventContentArg }) {
           {String(p.tipo)} · {String(p.titulo ?? "")}
         </div>
         <div className="truncate text-[10px] opacity-90">{String(p.leadNombre ?? "")}</div>
-        <div className="truncate text-[10px] opacity-80">{String(p.detalle ?? "")}</div>
       </div>
     </div>
   );
@@ -159,20 +182,30 @@ export default function AgendaView({
   crmHabilitado?: boolean;
 }) {
   const esAdmin = canManageOrganization(rol);
-  const [rango, setRango] = useState(rangoInicial);
+  const searchParams = useSearchParams();
+  const deepLinkVisitaId = searchParams.get("visitaId");
+  const deepLinkActividadId = searchParams.get("actividadId");
+  const deepLinkCuando = searchParams.get("cuando");
+  const tieneDeepLink = Boolean(deepLinkVisitaId || deepLinkActividadId);
+  const [rango, setRango] = useState(() => rangoInicial(deepLinkCuando));
   const [asignadoFiltro, setAsignadoFiltro] = useState(esAdmin ? "todos" : "mios");
   const [vistaInicial, setVistaInicial] = useState("timeGridWeek");
+  const [vistaActual, setVistaActual] = useState("timeGridWeek");
   const [esMovil, setEsMovil] = useState(false);
   const [calendarioListo, setCalendarioListo] = useState(false);
   const [itemSeleccionado, setItemSeleccionado] = useState<AgendaItemRow | null>(null);
   const [crearAbierto, setCrearAbierto] = useState(false);
   const [slotInicial, setSlotInicial] = useState<string | null>(null);
+  const [deepLinkAplicado, setDeepLinkAplicado] = useState(false);
+  const [deepLinkRangoAjustado, setDeepLinkRangoAjustado] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 639px)");
     const sync = () => setEsMovil(mq.matches);
     setEsMovil(mq.matches);
-    setVistaInicial(mq.matches ? "listWeek" : "timeGridWeek");
+    const vista = mq.matches ? "listWeek" : "timeGridWeek";
+    setVistaInicial(vista);
+    setVistaActual(vista);
     setCalendarioListo(true);
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
@@ -196,6 +229,7 @@ export default function AgendaView({
         hasta: rango.hasta,
         asignado: asignadoFiltro,
       }),
+    placeholderData: keepPreviousData,
   });
 
   const crearActividad = useAppMutation({
@@ -234,6 +268,42 @@ export default function AgendaView({
     [agendaQuery.data],
   );
 
+  // Abrir detalle si venimos de una notificación (?visitaId= / ?actividadId=).
+  useEffect(() => {
+    if (deepLinkAplicado || !tieneDeepLink) return;
+    if (agendaQuery.isLoading || agendaQuery.isFetching) return;
+    const items = agendaQuery.data ?? [];
+    const item = items.find((row) =>
+      deepLinkVisitaId
+        ? row.origen === "visita" && row.id === deepLinkVisitaId
+        : row.origen === "actividad" && row.id === deepLinkActividadId,
+    );
+    if (item) {
+      setItemSeleccionado(item);
+      setDeepLinkAplicado(true);
+      return;
+    }
+    if (!deepLinkRangoAjustado && deepLinkCuando) {
+      setRango(rangoInicial(deepLinkCuando));
+      if (esAdmin) setAsignadoFiltro("todos");
+      setDeepLinkRangoAjustado(true);
+      return;
+    }
+    // Ya ajustamos rango y no está: no insistir (fuera de permisos / cancelado).
+    setDeepLinkAplicado(true);
+  }, [
+    agendaQuery.data,
+    agendaQuery.isFetching,
+    agendaQuery.isLoading,
+    deepLinkActividadId,
+    deepLinkAplicado,
+    deepLinkCuando,
+    deepLinkRangoAjustado,
+    deepLinkVisitaId,
+    esAdmin,
+    tieneDeepLink,
+  ]);
+
   const opcionesAsignado = useMemo(() => {
     const base = [
       { value: "todos", label: "Todos los asesores" },
@@ -246,6 +316,7 @@ export default function AgendaView({
   }, [asignablesQuery.data, usuarioId]);
 
   function onDatesSet(arg: DatesSetArg) {
+    setVistaActual(arg.view.type);
     const desde = arg.start.toISOString();
     const hasta = new Date(arg.end.getTime() - 1).toISOString();
     setRango((prev) => {
@@ -316,16 +387,21 @@ export default function AgendaView({
       {agendaQuery.isError ? <QueryError error={agendaQuery.error} /> : null}
 
       <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white p-2 dark:border-gray-800 dark:bg-white/[0.03] sm:p-4">
-        {agendaQuery.isLoading || !calendarioListo ? (
+        {!calendarioListo || (agendaQuery.isLoading && !agendaQuery.data) ? (
           <CalendarSkeleton />
         ) : (
-          <div className="agenda-calendar min-h-[28rem] text-theme-sm text-gray-800 sm:min-h-[32rem] dark:text-gray-200">
+          <div className="agenda-calendar relative min-h-[28rem] text-theme-sm text-gray-800 sm:min-h-[32rem] dark:text-gray-200">
+            {agendaQuery.isFetching ? (
+              <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-0.5 overflow-hidden bg-brand-100 dark:bg-brand-500/20">
+                <div className="h-full w-1/3 animate-pulse bg-brand-500" />
+              </div>
+            ) : null}
             <FullCalendar
               key={esMovil ? "agenda-movil" : "agenda-desktop"}
               plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
               locale={esLocale}
               timeZone="America/Lima"
-              initialView={vistaInicial}
+              initialView={vistaActual || vistaInicial}
               headerToolbar={
                 esMovil
                   ? {
@@ -348,9 +424,10 @@ export default function AgendaView({
               }
               height="auto"
               contentHeight="auto"
-              slotMinTime="07:00:00"
-              slotMaxTime="21:00:00"
+              slotMinTime="06:00:00"
+              slotMaxTime="22:00:00"
               slotDuration="00:30:00"
+              scrollTime="08:00:00"
               allDaySlot={false}
               nowIndicator
               weekends
@@ -358,7 +435,8 @@ export default function AgendaView({
               selectable
               selectMirror
               stickyHeaderDates={!esMovil}
-              dayMaxEvents={esMovil ? 2 : true}
+              dayMaxEvents={esMovil ? 3 : true}
+              moreLinkClick="popover"
               events={events}
               datesSet={onDatesSet}
               eventClick={onEventClick}

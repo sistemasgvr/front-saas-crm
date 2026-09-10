@@ -80,18 +80,18 @@ export default function NotificationPermissionCard() {
 
   if (permiso === "no-soportado") {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03]">
         <div className="flex items-start gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400">
             <Icon name="mdi:cellphone" size={18} />
           </span>
-          <div>
+          <div className="min-w-0">
             <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">
               Notificaciones en este dispositivo
             </p>
             <p className="mt-1 max-w-md text-theme-xs text-gray-500 dark:text-gray-400">
-              En iPhone: Compartir → Agregar a pantalla de inicio, y abre el CRM desde el icono.
-              En Android: usa Chrome y activa el permiso cuando se solicite.
+              En iPhone: toca Compartir, elige &quot;Agregar a pantalla de inicio&quot; y abre el CRM
+              desde ese icono. En Android, usa Chrome y activa el permiso cuando se solicite.
             </p>
           </div>
         </div>
@@ -100,13 +100,13 @@ export default function NotificationPermissionCard() {
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400">
             <Icon name="mdi:bell-ring-outline" size={18} />
           </span>
-          <div>
+          <div className="min-w-0">
             <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">
               Notificaciones del sistema
             </p>

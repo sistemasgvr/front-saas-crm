@@ -19,6 +19,7 @@ export default function LoginForm() {
   const remember = useAuthUiStore((state) => state.remember);
   const forget = useAuthUiStore((state) => state.forget);
   const rememberedEmail = useAuthUiStore((state) => state.rememberedEmail);
+  const rememberedPassword = useAuthUiStore((state) => state.rememberedPassword);
   const remembered = useAuthUiStore((state) => state.rememberMe);
   const {
     register,
@@ -34,22 +35,21 @@ export default function LoginForm() {
   useEffect(() => {
     if (!remembered || !rememberedEmail) return;
     setValue("email", rememberedEmail);
+    setValue("password", rememberedPassword);
     setValue("rememberMe", true);
-  }, [remembered, rememberedEmail, setValue]);
+  }, [remembered, rememberedEmail, rememberedPassword, setValue]);
 
   const login = useAppMutation({
     mutationFn: async (values: LoginValues) => {
       const result = await loginAction(
         toFormData({ email: values.email, password: values.password, rememberMe: values.rememberMe }),
       );
-      if (values.rememberMe) remember(values.email);
+      if (values.rememberMe) remember(values.email, values.password);
       else forget();
 
       // Navegación dura: sale del login al instante (cookies ya seteadas).
-      // El soft router.push dejaba el formulario visible mientras cargaba el RSC.
       window.location.assign(result.redirectTo);
 
-      // Mantener isPending / overlay hasta que el navegador descargue la página.
       await new Promise<never>(() => {});
     },
   });
@@ -101,14 +101,22 @@ export default function LoginForm() {
                 />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div>
                 <Controller
                   name="rememberMe"
                   control={control}
                   render={({ field }) => (
-                    <Checkbox checked={field.value} onChange={field.onChange} label="Recordar email" />
+                    <Checkbox
+                      checked={field.value}
+                      onChange={field.onChange}
+                      label="Recordar correo y contraseña"
+                    />
                   )}
                 />
+                <p className="mt-1.5 text-theme-xs text-gray-400 dark:text-gray-500">
+                  Solo rellena el formulario la próxima vez en este navegador. No alarga la sesión
+                  iniciada.
+                </p>
               </div>
 
               <div>

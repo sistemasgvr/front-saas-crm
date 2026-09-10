@@ -22,6 +22,19 @@ export async function markAllNotificationsReadAction(): Promise<void> {
   }
 }
 
+export async function markWhatsappNotificationsReadAction(
+  conversacionId: string,
+): Promise<{ count: number }> {
+  try {
+    return await apiFetch<{ count: number }>(
+      `/notifications/read-whatsapp/${conversacionId}`,
+      { method: "POST" },
+    );
+  } catch (error) {
+    fail(error, "No se pudieron marcar las notificaciones de WhatsApp como leídas");
+  }
+}
+
 export async function subscribePushAction(input: {
   endpoint: string;
   keys: { p256dh: string; auth: string };

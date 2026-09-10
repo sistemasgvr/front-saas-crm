@@ -69,6 +69,78 @@ export async function pedirPermisoNotificacionesSistema(): Promise<NotificationP
   return resultado;
 }
 
+/** Tag estable por chat: colapsa el stack del SO (SW + fallback). */
+export function tagNotificacionWhatsapp(conversacionId: string): string {
+  return `wa-${conversacionId}`;
+}
+
+/** Cuerpo agrupado: "N mensajes · preview" si hay más de uno sin leer. */
+export function cuerpoNotificacionWhatsapp(
+  mensaje: string,
+  noLeidos?: number | null,
+): string {
+  if (typeof noLeidos === "number" && noLeidos > 1) {
+    return `${noLeidos} mensajes · ${mensaje}`;
+  }
+  return mensaje;
+}
+
+/**
+ * Cierra el toast del SO agrupado por chat (tras abrir / marcar leído).
+ * postMessage al SW + getNotifications por si el aviso lo creó la página.
+ */
+export function dismissWhatsappOsNotification(conversacionId: string): void {
+  if (typeof navigator === "undefined") return;
+  const tag = tagNotificacionWhatsapp(conversacionId);
+  try {
+    navigator.serviceWorker?.controller?.postMessage({
+      type: "crm-dismiss-whatsapp",
+      conversacionId,
+    });
+  } catch {
+    // ignore
+  }
+  void navigator.serviceWorker
+    ?.getRegistration?.("/")
+    .then((reg) => reg?.getNotifications?.({ tag }))
+    .then((list) => {
+      list?.forEach((n) => n.close());
+    })
+    .catch(() => undefined);
+}
+
+/** Cierra por tag genérico (id de notificación CRM, etc.). */
+export function dismissOsNotificationByTag(tag: string): void {
+  if (typeof navigator === "undefined" || !tag) return;
+  try {
+    navigator.serviceWorker?.controller?.postMessage({
+      type: "crm-dismiss-notification",
+      tag,
+    });
+  } catch {
+    // ignore
+  }
+  void navigator.serviceWorker
+    ?.getRegistration?.("/")
+    .then((reg) => reg?.getNotifications?.({ tag }))
+    .then((list) => {
+      list?.forEach((n) => n.close());
+    })
+    .catch(() => undefined);
+}
+
+/** Cierra todas las notificaciones del SO mostradas por este SW. */
+export function dismissAllOsNotifications(): void {
+  if (typeof navigator === "undefined") return;
+  void navigator.serviceWorker
+    ?.getRegistration?.("/")
+    .then((reg) => reg?.getNotifications?.())
+    .then((list) => {
+      list?.forEach((n) => n.close());
+    })
+    .catch(() => undefined);
+}
+
 /**
  * Aviso nativo del SO desde la pestaña abierta.
  * Con Web Push activo preferimos el Service Worker (funciona en segundo plano
@@ -88,8 +160,11 @@ export function mostrarNotificacionSistema(
     const notif = new Notification(titulo, {
       body: opciones.body,
       tag: opciones.tag,
-      icon: "/icon.png",
-    });
+      // Mismo tag → reemplaza el toast anterior (agrupa por chat).
+      // `renotify` es estándar en Chromium; tipado DOM aún no lo incluye.
+      renotify: true,
+      icon: "/icon.png?v=20260910gvr",
+    } as NotificationOptions);
     if (opciones.onClick) {
       const onClick = opciones.onClick;
       notif.onclick = () => {

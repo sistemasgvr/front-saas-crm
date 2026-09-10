@@ -120,11 +120,11 @@ export function EditModuleForm({ modulo }: { modulo: ModuloAdmin }) {
   return (
     <form
       onSubmit={handleSubmit((values) => mutation.mutate(values))}
-      className="grid grid-cols-1 gap-3 sm:grid-cols-4 sm:items-end"
+      className="grid grid-cols-1 gap-3 md:grid-cols-4 md:items-end"
       noValidate
     >
       <fieldset disabled={mutation.isPending} className="contents">
-        <div className="sm:col-span-1">
+        <div className="md:col-span-1">
           <Label>Código</Label>
           <Input defaultValue={modulo.codigo} disabled />
         </div>
@@ -156,7 +156,7 @@ export function EditModuleForm({ modulo }: { modulo: ModuloAdmin }) {
             {...register("orden", { valueAsNumber: true })}
           />
         </div>
-        <div className="sm:col-span-3">
+        <div className="md:col-span-3">
           <Label htmlFor={`descripcion-${modulo.id}`}>Descripción</Label>
           <TextArea
             id={`descripcion-${modulo.id}`}

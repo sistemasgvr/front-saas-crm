@@ -59,7 +59,10 @@ export function debeRegistrarPushEnEsteOrigen(): boolean {
 export async function registrarServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!soportaServiceWorker()) return null;
   try {
-    return await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    return await navigator.serviceWorker.register("/sw.js?v=20260910gvr3", {
+      scope: "/",
+      updateViaCache: "none",
+    });
   } catch {
     return null;
   }

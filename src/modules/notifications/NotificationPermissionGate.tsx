@@ -95,8 +95,8 @@ export default function NotificationPermissionGate() {
             Notificaciones no disponibles aquí
           </h2>
           <p className="mt-2 text-center text-theme-sm text-gray-500 dark:text-gray-400">
-            En iPhone, agrega el CRM a la pantalla de inicio (Compartir → Agregar a inicio) y ábrelo
-            desde ahí para poder recibir avisos. En Android usa Chrome.
+            En iPhone: toca Compartir, elige &quot;Agregar a pantalla de inicio&quot; y abre el CRM
+            desde ese icono para recibir avisos. En Android, usa Chrome.
           </p>
           <p className="mt-3 text-center text-theme-xs text-gray-400 dark:text-gray-500">
             El sonido y los avisos dentro del CRM siguen funcionando con la pestaña abierta.

@@ -16,6 +16,7 @@ import { useNotificationsSocket } from "./useNotificationsSocket";
 import { getNotifications, getUnreadCount } from "./queries";
 import { markNotificationReadAction } from "./actions";
 import { resolverRutaNotificacion, type NotificacionItem } from "./types";
+import { dismissOsNotificationByTag, dismissWhatsappOsNotification } from "./system-notifications";
 
 function formatearFecha(iso: string) {
   return new Date(iso).toLocaleString("es-PE", { timeZone: "America/Lima", dateStyle: "short", timeStyle: "short" });
@@ -82,7 +83,19 @@ export default function NotificationBell({ organizacionId }: NotificationBellPro
   function abrirNotificacion(item: NotificacionItem) {
     setIsOpen(false);
     if (!item.leida) marcarLeida.mutate(item.id);
-    const ruta = resolverRutaNotificacion(item.payload);
+    const conversacionId =
+      item.payload && typeof item.payload.whatsappConversacionId === "string"
+        ? item.payload.whatsappConversacionId
+        : null;
+    if (
+      (item.tipo === "WHATSAPP_MENSAJE" || conversacionId) &&
+      conversacionId
+    ) {
+      dismissWhatsappOsNotification(conversacionId);
+    } else {
+      dismissOsNotificationByTag(item.id);
+    }
+    const ruta = resolverRutaNotificacion(item.payload, item.tipo);
     if (ruta) router.push(ruta);
   }
 

@@ -7,14 +7,17 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { queryKeys } from "@/src/lib/query/keys";
 import type { ConversacionResumen } from "@/src/modules/chats/types";
+import { markWhatsappNotificationsReadAction, subscribePushAction, unsubscribePushAction } from "./actions";
 import { getSocketTicket, getVapidPublicKey } from "./queries";
-import { subscribePushAction, unsubscribePushAction } from "./actions";
 import { reproducirSonidoNotificacion } from "./notification-sounds";
 import {
+  cuerpoNotificacionWhatsapp,
+  dismissWhatsappOsNotification,
   marcarNotificacionVistaReciente,
   mostrarNotificacionSistema,
   notificacionYaVistaReciente,
   permisoNotificacionesSistema,
+  tagNotificacionWhatsapp,
   useNotificacionesSistemaPermiso,
 } from "./system-notifications";
 import {
@@ -111,16 +114,59 @@ function pintarNotificacionEnVivo(
   router: ReturnType<typeof useRouter>,
   queryClient: ReturnType<typeof useQueryClient>,
 ): void {
+  const conversacionId =
+    typeof data.payload?.whatsappConversacionId === "string"
+      ? data.payload.whatsappConversacionId
+      : null;
+  const enChatActivo =
+    Boolean(conversacionId) &&
+    typeof window !== "undefined" &&
+    (window.location.pathname === `/chats/${conversacionId}` ||
+      window.location.pathname.startsWith(`/chats/${conversacionId}/`));
+
+  // Ya estás viendo ese chat: no toast/SO; marcar leída + quitar aviso agrupado.
+  if (enChatActivo && conversacionId) {
+    dismissWhatsappOsNotification(conversacionId);
+    void markWhatsappNotificationsReadAction(conversacionId)
+      .then(() => {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsAll });
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.notificationsUnreadCount,
+        });
+      })
+      .catch(() => undefined);
+    invalidarCachesNotificacion(queryClient, data.payload, data.tipo);
+    return;
+  }
+
   const yaVista = notificacionYaVistaReciente(data.id);
+  const ruta = resolverRutaNotificacion(data.payload, data.tipo);
   if (!yaVista) {
     marcarNotificacionVistaReciente(data.id);
-    toast.info(data.titulo, { description: data.mensaje });
+    toast.info(data.titulo, {
+      description: data.mensaje,
+      ...(ruta
+        ? {
+            action: {
+              label: "Ver",
+              onClick: () => router.push(ruta),
+            },
+          }
+        : {}),
+    });
     reproducirSonidoNotificacion(data.tipo);
+    const noLeidos =
+      typeof data.payload?.noLeidos === "number" ? data.payload.noLeidos : undefined;
+    const esWhatsapp = data.tipo === "WHATSAPP_MENSAJE" || Boolean(conversacionId);
     mostrarNotificacionSistema(data.titulo, {
-      body: data.mensaje,
-      tag: data.id,
+      body: esWhatsapp
+        ? cuerpoNotificacionWhatsapp(data.mensaje, noLeidos)
+        : data.mensaje,
+      tag:
+        esWhatsapp && conversacionId
+          ? tagNotificacionWhatsapp(conversacionId)
+          : data.id,
       onClick: () => {
-        const ruta = resolverRutaNotificacion(data.payload);
         if (ruta) router.push(ruta);
       },
     });
@@ -225,6 +271,16 @@ export function useNotificationsSocket(enabled: boolean) {
 
     socket.on("notificacion:nueva", (data: NotificacionEventoSocket) => {
       pintarNotificacionEnVivo(data, router, queryClient);
+    });
+
+    socket.on("notificacion:leida", () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsAll });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
+    });
+
+    socket.on("notificacion:todas-leidas", () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsAll });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
     });
 
     return () => {

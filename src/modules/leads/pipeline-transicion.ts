@@ -1,4 +1,7 @@
 import type { CampoTransicionMeta } from "./types";
+import { datetimeLocalAISO } from "@/src/lib/lima-datetime";
+
+export { datetimeLocalAISO };
 
 /** Etiquetas para metadata del historial (espejo del dominio backend). */
 const ETIQUETAS_METADATA: Record<string, string> = {
@@ -86,13 +89,6 @@ export function camposParaDestino(
 ): CampoTransicionMeta[] {
   if (esReapertura) return meta.camposReapertura ?? [];
   return meta.estados.find((e) => e.codigo === destino)?.camposAlEntrar ?? [];
-}
-
-/** Convierte datetime-local (sin Z) a ISO para el backend. */
-export function datetimeLocalAISO(valor: string): string {
-  if (!valor) return valor;
-  const d = new Date(valor);
-  return Number.isNaN(d.getTime()) ? valor : d.toISOString();
 }
 
 export function formularioTransicionValido(

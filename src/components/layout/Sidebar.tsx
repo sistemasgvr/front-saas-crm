@@ -37,15 +37,18 @@ function NavLink({
   active,
   expanded,
   badge,
+  onNavigate,
 }: {
   item: NavItem;
   active: boolean;
   expanded: boolean;
   badge: number;
+  onNavigate?: () => void;
 }) {
   return (
     <Link
       href={item.path}
+      onClick={() => onNavigate?.()}
       className={`menu-item group ${active ? "menu-item-active" : "menu-item-inactive"} ${
         !expanded ? "lg:justify-center" : "lg:justify-start"
       }`}
@@ -74,9 +77,13 @@ export default function Sidebar({
   homeHref,
   sectionTitle = "Menú",
 }: SidebarProps) {
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { isExpanded, isMobileOpen, isHovered, setIsHovered, toggleMobileSidebar } = useSidebar();
   const pathname = usePathname();
   const expanded = isExpanded || isHovered || isMobileOpen;
+
+  const closeMobileNav = () => {
+    if (isMobileOpen) toggleMobileSidebar();
+  };
 
   const resolvedGroups: NavGroup[] =
     groups && groups.length > 0
@@ -148,6 +155,7 @@ export default function Sidebar({
                         active={isActive(item.path)}
                         expanded={expanded}
                         badge={badgeFor(item.path)}
+                        onNavigate={closeMobileNav}
                       />
                     </li>
                   ))}

@@ -26,7 +26,7 @@ export default function ModulesView() {
     <div className="space-y-6">
       <PageHeader title="Módulos" description="Catálogo de funcionalidades que se activan por empresa." />
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03]">
         <h2 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90">Nuevo módulo</h2>
         <CreateModuleForm />
       </div>
@@ -40,22 +40,24 @@ export default function ModulesView() {
         {(modulos ?? []).map((modulo) => (
           <div
             key={modulo.id}
-            className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]"
+            className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03]"
           >
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <Avatar
                   name={modulo.nombre}
                   icon={modulo.icono || "mdi:puzzle-outline"}
                   shape="rounded"
                   size="md"
                 />
-                <div>
-                  <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">{modulo.nombre}</p>
-                  <p className="text-theme-xs text-gray-500 dark:text-gray-400">{modulo.codigo}</p>
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                    {modulo.nombre}
+                  </p>
+                  <p className="truncate text-theme-xs text-gray-500 dark:text-gray-400">{modulo.codigo}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                 <StatusBadge
                   active={modulo.estado === 1}
                   activeLabel="Catálogo activo"

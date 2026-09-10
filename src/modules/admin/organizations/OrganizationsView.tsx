@@ -11,10 +11,11 @@ import type { DynamicFilterFieldDef, DynamicFilterValues } from "@/src/component
 import PageHeader from "@/src/components/ui/PageHeader";
 import Pagination from "@/src/components/ui/Pagination";
 import { QueryError } from "@/src/components/ui/PageLoader";
-import { TableRowsSkeleton } from "@/src/components/ui/skeletons";
+import { TablePageSkeleton } from "@/src/components/ui/skeletons";
 import TableAction from "@/src/components/ui/TableAction";
 import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
+import type { OrganizacionAdmin } from "../types";
 import { getAdminOrganizations } from "./queries";
 
 const PAGE_SIZE = 20;
@@ -37,6 +38,34 @@ function toEstado(value: string | undefined): 0 | 1 | undefined {
   if (value === "0") return 0;
   if (value === "1") return 1;
   return undefined;
+}
+
+function OrganizationMobileCard({ org }: { org: OrganizacionAdmin }) {
+  return (
+    <article className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="flex items-start justify-between gap-3">
+        <EntityCell
+          name={org.nombre}
+          subtitle={org.slug}
+          src={org.logoUrl}
+          shape="rounded"
+          icon="mdi:office-building-outline"
+          size="sm"
+        />
+        <div className="shrink-0">
+          <StatusBadge active={org.estado === 1} activeLabel="Activa" inactiveLabel="Desactivada" />
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-end border-t border-gray-100 pt-3 dark:border-gray-800">
+        <TableAction
+          href={`/admin/organizations/${org.id}`}
+          icon="mdi:eye-outline"
+          label={`Ver ${org.nombre}`}
+        />
+      </div>
+    </article>
+  );
 }
 
 export default function OrganizationsView() {
@@ -75,13 +104,95 @@ export default function OrganizationsView() {
       </PageHeader>
 
       {isLoading ? (
-        <TableRowsSkeleton rows={8} cols={4} />
+        <TablePageSkeleton cols={3} />
       ) : isError ? (
         <QueryError error={error} />
       ) : (
-        <TableCard
-          footer={
-            data ? (
+        <>
+          <div className="space-y-3 md:hidden">
+            {orgs.length === 0 ? (
+              <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+                <EmptyState
+                  icon="mdi:office-building-outline"
+                  title="No hay empresas con estos filtros."
+                  description="Prueba otra búsqueda o cambia el estado."
+                />
+              </div>
+            ) : (
+              orgs.map((org) => <OrganizationMobileCard key={org.id} org={org} />)
+            )}
+          </div>
+
+          <div className="hidden md:block">
+            <TableCard
+              footer={
+                data ? (
+                  <Pagination
+                    page={data.page}
+                    pageSize={data.pageSize}
+                    total={data.total}
+                    totalPages={data.totalPages}
+                    onPageChange={setPage}
+                    itemLabel="empresas"
+                  />
+                ) : null
+              }
+            >
+              <Table>
+                <TableHeader className="border-b border-gray-100 dark:border-gray-800">
+                  <TableRow>
+                    <TableCell isHeader className={thClass}>
+                      Empresa
+                    </TableCell>
+                    <TableCell isHeader className={thClass}>
+                      Estado
+                    </TableCell>
+                    <TableCell isHeader className={thClassEnd}>
+                      Acción
+                    </TableCell>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {orgs.length === 0 && (
+                    <EmptyState
+                      colSpan={3}
+                      icon="mdi:office-building-outline"
+                      title="No hay empresas con estos filtros."
+                      description="Prueba otra búsqueda o cambia el estado."
+                    />
+                  )}
+                  {orgs.map((org) => (
+                    <TableRow key={org.id}>
+                      <TableCell className={tdPrimaryClass}>
+                        <EntityCell
+                          name={org.nombre}
+                          subtitle={org.slug}
+                          src={org.logoUrl}
+                          shape="rounded"
+                          icon="mdi:office-building-outline"
+                        />
+                      </TableCell>
+                      <TableCell className={tdClass}>
+                        <StatusBadge active={org.estado === 1} activeLabel="Activa" inactiveLabel="Desactivada" />
+                      </TableCell>
+                      <TableCell className="px-5 py-4">
+                        <div className="flex justify-end">
+                          <TableAction
+                            href={`/admin/organizations/${org.id}`}
+                            icon="mdi:eye-outline"
+                            label={`Ver ${org.nombre}`}
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableCard>
+          </div>
+
+          {data ? (
+            <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50/70 px-5 py-5 dark:border-gray-800 dark:bg-white/[0.02] md:hidden">
               <Pagination
                 page={data.page}
                 pageSize={data.pageSize}
@@ -90,60 +201,9 @@ export default function OrganizationsView() {
                 onPageChange={setPage}
                 itemLabel="empresas"
               />
-            ) : null
-          }
-        >
-          <Table>
-            <TableHeader className="border-b border-gray-100 dark:border-gray-800">
-              <TableRow>
-                <TableCell isHeader className={thClass}>
-                  Empresa
-                </TableCell>
-                <TableCell isHeader className={thClass}>
-                  Estado
-                </TableCell>
-                <TableCell isHeader className={thClassEnd}>
-                  Acción
-                </TableCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {orgs.length === 0 && (
-                <EmptyState
-                  colSpan={3}
-                  icon="mdi:office-building-outline"
-                  title="No hay empresas con estos filtros."
-                  description="Prueba otra búsqueda o cambia el estado."
-                />
-              )}
-              {orgs.map((org) => (
-                <TableRow key={org.id}>
-                  <TableCell className={tdPrimaryClass}>
-                    <EntityCell
-                      name={org.nombre}
-                      subtitle={org.slug}
-                      src={org.logoUrl}
-                      shape="rounded"
-                      icon="mdi:office-building-outline"
-                    />
-                  </TableCell>
-                  <TableCell className={tdClass}>
-                    <StatusBadge active={org.estado === 1} activeLabel="Activa" inactiveLabel="Desactivada" />
-                  </TableCell>
-                  <TableCell className="px-5 py-4">
-                    <div className="flex justify-end">
-                      <TableAction
-                        href={`/admin/organizations/${org.id}`}
-                        icon="mdi:eye-outline"
-                        label={`Ver ${org.nombre}`}
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableCard>
+            </div>
+          ) : null}
+        </>
       )}
     </div>
   );

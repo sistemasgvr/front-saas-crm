@@ -8,7 +8,7 @@ import Select from "@/src/components/form/Select";
 import Input from "@/src/components/form/input/InputField";
 import TextArea from "@/src/components/form/input/TextArea";
 import { queryKeys } from "@/src/lib/query/keys";
-import { datetimeLocalAISO } from "@/src/modules/leads/pipeline-transicion";
+import { datetimeLocalAISO, isoADatetimeLocalLima } from "@/src/lib/lima-datetime";
 import { getAsignables, getLeads } from "@/src/modules/leads/queries";
 import type {
   CrearActividadAgendaInput,
@@ -39,11 +39,7 @@ const MODALIDADES = [
 ];
 
 function aDatetimeLocal(iso?: string) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return iso ? isoADatetimeLocalLima(iso) : "";
 }
 
 export default function CrearActividadAgendaModal({

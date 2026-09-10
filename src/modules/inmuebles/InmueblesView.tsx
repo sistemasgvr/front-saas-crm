@@ -25,6 +25,7 @@ import {
   etiquetaOperacionInmueble,
   etiquetaTipoInmueble,
   formatearPrecioInmueble,
+  type InmuebleRow,
 } from "./types";
 
 const PAGE_SIZE = 20;
@@ -65,6 +66,51 @@ function colorEstado(estado: string): "success" | "warning" | "error" | "light" 
   if (estado === "RESERVADO") return "warning";
   if (estado === "VENDIDO") return "error";
   return "light";
+}
+
+function InmuebleMobileCard({ row }: { row: InmuebleRow }) {
+  return (
+    <article className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <Link
+            href={`/inmuebles/${row.id}`}
+            className="font-medium text-gray-800 hover:underline dark:text-white/90"
+          >
+            {row.codigo}
+          </Link>
+          <p className="mt-0.5 truncate text-theme-xs text-gray-500">
+            {row.titulo}
+            {row.zona ? ` · ${row.zona}` : ""}
+          </p>
+        </div>
+        <Badge size="sm" color={colorEstado(row.estadoInmueble)}>
+          {etiquetaEstadoInmueble(row.estadoInmueble)}
+        </Badge>
+      </div>
+
+      <dl className="mt-3 space-y-1.5 text-theme-sm text-gray-600 dark:text-gray-300">
+        <div className="flex justify-between gap-3">
+          <dt className="text-gray-400">Tipo</dt>
+          <dd className="truncate text-right">{etiquetaTipoInmueble(row.tipo)}</dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-gray-400">Operación</dt>
+          <dd className="truncate text-right">{etiquetaOperacionInmueble(row.operacion)}</dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-gray-400">Precio</dt>
+          <dd className="truncate text-right font-medium text-gray-800 dark:text-white/90">
+            {formatearPrecioInmueble(row.precio, row.moneda)}
+          </dd>
+        </div>
+      </dl>
+
+      <div className="mt-3 flex items-center justify-end border-t border-gray-100 pt-3 dark:border-gray-800">
+        <TableAction href={`/inmuebles/${row.id}`} label="Ver" icon="mdi:eye-outline" />
+      </div>
+    </article>
+  );
 }
 
 export default function InmueblesView({ rol }: { rol: string | null }) {
@@ -114,48 +160,15 @@ export default function InmueblesView({ rol }: { rol: string | null }) {
       </PageHeader>
 
       {isLoading ? (
-        <TablePageSkeleton cols={5} showMobileCards={false} />
+        <TablePageSkeleton cols={5} />
       ) : isError ? (
         <QueryError error={error} />
       ) : (
-        <TableCard
-          footer={
-            data ? (
-              <Pagination
-                page={data.page}
-                pageSize={data.pageSize}
-                total={data.total}
-                totalPages={data.totalPages}
-                onPageChange={setPage}
-                itemLabel="inmuebles"
-              />
-            ) : null
-          }
-        >
-          <Table>
-            <TableHeader className="border-b border-gray-100 dark:border-gray-800">
-              <TableRow>
-                <TableCell isHeader className={thClass}>
-                  Inmueble
-                </TableCell>
-                <TableCell isHeader className={thClass}>
-                  Tipo / Op.
-                </TableCell>
-                <TableCell isHeader className={thClass}>
-                  Precio
-                </TableCell>
-                <TableCell isHeader className={thClass}>
-                  Estado
-                </TableCell>
-                <TableCell isHeader className={thClassEnd}>
-                  Acción
-                </TableCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {rows.length === 0 && (
+        <>
+          <div className="space-y-3 md:hidden">
+            {rows.length === 0 ? (
+              <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
                 <EmptyState
-                  colSpan={5}
                   icon="mdi:home-city-outline"
                   title="No hay inmuebles con estos filtros."
                   description={
@@ -164,51 +177,119 @@ export default function InmueblesView({ rol }: { rol: string | null }) {
                       : "Pide a un administrador que cargue el catálogo."
                   }
                 />
-              )}
-              {rows.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell className={tdPrimaryClass}>
-                    <Link
-                      href={`/inmuebles/${row.id}`}
-                      className="font-medium text-gray-800 hover:underline dark:text-white/90"
-                    >
-                      {row.codigo}
-                    </Link>
-                    <p className="mt-0.5 truncate text-theme-xs text-gray-500">
-                      {row.titulo}
-                      {row.zona ? ` · ${row.zona}` : ""}
-                    </p>
-                  </TableCell>
-                  <TableCell className={tdClass}>
-                    <span className="text-theme-sm text-gray-700 dark:text-gray-300">
-                      {etiquetaTipoInmueble(row.tipo)}
-                    </span>
-                    <p className="text-theme-xs text-gray-500">
-                      {etiquetaOperacionInmueble(row.operacion)}
-                    </p>
-                  </TableCell>
-                  <TableCell className={tdClass}>
-                    {formatearPrecioInmueble(row.precio, row.moneda)}
-                  </TableCell>
-                  <TableCell className={tdClass}>
-                    <Badge size="sm" color={colorEstado(row.estadoInmueble)}>
-                      {etiquetaEstadoInmueble(row.estadoInmueble)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="px-5 py-4">
-                    <div className="flex justify-end">
-                      <TableAction
-                        href={`/inmuebles/${row.id}`}
-                        label="Ver"
-                        icon="mdi:eye-outline"
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableCard>
+              </div>
+            ) : (
+              rows.map((row) => <InmuebleMobileCard key={row.id} row={row} />)
+            )}
+          </div>
+
+          <div className="hidden md:block">
+            <TableCard
+              footer={
+                data ? (
+                  <Pagination
+                    page={data.page}
+                    pageSize={data.pageSize}
+                    total={data.total}
+                    totalPages={data.totalPages}
+                    onPageChange={setPage}
+                    itemLabel="inmuebles"
+                  />
+                ) : null
+              }
+            >
+              <Table className="table-fixed">
+                <TableHeader className="border-b border-gray-100 dark:border-gray-800">
+                  <TableRow>
+                    <TableCell isHeader className={`${thClass} w-[32%]`}>
+                      Inmueble
+                    </TableCell>
+                    <TableCell isHeader className={`${thClass} w-[18%]`}>
+                      Tipo / Op.
+                    </TableCell>
+                    <TableCell isHeader className={`${thClass} w-[18%]`}>
+                      Precio
+                    </TableCell>
+                    <TableCell isHeader className={`${thClass} w-[16%]`}>
+                      Estado
+                    </TableCell>
+                    <TableCell isHeader className={`${thClassEnd} w-[16%]`}>
+                      Acción
+                    </TableCell>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {rows.length === 0 && (
+                    <EmptyState
+                      colSpan={5}
+                      icon="mdi:home-city-outline"
+                      title="No hay inmuebles con estos filtros."
+                      description={
+                        puedeEditar
+                          ? "Crea el primero para usarlo en visitas y el pipeline."
+                          : "Pide a un administrador que cargue el catálogo."
+                      }
+                    />
+                  )}
+                  {rows.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className={tdPrimaryClass}>
+                        <Link
+                          href={`/inmuebles/${row.id}`}
+                          className="font-medium text-gray-800 hover:underline dark:text-white/90"
+                        >
+                          {row.codigo}
+                        </Link>
+                        <p className="mt-0.5 truncate text-theme-xs text-gray-500">
+                          {row.titulo}
+                          {row.zona ? ` · ${row.zona}` : ""}
+                        </p>
+                      </TableCell>
+                      <TableCell className={tdClass}>
+                        <span className="text-theme-sm text-gray-700 dark:text-gray-300">
+                          {etiquetaTipoInmueble(row.tipo)}
+                        </span>
+                        <p className="text-theme-xs text-gray-500">
+                          {etiquetaOperacionInmueble(row.operacion)}
+                        </p>
+                      </TableCell>
+                      <TableCell className={tdClass}>
+                        {formatearPrecioInmueble(row.precio, row.moneda)}
+                      </TableCell>
+                      <TableCell className={tdClass}>
+                        <Badge size="sm" color={colorEstado(row.estadoInmueble)}>
+                          {etiquetaEstadoInmueble(row.estadoInmueble)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-5 py-4">
+                        <div className="flex justify-end">
+                          <TableAction
+                            href={`/inmuebles/${row.id}`}
+                            label="Ver"
+                            icon="mdi:eye-outline"
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableCard>
+          </div>
+
+          {data ? (
+            <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50/70 px-5 py-5 dark:border-gray-800 dark:bg-white/[0.02] md:hidden">
+              <Pagination
+                page={data.page}
+                pageSize={data.pageSize}
+                total={data.total}
+                totalPages={data.totalPages}
+                onPageChange={setPage}
+                itemLabel="inmuebles"
+              />
+            </div>
+          ) : null}
+        </>
       )}
     </div>
   );

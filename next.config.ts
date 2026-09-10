@@ -14,6 +14,17 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: projectRoot,
   },
+  async headers() {
+    const noCache = [
+      { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
+    ];
+    return [
+      { source: "/icon.png", headers: noCache },
+      { source: "/icon-maskable.png", headers: noCache },
+      { source: "/manifest.webmanifest", headers: noCache },
+      { source: "/sw.js", headers: noCache },
+    ];
+  },
 };
 
 export default nextConfig;

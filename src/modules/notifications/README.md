@@ -47,13 +47,17 @@ Generar: `npx web-push generate-vapid-keys`. Mismo par en todos los entornos que
 
 ## Quién recibe qué
 
-| Evento | Destinatarios |
-|--------|----------------|
-| WhatsApp con lead **asignado** | Solo el asignado |
-| WhatsApp sin lead / sin asignar | Toda la org (usuarios activos) |
-| Lead nuevo con auto-asignación | El asignado |
-| Lead nuevo **sin** asignado | Toda la org activa |
-| Agenda | El destinatario del recordatorio |
+Todas pasan por `CrearNotificacionUseCase` → BD + Socket (`notificacion:nueva`) + Web Push a los mismos `usuarioIds`. Marcar leída sincroniza dispositivos vía `notificacion:leida` / `notificacion:todas-leidas`.
+
+| Evento | Destinatarios | Deep link |
+|--------|----------------|-----------|
+| WhatsApp con lead **asignado** | Solo el asignado | `/chats/{id}` |
+| WhatsApp sin lead / sin asignar | Toda la org (usuarios activos) | `/chats/{id}` |
+| Lead nuevo con auto-asignación | El asignado | `/leads/{id}` |
+| Lead nuevo **sin** asignado | Toda la org activa | `/leads/{id}` |
+| Agenda próxima (−30/−15/−5 min) | Asignado + creador + dueño del lead | `/agenda?visitaId=` o `?actividadId=` + `cuando` |
+| Agenda asignada (crear/reasignar a otro) | Nuevo asignado | Igual agenda |
+| Meta webhook con problemas | Quien ejecutó la verificación | `/settings/meta/pages/{id}` |
 
 ## Diagnóstico: “a este usuario no le llega”
 

@@ -6,7 +6,9 @@ import { persist } from "zustand/middleware";
 interface AuthUiState {
   rememberMe: boolean;
   rememberedEmail: string;
-  remember: (email: string) => void;
+  rememberedPassword: string;
+  /** Guarda email+contraseña solo para autofill del formulario (no controla duración de sesión). */
+  remember: (email: string, password: string) => void;
   forget: () => void;
 }
 
@@ -15,8 +17,19 @@ export const useAuthUiStore = create<AuthUiState>()(
     (set) => ({
       rememberMe: false,
       rememberedEmail: "",
-      remember: (email) => set({ rememberMe: true, rememberedEmail: email }),
-      forget: () => set({ rememberMe: false, rememberedEmail: "" }),
+      rememberedPassword: "",
+      remember: (email, password) =>
+        set({
+          rememberMe: true,
+          rememberedEmail: email,
+          rememberedPassword: password,
+        }),
+      forget: () =>
+        set({
+          rememberMe: false,
+          rememberedEmail: "",
+          rememberedPassword: "",
+        }),
     }),
     { name: "gvr-auth-ui" },
   ),

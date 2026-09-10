@@ -8,7 +8,7 @@ import Select from "@/src/components/form/Select";
 import Input from "@/src/components/form/input/InputField";
 import TextArea from "@/src/components/form/input/TextArea";
 import { Icon } from "@/src/components/ui/Icon";
-import { datetimeLocalAISO } from "@/src/modules/leads/pipeline-transicion";
+import { datetimeLocalAISO, isoADatetimeLocalLima } from "@/src/lib/lima-datetime";
 import type {
   ActualizarActividadAgendaInput,
   ActualizarVisitaAgendaInput,
@@ -48,10 +48,7 @@ function formatearFecha(iso: string) {
 }
 
 function aDatetimeLocal(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return isoADatetimeLocalLima(iso);
 }
 
 export default function AgendaItemDetalleModal({

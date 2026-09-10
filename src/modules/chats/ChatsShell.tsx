@@ -14,7 +14,7 @@ export default function ChatsShell({ sidebar, children }: { sidebar: ReactNode; 
 
   return (
     <div
-      className="-mx-4 flex h-[calc(100dvh-7.5rem)] min-h-0 overflow-hidden border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] md:mx-0 md:h-[calc(100vh-180px)] md:min-h-[520px] md:rounded-2xl md:border"
+      className="-mx-4 -my-4 flex h-[calc(100dvh-4rem)] min-h-0 overflow-hidden border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] md:mx-0 md:my-0 md:h-[calc(100vh-180px)] md:min-h-[520px] md:rounded-2xl md:border"
     >
       <div
         className={`h-full w-full shrink-0 overflow-hidden border-r border-gray-100 dark:border-gray-800 md:block md:w-[340px] ${

@@ -12,7 +12,6 @@ type LoginResponse = {
 export async function loginAction(formData: FormData): Promise<{ redirectTo: string }> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const rememberMe = formData.get("rememberMe") === "on";
 
   if (!email || !password) {
     throw new Error("Ingresa tu email y contraseña");
@@ -40,7 +39,8 @@ export async function loginAction(formData: FormData): Promise<{ redirectTo: str
     throw error;
   }
 
-  await setSessionCookies(data.accessToken, data.refreshToken, rememberMe);
+  // Siempre persistir cookies (~24h). "Recordar email" solo afecta el store UI del formulario.
+  await setSessionCookies(data.accessToken, data.refreshToken, true);
 
   // Destino inmediato desde la respuesta de login (sin GET /me extra).
   // Clientes van a /dashboard; si no tienen el módulo, esa página redirige.

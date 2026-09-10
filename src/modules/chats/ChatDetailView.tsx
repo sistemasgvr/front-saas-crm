@@ -60,6 +60,8 @@ import {
 } from "./sticker-favoritos";
 import { getChat, getTemplates, getChats } from "./queries";
 import ChatLeadInmuebleChip from "./ChatLeadInmuebleChip";
+import { markWhatsappNotificationsReadAction } from "@/src/modules/notifications/actions";
+import { dismissWhatsappOsNotification } from "@/src/modules/notifications/system-notifications";
 import type {
   ConversacionDetalle,
   ConversacionResumen,
@@ -1345,6 +1347,18 @@ export default function ChatDetailView({
     if (unreadInvalidadoParaId.current !== id) {
       unreadInvalidadoParaId.current = id;
       void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChatsUnreadCount });
+      // Backend ya puso noLeidos=0 al GET del chat — quitar toast del SO agrupado.
+      dismissWhatsappOsNotification(id);
+      void markWhatsappNotificationsReadAction(id)
+        .then(() => {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsAll });
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.notificationsUnreadCount,
+          });
+        })
+        .catch(() => {
+          /* fire-and-forget: el socket / próximo refetch corrigen */
+        });
     }
   }, [chatQuery.isSuccess, chatQuery.data, id, queryClient]);
 
