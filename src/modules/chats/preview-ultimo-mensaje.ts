@@ -40,7 +40,7 @@ export function previewUltimoMensaje(m: Pick<Mensaje, "texto" | "mediaCaption" |
     case "system":
       return "Mensaje del sistema";
     case "unsupported":
-      return "Mensaje no soportado";
+      return "Meta no envió el contenido";
     default:
       return m.tipo ? "Mensaje" : null;
   }

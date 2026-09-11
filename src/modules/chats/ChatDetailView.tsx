@@ -234,6 +234,7 @@ function resumenCitado(citado: {
   if (citado.mediaCaption) return textoWhatsAppPlano(citado.mediaCaption);
   if (citado.tipo === "location") return "📍 Ubicación";
   if (citado.tipo === "contacts") return "👤 Contacto";
+  if (citado.tipo === "unsupported") return "Meta no envió el contenido";
   if (citado.tieneMedia) return ETIQUETA_TIPO_MEDIA[citado.tipo] ?? "📎 Archivo adjunto";
   return etiquetaTipoMensajeVacio(citado.tipo);
 }
@@ -279,6 +280,57 @@ function ContenidoContactos({ contactos }: { contactos: ContactoMensaje[] }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+/** Meta mandó type=unsupported (p. ej. 131060) sin cuerpo — aviso para el asesor. */
+function AvisoMensajeNoDisponibleMeta({
+  esSaliente,
+  detalle,
+}: {
+  esSaliente: boolean;
+  detalle?: string | null;
+}) {
+  return (
+    <div
+      className={`flex gap-2 rounded-lg px-2.5 py-2 ${
+        esSaliente
+          ? "bg-white/15"
+          : "bg-warning-50 dark:bg-warning-500/10"
+      }`}
+    >
+      <Icon
+        name="mdi:cloud-off-outline"
+        size={18}
+        className={`mt-0.5 shrink-0 ${
+          esSaliente ? "text-white/90" : "text-warning-600 dark:text-warning-400"
+        }`}
+      />
+      <div className="min-w-0">
+        <p className="text-theme-sm font-medium leading-snug">
+          Meta no envió el contenido de este mensaje
+        </p>
+        <p
+          className={`mt-0.5 text-theme-xs leading-snug ${
+            esSaliente ? "text-white/75" : "text-gray-600 dark:text-gray-400"
+          }`}
+        >
+          Suele pasar en el primer mensaje o con coexistencia. Revisalo en la app
+          WhatsApp Business o pedí al contacto que lo reenvíe.
+        </p>
+        {detalle &&
+          !/meta no envió/i.test(detalle) &&
+          !/currently unavailable/i.test(detalle) && (
+            <p
+              className={`mt-1 text-theme-xs opacity-70 ${
+                esSaliente ? "text-white/70" : ""
+              }`}
+            >
+              {detalle}
+            </p>
+          )}
+      </div>
     </div>
   );
 }
@@ -1056,17 +1108,25 @@ function Burbuja({
         {mensaje.contactos && mensaje.contactos.length > 0 && (
           <ContenidoContactos contactos={mensaje.contactos} />
         )}
-        {(mensaje.texto || mensaje.mediaCaption) && (
-          <div
-            className={`text-theme-sm leading-relaxed break-words [overflow-wrap:anywhere] ${
-              esMediaVisual ? "px-2 pt-0.5" : ""
-            }`}
-          >
-            <TextoWhatsApp texto={mensaje.texto ?? mensaje.mediaCaption ?? ""} />
-          </div>
+        {mensaje.tipo === "unsupported" ? (
+          <AvisoMensajeNoDisponibleMeta
+            esSaliente={esSaliente}
+            detalle={mensaje.texto}
+          />
+        ) : (
+          (mensaje.texto || mensaje.mediaCaption) && (
+            <div
+              className={`text-theme-sm leading-relaxed break-words [overflow-wrap:anywhere] ${
+                esMediaVisual ? "px-2 pt-0.5" : ""
+              }`}
+            >
+              <TextoWhatsApp texto={mensaje.texto ?? mensaje.mediaCaption ?? ""} />
+            </div>
+          )
         )}
         {mensaje.interactivo && <ContenidoInteractivo interactivo={mensaje.interactivo} />}
-        {!mensaje.tieneMedia &&
+        {mensaje.tipo !== "unsupported" &&
+          !mensaje.tieneMedia &&
           !TIPOS_MEDIA.has(mensaje.tipo) &&
           !mensaje.texto &&
           !mensaje.mediaCaption &&
