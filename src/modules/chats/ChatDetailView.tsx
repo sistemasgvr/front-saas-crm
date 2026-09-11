@@ -35,8 +35,10 @@ import {
   reenviarMensajesLoteAction,
   eliminarMensajeAction,
   crearLeadDesdeChatAction,
+  renombrarChatAction,
 } from "./actions";
 import { toast } from "sonner";
+import RenombrarInline from "@/src/components/ui/RenombrarInline";
 import { clearBorrador, setBorrador, useBorradorChat } from "./chat-borradores";
 import { previewUltimoMensaje } from "./preview-ultimo-mensaje";
 import { ChatBusquedaPanel } from "./ChatBusquedaPanel";
@@ -2140,7 +2142,33 @@ export default function ChatDetailView({
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-1.5">
             <p className="truncate text-theme-sm font-medium text-gray-800 dark:text-white/90">{nombre}</p>
-            {chat.lead?.origen ? <OrigenLeadBadge origen={chat.lead.origen} className="shrink-0" /> : null}
+            <RenombrarInline
+              nombreActual={
+                chat.nombreContacto?.trim() ||
+                chat.lead?.nombre?.trim() ||
+                nombre
+              }
+              titulo="Renombrar chat"
+              ariaLabel="Renombrar chat"
+              onGuardar={async (nuevoNombre) => {
+                await renombrarChatAction(id, nuevoNombre);
+                await Promise.all([
+                  queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChat(id) }),
+                  queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChats }),
+                  ...(chat.lead?.id
+                    ? [
+                        queryClient.invalidateQueries({
+                          queryKey: queryKeys.lead(chat.lead.id),
+                        }),
+                        queryClient.invalidateQueries({ queryKey: queryKeys.leadsAll }),
+                      ]
+                    : []),
+                ]);
+              }}
+            />
+            {chat.lead?.origen ? (
+              <OrigenLeadBadge origen={chat.lead.origen} soloIcono className="shrink-0" />
+            ) : null}
           </div>
           {chat.bloqueado ? (
             <p className="truncate text-theme-xs text-error-500">

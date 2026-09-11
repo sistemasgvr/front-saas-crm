@@ -249,6 +249,8 @@ export interface GestionarLeadInput {
   metadata?: Record<string, string>;
   /** null quita el vínculo con el catálogo. */
   inmuebleInteresId?: string | null;
+  /** Nombre visible del lead. */
+  nombre?: string;
 }
 
 export interface ListaLeadsResultado {

@@ -217,3 +217,17 @@ export async function crearLeadDesdeChatAction(
     fail(error, "No se pudo crear el lead desde el chat");
   }
 }
+
+export async function renombrarChatAction(
+  conversacionId: string,
+  nombre: string,
+): Promise<void> {
+  try {
+    await apiFetch(`/whatsapp/chats/${conversacionId}/nombre`, {
+      method: "PATCH",
+      body: JSON.stringify({ nombre }),
+    });
+  } catch (error) {
+    fail(error, "No se pudo renombrar el chat");
+  }
+}

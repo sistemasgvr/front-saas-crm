@@ -3,13 +3,15 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Avatar from "@/src/components/ui/avatar/Avatar";
 import Button from "@/src/components/ui/button/Button";
 import CollapsibleSection from "@/src/components/ui/CollapsibleSection";
 import { Icon } from "@/src/components/ui/Icon";
+import RenombrarInline from "@/src/components/ui/RenombrarInline";
 import { DetailPageSkeleton } from "@/src/components/ui/skeletons";
 import { QueryError } from "@/src/components/ui/PageLoader";
+import { unwrapAction } from "@/src/lib/action-result";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
@@ -25,6 +27,7 @@ import {
   valorCampoMeta,
 } from "./meta-lead-payload";
 import { getLead } from "./queries";
+import { gestionarLeadAction } from "./actions";
 import { iniciarChatDesdeLeadAction } from "@/src/modules/chats/actions";
 
 type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
@@ -135,6 +138,7 @@ export default function LeadDetailView({
   crmHabilitado: boolean;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const leadQuery = useQuery({ queryKey: queryKeys.lead(id), queryFn: () => getLead(id) });
   const iniciarChat = useAppMutation({
     mutationFn: () => iniciarChatDesdeLeadAction(id),
@@ -189,7 +193,24 @@ export default function LeadDetailView({
       <div className="flex flex-wrap items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] md:p-5">
         <Avatar name={nombre} size="xl" />
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-lg font-semibold text-gray-800 dark:text-white/90">{nombre}</h1>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <h1 className="truncate text-lg font-semibold text-gray-800 dark:text-white/90">{nombre}</h1>
+            {puedeGestionar ? (
+              <RenombrarInline
+                nombreActual={lead.nombre?.trim() || ""}
+                titulo="Renombrar lead"
+                ariaLabel="Renombrar lead"
+                onGuardar={async (nuevoNombre) => {
+                  unwrapAction(await gestionarLeadAction(id, { nombre: nuevoNombre }));
+                  await Promise.all([
+                    queryClient.invalidateQueries({ queryKey: queryKeys.lead(id) }),
+                    queryClient.invalidateQueries({ queryKey: queryKeys.leadsAll }),
+                    queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChats }),
+                  ]);
+                }}
+              />
+            ) : null}
+          </div>
           <div className="mt-1.5">
             <OrigenLeadBadge origen={lead.origen} />
           </div>

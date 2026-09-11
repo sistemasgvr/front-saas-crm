@@ -179,7 +179,7 @@ export default function ChatsSidebar({ rol: _rol }: { rol: Rol }) {
                           </span>
                         ) : null}
                         {chat.lead?.origen ? (
-                          <OrigenLeadBadge origen={chat.lead.origen} className="shrink-0" />
+                          <OrigenLeadBadge origen={chat.lead.origen} soloIcono className="shrink-0" />
                         ) : null}
                       </div>
                       <span className="shrink-0 text-theme-xs text-gray-400">

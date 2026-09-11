@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Avatar from "@/src/components/ui/avatar/Avatar";
 import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
 import Modal from "@/src/components/ui/modal/Modal";
+import RenombrarInline from "@/src/components/ui/RenombrarInline";
 import { DetailModalSkeleton } from "@/src/components/ui/skeletons";
 import { QueryError } from "@/src/components/ui/PageLoader";
+import { unwrapAction } from "@/src/lib/action-result";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
@@ -17,6 +19,7 @@ import LeadAssignmentActions from "./LeadAssignmentActions";
 import LeadInmuebleInteresBlock from "./LeadInmuebleInteresBlock";
 import LeadPipelinePanel from "./LeadPipelinePanel";
 import { getLead } from "./queries";
+import { gestionarLeadAction } from "./actions";
 
 type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 
@@ -54,6 +57,7 @@ export default function LeadDetailModal({
   crmHabilitado?: boolean;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const leadQuery = useQuery({
     queryKey: queryKeys.lead(leadId ?? ""),
     queryFn: () => getLead(leadId as string),
@@ -66,6 +70,9 @@ export default function LeadDetailModal({
   const lead = leadQuery.data;
   const nombre = lead?.nombre ?? "Sin nombre";
   const cargado = !leadQuery.isLoading && !leadQuery.isError && Boolean(lead);
+  const puedeGestionar =
+    Boolean(lead) &&
+    (canManageOrganization(rol) || lead?.asignado?.id === usuarioId);
 
   return (
     <Modal
@@ -77,7 +84,34 @@ export default function LeadDetailModal({
           <div className="flex flex-wrap items-start gap-4 p-5 pr-14 sm:p-6 sm:pr-16">
             <Avatar name={nombre} size="lg" />
             <div className="min-w-0 flex-1">
-              <h2 className="truncate text-lg font-semibold text-gray-800 dark:text-white/90">{nombre}</h2>
+              <div className="flex min-w-0 items-center gap-1.5">
+                <h2 className="truncate text-lg font-semibold text-gray-800 dark:text-white/90">
+                  {nombre}
+                </h2>
+                {puedeGestionar && leadId ? (
+                  <RenombrarInline
+                    nombreActual={lead.nombre?.trim() || ""}
+                    titulo="Renombrar lead"
+                    ariaLabel="Renombrar lead"
+                    onGuardar={async (nuevoNombre) => {
+                      unwrapAction(
+                        await gestionarLeadAction(leadId, { nombre: nuevoNombre }),
+                      );
+                      await Promise.all([
+                        queryClient.invalidateQueries({
+                          queryKey: queryKeys.lead(leadId),
+                        }),
+                        queryClient.invalidateQueries({
+                          queryKey: queryKeys.leadsAll,
+                        }),
+                        queryClient.invalidateQueries({
+                          queryKey: queryKeys.whatsappChats,
+                        }),
+                      ]);
+                    }}
+                  />
+                ) : null}
+              </div>
               <div className="mt-1.5 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-x-4">
                 <span className="inline-flex items-center gap-1.5 text-theme-xs text-gray-600 dark:text-gray-300">
                   <Icon name="mdi:email-outline" size={14} className="shrink-0 text-gray-400" />
