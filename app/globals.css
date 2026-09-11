@@ -383,11 +383,41 @@
   color: #111b21;
 }
 
+/* Header fijo (contador + zoom/descarga/cerrar), igual que la franja de miniaturas abajo.
+   No debe moverse al hacer zoom/pan de la imagen. */
 .yarl__chat-whatsapp .yarl__toolbar {
-  background: transparent;
-  padding: 12px 16px;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 30 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
   gap: 4px;
-  z-index: 2;
+  margin: 0 !important;
+  padding: max(10px, env(safe-area-inset-top, 0px)) 12px 10px !important;
+  background-color: #e9edef !important;
+  background-image: none !important;
+  transform: none !important;
+  pointer-events: auto;
+}
+
+.yarl__chat-whatsapp .yarl__counter {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: 31 !important;
+  display: flex !important;
+  align-items: center !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: max(14px, calc(env(safe-area-inset-top, 0px) + 4px)) 16px 12px !important;
+  color: #54656f !important;
+  filter: none !important;
+  background-color: #e9edef !important;
+  transform: none !important;
+  pointer-events: none;
 }
 
 .yarl__chat-whatsapp .yarl__button {
@@ -498,13 +528,6 @@
   box-shadow: 0 0 0 1px #25d366;
 }
 
-.yarl__chat-whatsapp .yarl__counter {
-  color: #54656f !important;
-  filter: none !important;
-  top: 18px;
-  left: 18px;
-}
-
 .dark .yarl__chat-whatsapp.yarl__portal,
 .dark .yarl__chat-whatsapp.yarl__root {
   --yarl__color_backdrop: #0b141a;
@@ -538,7 +561,9 @@
   color: #667781 !important;
 }
 
+.dark .yarl__chat-whatsapp .yarl__toolbar,
 .dark .yarl__chat-whatsapp .yarl__counter {
+  background-color: #0b141a !important;
   color: #aebac1 !important;
 }
 

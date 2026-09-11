@@ -17,6 +17,7 @@ import LeadAssignmentActions from "./LeadAssignmentActions";
 import LeadInmuebleInteresBlock from "./LeadInmuebleInteresBlock";
 import LeadPipelinePanel from "./LeadPipelinePanel";
 import LeadVisitasPanel from "./LeadVisitasPanel";
+import OrigenLeadBadge from "./OrigenLeadBadge";
 import {
   etiquetaCampoMeta,
   iconoCampoMeta,
@@ -189,6 +190,9 @@ export default function LeadDetailView({
         <Avatar name={nombre} size="xl" />
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-lg font-semibold text-gray-800 dark:text-white/90">{nombre}</h1>
+          <div className="mt-1.5">
+            <OrigenLeadBadge origen={lead.origen} />
+          </div>
           <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:gap-x-5">
             <span className="inline-flex items-center gap-1.5 text-theme-sm text-gray-600 dark:text-gray-300">
               <Icon name="mdi:email-outline" size={16} className="shrink-0 text-gray-400" />

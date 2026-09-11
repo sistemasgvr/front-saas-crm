@@ -42,7 +42,9 @@ function parchearListaChatsWhatsapp(
   let sumoNoLeido = false;
   let parcheado = false;
 
-  queryClient.setQueryData<ConversacionResumen[]>(queryKeys.whatsappChats, (prev) => {
+  queryClient.setQueriesData<ConversacionResumen[]>(
+    { queryKey: ["whatsapp", "chats", "list"] },
+    (prev) => {
     if (!Array.isArray(prev) || prev.length === 0) return prev;
     const idx = prev.findIndex((c) => c.id === conversacionId);
     if (idx < 0) return prev;
@@ -59,7 +61,8 @@ function parchearListaChatsWhatsapp(
       noLeidos,
     };
     return [actualizado, ...prev.filter((c) => c.id !== conversacionId)];
-  });
+  },
+  );
 
   if (sumoNoLeido) {
     queryClient.setQueryData<{ count: number }>(queryKeys.whatsappChatsUnreadCount, (prev) => ({

@@ -13,6 +13,7 @@ import Input from "@/src/components/form/input/InputField";
 import Checkbox from "@/src/components/form/input/Checkbox";
 import Select from "@/src/components/form/Select";
 import Modal from "@/src/components/ui/modal/Modal";
+import ConfirmModal from "@/src/components/ui/modal/ConfirmModal";
 import { Icon } from "@/src/components/ui/Icon";
 import { Spinner } from "@/src/components/ui/Spinner";
 import { Dropdown } from "@/src/components/ui/dropdown/Dropdown";
@@ -43,8 +44,14 @@ import CrearLeadDesdeChatModal from "./CrearLeadDesdeChatModal";
 import CrearActividadAgendaModal from "@/src/modules/agenda/CrearActividadAgendaModal";
 import { canManageOrganization } from "@/src/lib/roles";
 import { unwrapAction } from "@/src/lib/action-result";
-import { crearActividadAgendaAction } from "@/src/modules/leads/actions";
+import {
+  crearActividadAgendaAction,
+  tomarLeadAction,
+} from "@/src/modules/leads/actions";
 import type { CrearActividadAgendaInput } from "@/src/modules/leads/types";
+import OrigenLeadBadge from "@/src/modules/leads/OrigenLeadBadge";
+import TextoWhatsApp from "./TextoWhatsApp";
+import { textoWhatsAppPlano } from "./texto-whatsapp-plano";
 import {
   ChatMediaLightboxProvider,
   useChatMediaLightbox,
@@ -214,8 +221,8 @@ function resumenCitado(citado: {
   tieneMedia: boolean;
   tipo: string;
 }): string {
-  if (citado.texto) return citado.texto;
-  if (citado.mediaCaption) return citado.mediaCaption;
+  if (citado.texto) return textoWhatsAppPlano(citado.texto);
+  if (citado.mediaCaption) return textoWhatsAppPlano(citado.mediaCaption);
   if (citado.tipo === "location") return "📍 Ubicación";
   if (citado.tipo === "contacts") return "👤 Contacto";
   if (citado.tieneMedia) return ETIQUETA_TIPO_MEDIA[citado.tipo] ?? "📎 Archivo adjunto";
@@ -1041,9 +1048,13 @@ function Burbuja({
           <ContenidoContactos contactos={mensaje.contactos} />
         )}
         {(mensaje.texto || mensaje.mediaCaption) && (
-          <p className={`whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${esMediaVisual ? "px-2 pt-0.5" : ""}`}>
-            {mensaje.texto ?? mensaje.mediaCaption}
-          </p>
+          <div
+            className={`text-theme-sm leading-relaxed break-words [overflow-wrap:anywhere] ${
+              esMediaVisual ? "px-2 pt-0.5" : ""
+            }`}
+          >
+            <TextoWhatsApp texto={mensaje.texto ?? mensaje.mediaCaption ?? ""} />
+          </div>
         )}
         {mensaje.interactivo && <ContenidoInteractivo interactivo={mensaje.interactivo} />}
         {!mensaje.tieneMedia &&
@@ -1227,6 +1238,9 @@ export default function ChatDetailView({
   const [modalCrearLeadAbierto, setModalCrearLeadAbierto] = useState(false);
   const [modalActividadAbierto, setModalActividadAbierto] = useState(false);
   const [modalInmuebleAbierto, setModalInmuebleAbierto] = useState(false);
+  const [confirmacionChat, setConfirmacionChat] = useState<
+    null | "tomar" | "bloquear" | "desbloquear"
+  >(null);
   const [menuAccionesAbierto, setMenuAccionesAbierto] = useState(false);
   const [mensajeResaltadoId, setMensajeResaltadoId] = useState<string | null>(null);
   const [mostrarIrAlFondo, setMostrarIrAlFondo] = useState(false);
@@ -1322,9 +1336,9 @@ export default function ChatDetailView({
     const ultimo = mensajes.length > 0 ? mensajes[mensajes.length - 1] : null;
     const preview = ultimo ? previewUltimoMensaje(ultimo) : chatQuery.data.ultimoMensajeTexto;
 
-    queryClient.setQueryData(
-      queryKeys.whatsappChats,
-      (prev: ConversacionResumen[] | undefined) => {
+    queryClient.setQueriesData<ConversacionResumen[]>(
+      { queryKey: ["whatsapp", "chats", "list"] },
+      (prev) => {
         if (!Array.isArray(prev)) return prev;
         return prev
           .map((c) =>
@@ -1555,8 +1569,8 @@ export default function ChatDetailView({
   }
 
   const chatsQuery = useQuery<ConversacionResumen[]>({
-    queryKey: queryKeys.whatsappChats,
-    queryFn: getChats,
+    queryKey: queryKeys.whatsappChatsList("todos"),
+    queryFn: () => getChats("todos"),
     enabled: modalReenvioAbierto,
   });
 
@@ -1601,6 +1615,20 @@ export default function ChatDetailView({
       queryKeys.whatsappChats,
       queryKeys.leadsAll,
       queryKeys.leadsNuevosCount,
+    ],
+  });
+
+  const tomarLead = useAppMutation({
+    mutationFn: async () => {
+      const leadId = chatQuery.data?.lead?.id;
+      if (!leadId) throw new Error("No hay lead vinculado");
+      return unwrapAction(await tomarLeadAction(leadId));
+    },
+    successMessage: "Lead tomado",
+    invalidateKeys: [
+      queryKeys.whatsappChat(id),
+      queryKeys.whatsappChats,
+      queryKeys.leadsAll,
     ],
   });
 
@@ -1981,7 +2009,9 @@ export default function ChatDetailView({
         ultimoMensajeEn: mensaje.fechaMensaje,
       };
     });
-    queryClient.setQueryData<ConversacionResumen[]>(queryKeys.whatsappChats, (prev) => {
+    queryClient.setQueriesData<ConversacionResumen[]>(
+      { queryKey: ["whatsapp", "chats", "list"] },
+      (prev) => {
       if (!Array.isArray(prev)) return prev;
       return prev
         .map((c) =>
@@ -1998,7 +2028,8 @@ export default function ChatDetailView({
           const tb = b.ultimoMensajeEn ? new Date(b.ultimoMensajeEn).getTime() : 0;
           return tb - ta;
         });
-    });
+    },
+    );
   }
 
   function mensajeTextoOptimista(
@@ -2097,16 +2128,41 @@ export default function ChatDetailView({
         </Link>
         <Avatar name={nombre} size="sm" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-theme-sm font-medium text-gray-800 dark:text-white/90">{nombre}</p>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <p className="truncate text-theme-sm font-medium text-gray-800 dark:text-white/90">{nombre}</p>
+            {chat.lead?.origen ? <OrigenLeadBadge origen={chat.lead.origen} className="shrink-0" /> : null}
+          </div>
           {chat.bloqueado ? (
             <p className="truncate text-theme-xs text-error-500">+{chat.waId} · Bloqueado</p>
           ) : chat.lead ? (
-            <p className="truncate text-theme-xs text-gray-500 dark:text-gray-400">+{chat.waId} · Lead vinculado</p>
+            <p className="truncate text-theme-xs text-gray-500 dark:text-gray-400">
+              +{chat.waId}
+              {chat.lead.asignado
+                ? ` · ${chat.lead.asignado.nombre}`
+                : " · Sin asignar"}
+            </p>
           ) : (
             <p className="truncate text-theme-xs text-warning-500">+{chat.waId} · Sin lead vinculado</p>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+          {crmHabilitado && chat.lead && !chat.lead.asignadoUsuarioId ? (
+            <button
+              type="button"
+              disabled={tomarLead.isPending}
+              onClick={() => setConfirmacionChat("tomar")}
+              className="hidden h-10 w-10 items-center justify-center rounded-full text-brand-600 transition-colors hover:bg-brand-500/10 disabled:opacity-50 md:flex dark:text-brand-400 dark:hover:bg-brand-500/15"
+              aria-label="Tomar lead"
+              title="Tomar lead"
+            >
+              {tomarLead.isPending ? (
+                <Spinner size={18} />
+              ) : (
+                <Icon name="mdi:hand-front-left-outline" size={22} />
+              )}
+            </button>
+          ) : null}
+
           {crmHabilitado && !chat.lead ? (
             <button
               type="button"
@@ -2160,22 +2216,29 @@ export default function ChatDetailView({
             <Icon name="mdi:magnify" size={22} />
           </button>
 
-          <span className="hidden md:contents">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              loading={bloquear.isPending}
-              onClick={() => {
-                const accion = chat.bloqueado ? "desbloquear" : "bloquear";
-                if (window.confirm(`¿Seguro que quieres ${accion} a este contacto en WhatsApp?`)) {
-                  bloquear.mutate(!chat.bloqueado);
-                }
-              }}
-            >
-              {chat.bloqueado ? "Desbloquear" : "Bloquear"}
-            </Button>
-          </span>
+          <button
+            type="button"
+            disabled={bloquear.isPending}
+            onClick={() =>
+              setConfirmacionChat(chat.bloqueado ? "desbloquear" : "bloquear")
+            }
+            className={`hidden h-10 w-10 items-center justify-center rounded-full transition-colors disabled:opacity-50 md:flex ${
+              chat.bloqueado
+                ? "text-success-600 hover:bg-success-500/10 dark:text-success-400"
+                : "text-error-500 hover:bg-error-500/10 dark:text-error-400"
+            }`}
+            aria-label={chat.bloqueado ? "Desbloquear contacto" : "Bloquear contacto"}
+            title={chat.bloqueado ? "Desbloquear" : "Bloquear"}
+          >
+            {bloquear.isPending ? (
+              <Spinner size={18} />
+            ) : (
+              <Icon
+                name={chat.bloqueado ? "mdi:lock-open-outline" : "mdi:block-helper"}
+                size={22}
+              />
+            )}
+          </button>
 
           {/* Móvil: menú ⋮ */}
           <div className="relative md:hidden">
@@ -2196,6 +2259,18 @@ export default function ChatDetailView({
               onClose={() => setMenuAccionesAbierto(false)}
               className="w-56 overflow-hidden py-1"
             >
+              {crmHabilitado && chat.lead && !chat.lead.asignadoUsuarioId ? (
+                <DropdownItem
+                  onClick={() => {
+                    setMenuAccionesAbierto(false);
+                    setConfirmacionChat("tomar");
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2.5 text-theme-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/5"
+                >
+                  <Icon name="mdi:hand-front-left-outline" size={18} className="text-gray-500" />
+                  Tomar lead
+                </DropdownItem>
+              ) : null}
               {crmHabilitado && !chat.lead ? (
                 <DropdownItem
                   onClick={() => {
@@ -2253,14 +2328,14 @@ export default function ChatDetailView({
               <DropdownItem
                 onClick={() => {
                   setMenuAccionesAbierto(false);
-                  const accion = chat.bloqueado ? "desbloquear" : "bloquear";
-                  if (window.confirm(`¿Seguro que quieres ${accion} a este contacto en WhatsApp?`)) {
-                    bloquear.mutate(!chat.bloqueado);
-                  }
+                  setConfirmacionChat(chat.bloqueado ? "desbloquear" : "bloquear");
                 }}
                 className="flex items-center gap-2.5 px-3 py-2.5 text-theme-sm text-error-600 hover:bg-gray-100 dark:text-error-400 dark:hover:bg-white/5"
               >
-                <Icon name="mdi:block-helper" size={18} />
+                <Icon
+                  name={chat.bloqueado ? "mdi:lock-open-outline" : "mdi:block-helper"}
+                  size={18}
+                />
                 {chat.bloqueado ? "Desbloquear" : "Bloquear"}
               </DropdownItem>
             </Dropdown>
@@ -3211,6 +3286,46 @@ export default function ChatDetailView({
             onSuccess: () => setModalCrearLeadAbierto(false),
           },
         );
+      }}
+    />
+    <ConfirmModal
+      open={confirmacionChat === "tomar"}
+      title="Tomar lead"
+      description="¿Quieres asignarte este lead y encargarte del chat?"
+      confirmLabel="Tomar"
+      loading={tomarLead.isPending}
+      onClose={() => setConfirmacionChat(null)}
+      onConfirm={() => {
+        tomarLead.mutate(undefined, {
+          onSuccess: () => setConfirmacionChat(null),
+        });
+      }}
+    />
+    <ConfirmModal
+      open={confirmacionChat === "bloquear"}
+      title="Bloquear contacto"
+      description="El contacto no podrá enviarte mensajes por WhatsApp hasta que lo desbloquees."
+      confirmLabel="Bloquear"
+      variant="danger"
+      loading={bloquear.isPending}
+      onClose={() => setConfirmacionChat(null)}
+      onConfirm={() => {
+        bloquear.mutate(true, {
+          onSuccess: () => setConfirmacionChat(null),
+        });
+      }}
+    />
+    <ConfirmModal
+      open={confirmacionChat === "desbloquear"}
+      title="Desbloquear contacto"
+      description="El contacto podrá volver a escribirte por WhatsApp."
+      confirmLabel="Desbloquear"
+      loading={bloquear.isPending}
+      onClose={() => setConfirmacionChat(null)}
+      onConfirm={() => {
+        bloquear.mutate(false, {
+          onSuccess: () => setConfirmacionChat(null),
+        });
       }}
     />
     {chat.lead && usuarioId ? (

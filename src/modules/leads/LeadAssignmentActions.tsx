@@ -34,18 +34,18 @@ export default function LeadAssignmentActions({
   const tomar = useAppMutation({
     mutationFn: async () => unwrapAction(await tomarLeadAction(leadId)),
     successMessage: "Lead tomado",
-    invalidateKeys: [queryKeys.leadsAll],
+    invalidateKeys: [queryKeys.leadsAll, queryKeys.whatsappChats],
   });
   const liberar = useAppMutation({
     mutationFn: async () => unwrapAction(await liberarLeadAction(leadId)),
     successMessage: "Lead liberado",
-    invalidateKeys: [queryKeys.leadsAll],
+    invalidateKeys: [queryKeys.leadsAll, queryKeys.whatsappChats],
   });
   const asignar = useAppMutation({
     mutationFn: async (usuarioId: string) =>
       unwrapAction(await asignarLeadAction(leadId, usuarioId)),
     successMessage: "Lead asignado",
-    invalidateKeys: [queryKeys.leadsAll],
+    invalidateKeys: [queryKeys.leadsAll, queryKeys.whatsappChats],
   });
 
   return (

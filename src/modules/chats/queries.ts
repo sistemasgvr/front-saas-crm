@@ -3,8 +3,11 @@
 import { apiFetch } from "@/src/lib/api";
 import type { ConversacionDetalle, ConversacionResumen, PlantillaWhatsApp } from "./types";
 
-export async function getChats(): Promise<ConversacionResumen[]> {
-  const data = await apiFetch<ConversacionResumen[]>("/whatsapp/chats");
+export async function getChats(
+  asignado: "todos" | "mios" = "todos",
+): Promise<ConversacionResumen[]> {
+  const q = asignado === "mios" ? "?asignado=mios" : "?asignado=todos";
+  const data = await apiFetch<ConversacionResumen[]>(`/whatsapp/chats${q}`);
   return Array.isArray(data) ? data : [];
 }
 

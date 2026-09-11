@@ -14,7 +14,7 @@ export default async function ChatsLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <ChatsShell sidebar={<ChatsSidebar />}>
+    <ChatsShell sidebar={<ChatsSidebar rol={me.rol} />}>
       {children}
     </ChatsShell>
   );

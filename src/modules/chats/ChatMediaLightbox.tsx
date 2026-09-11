@@ -175,7 +175,8 @@ export function ChatMediaLightboxProvider({
             color: "#111b21",
           },
           slide: {
-            padding: "12px 56px 8px",
+            // Deja hueco bajo el header fijo (contador + toolbar).
+            padding: "56px 56px 8px",
           },
           navigationPrev: {
             left: 20,
@@ -190,6 +191,14 @@ export function ChatMediaLightboxProvider({
           thumbnailsContainer: {
             backgroundColor: "#e9edef",
             width: "100%",
+          },
+          toolbar: {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 30,
+            backgroundColor: "#e9edef",
           },
         }}
         on={{

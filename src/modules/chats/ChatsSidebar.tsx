@@ -6,15 +6,20 @@ import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Avatar from "@/src/components/ui/avatar/Avatar";
 import EmptyState from "@/src/components/ui/EmptyState";
+import Switch from "@/src/components/form/switch/Switch";
 import { Icon } from "@/src/components/ui/Icon";
 import { QueryError } from "@/src/components/ui/PageLoader";
 import { Skeleton } from "@/src/components/ui/Skeleton";
 import { queryKeys } from "@/src/lib/query/keys";
+import OrigenLeadBadge from "@/src/modules/leads/OrigenLeadBadge";
+import { textoWhatsAppPlano } from "./texto-whatsapp-plano";
 import { filtrarConversaciones } from "./filtrar-conversaciones";
 import { useChatBorradores } from "./chat-borradores";
 import { getChats } from "./queries";
 
 const INTERVALO_REFRESCO_MS = 45_000;
+
+type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 
 /** Poll solo con la pestaña visible — evita saturar Prisma con pestañas en background. */
 function intervaloSiVisible(ms: number): number | false {
@@ -54,15 +59,17 @@ function ChatsListSkeleton() {
 
 /** Lista de conversaciones tipo WhatsApp Web — vive en el layout de /chats,
  * así se mantiene montada (sin recargar) al navegar entre conversaciones. */
-export default function ChatsSidebar() {
+export default function ChatsSidebar({ rol: _rol }: { rol: Rol }) {
   const pathname = usePathname();
   const activeId = pathname.match(/^\/chats\/([^/]+)/)?.[1];
+  const [soloMios, setSoloMios] = useState(false);
+  const asignadoFiltro: "todos" | "mios" = soloMios ? "mios" : "todos";
   const [busqueda, setBusqueda] = useState("");
   const busquedaDeferred = useDeferredValue(busqueda);
   const borradores = useChatBorradores();
   const chatsQuery = useQuery({
-    queryKey: queryKeys.whatsappChats,
-    queryFn: getChats,
+    queryKey: queryKeys.whatsappChatsList(asignadoFiltro),
+    queryFn: () => getChats(asignadoFiltro),
     refetchInterval: () => intervaloSiVisible(INTERVALO_REFRESCO_MS),
   });
 
@@ -74,9 +81,18 @@ export default function ChatsSidebar() {
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
-        <h1 className="text-theme-sm font-semibold text-gray-800 dark:text-white/90">Chats</h1>
-        <p className="mb-3 text-theme-xs text-gray-500 dark:text-gray-400">WhatsApp de tus leads</p>
-        <div className="relative">
+        <div className="mb-1 flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h1 className="text-theme-sm font-semibold text-gray-800 dark:text-white/90">Chats</h1>
+            <p className="text-theme-xs text-gray-500 dark:text-gray-400">WhatsApp de tus leads</p>
+          </div>
+          <Switch
+            label={soloMios ? "Solo míos" : "Todos"}
+            checked={soloMios}
+            onChange={setSoloMios}
+          />
+        </div>
+        <div className="relative mt-3">
           <Icon
             name="mdi:magnify"
             size={18}
@@ -129,6 +145,7 @@ export default function ChatsSidebar() {
             {chatsFiltrados.map((chat) => {
               const nombre = chat.lead?.nombre ?? chat.nombreContacto ?? chat.waId;
               const activo = chat.id === activeId;
+              const asesor = chat.lead?.asignado?.nombre?.trim() || null;
               // Como WhatsApp: el borrador solo se ve en la lista si NO estás en ese chat.
               const borrador = activo ? undefined : borradores[chat.id]?.trim() || undefined;
               return (
@@ -144,9 +161,26 @@ export default function ChatsSidebar() {
                   <Avatar name={nombre} size="md" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-theme-sm font-medium text-gray-800 dark:text-white/90">
-                        {nombre}
-                      </p>
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <p className="truncate text-theme-sm font-medium text-gray-800 dark:text-white/90">
+                          {nombre}
+                        </p>
+                        {asesor ? (
+                          <span
+                            className="max-w-[7rem] shrink-0 truncate rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-white/10 dark:text-gray-300"
+                            title={asesor}
+                          >
+                            {asesor}
+                          </span>
+                        ) : chat.lead ? (
+                          <span className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                            Libre
+                          </span>
+                        ) : null}
+                        {chat.lead?.origen ? (
+                          <OrigenLeadBadge origen={chat.lead.origen} className="shrink-0" />
+                        ) : null}
+                      </div>
                       <span className="shrink-0 text-theme-xs text-gray-400">
                         {formatearFecha(chat.ultimoMensajeEn)}
                       </span>
@@ -158,7 +192,9 @@ export default function ChatsSidebar() {
                         </p>
                       ) : (
                         <p className="truncate text-theme-xs text-gray-500 dark:text-gray-400">
-                          {chat.ultimoMensajeTexto ?? "Sin mensajes"}
+                          {chat.ultimoMensajeTexto
+                            ? textoWhatsAppPlano(chat.ultimoMensajeTexto)
+                            : "Sin mensajes"}
                         </p>
                       )}
                       {chat.noLeidos > 0 && (

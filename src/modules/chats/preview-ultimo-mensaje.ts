@@ -1,12 +1,13 @@
 import type { Mensaje } from "./types";
+import { textoWhatsAppPlano } from "./texto-whatsapp-plano";
 
 /** Preview de lista de chats — mismo criterio que el backend. */
 export function previewUltimoMensaje(m: Pick<Mensaje, "texto" | "mediaCaption" | "tipo" | "mediaEsVoz">): string | null {
   const texto = m.texto?.trim();
-  if (texto) return texto.slice(0, 200);
+  if (texto) return textoWhatsAppPlano(texto).slice(0, 200);
 
   const caption = m.mediaCaption?.trim();
-  if (caption) return caption.slice(0, 200);
+  if (caption) return textoWhatsAppPlano(caption).slice(0, 200);
 
   switch (m.tipo) {
     case "image":

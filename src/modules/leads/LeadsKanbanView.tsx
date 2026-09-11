@@ -32,6 +32,7 @@ import { gestionarLeadAction, tomarLeadAction } from "./actions";
 import { getMetaPipeline, getTablero } from "./queries";
 import ClasificarTipoLeadModal from "./ClasificarTipoLeadModal";
 import LeadDetailModal from "./LeadDetailModal";
+import OrigenLeadBadge from "./OrigenLeadBadge";
 import TransicionPipelineModal from "./TransicionPipelineModal";
 import { camposParaDestino } from "./pipeline-transicion";
 import {
@@ -131,28 +132,31 @@ function LeadCardBody({
         <p className="min-w-0 truncate text-theme-sm font-medium text-gray-800 dark:text-white/90">
           {lead.nombre ?? "Sin nombre"}
         </p>
-        {mostrarTipo &&
-          (sinClasificar ? (
-            interactive && onClasificar ? (
-              <button
-                type="button"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => onClasificar(lead.id)}
-                title="Clasificar tipo de lead"
-                className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 hover:bg-amber-100 dark:bg-amber-500/15 dark:text-amber-400 dark:hover:bg-amber-500/25"
-              >
-                Sin clasificar
-              </button>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <OrigenLeadBadge origen={lead.origen} />
+          {mostrarTipo &&
+            (sinClasificar ? (
+              interactive && onClasificar ? (
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => onClasificar(lead.id)}
+                  title="Clasificar tipo de lead"
+                  className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 hover:bg-amber-100 dark:bg-amber-500/15 dark:text-amber-400 dark:hover:bg-amber-500/25"
+                >
+                  Sin clasificar
+                </button>
+              ) : (
+                <span className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                  Sin clasificar
+                </span>
+              )
             ) : (
-              <span className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
-                Sin clasificar
+              <span className="shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-white/10 dark:text-gray-400">
+                {ETIQUETA_TIPO_LEAD[lead.tipoLead ?? "OTRO"] ?? "Otro"}
               </span>
-            )
-          ) : (
-            <span className="shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-white/10 dark:text-gray-400">
-              {ETIQUETA_TIPO_LEAD[lead.tipoLead ?? "OTRO"] ?? "Otro"}
-            </span>
-          ))}
+            ))}
+        </div>
       </div>
       {lead.telefono && (
         <p className="mt-1 flex items-center gap-1 text-theme-xs text-gray-500 dark:text-gray-400">

@@ -36,6 +36,8 @@ export interface LeadResumen {
   campana: ReferenciaNombrada | null;
   anuncio: ReferenciaNombrada | null;
   tipoLead: string | null;
+  /** META | WHATSAPP | MANUAL */
+  origen: string;
   asignado: ReferenciaNombrada | null;
   /** Código del pipeline — PLAN-PIPELINE-INMOBILIARIA.md. */
   estadoGestion: string;
@@ -102,6 +104,8 @@ export interface LeadTableroRow {
   telefono: string | null;
   email: string | null;
   tipoLead: string | null;
+  /** META | WHATSAPP | MANUAL */
+  origen: string;
   asignado: ReferenciaNombrada | null;
   estadoGestion: string;
   fechaLead: string | null;

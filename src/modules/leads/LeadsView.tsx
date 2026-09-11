@@ -30,6 +30,7 @@ import {
 } from "./queries";
 import type { AnuncioFiltroOpcion, CampanaFiltroOpcion, LeadResumen, ReferenciaNombrada } from "./types";
 import EstadoPipelineBadge from "./EstadoPipelineBadge";
+import OrigenLeadBadge from "./OrigenLeadBadge";
 import { ETIQUETA_TIPO_LEAD } from "./pipeline";
 
 type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
@@ -53,6 +54,7 @@ function LeadMobileCard({
       <div className="flex items-start justify-between gap-3">
         <EntityCell name={nombre} subtitle={lead.email ?? "Sin email"} icon="mdi:account-outline" size="sm" />
         <div className="flex shrink-0 flex-col items-end gap-1">
+          <OrigenLeadBadge origen={lead.origen} />
           {lead.tipoLead ? (
             <span className="text-theme-xs text-gray-400">{ETIQUETA_TIPO_LEAD[lead.tipoLead] ?? lead.tipoLead}</span>
           ) : null}
@@ -428,6 +430,7 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
                     </TableCell>
                     <TableCell className={`${tdClass} min-w-0`}>
                       <div className="flex flex-col gap-1">
+                        <OrigenLeadBadge origen={lead.origen} />
                         {lead.tipoLead && (
                           <span className="text-theme-xs text-gray-400">
                             {ETIQUETA_TIPO_LEAD[lead.tipoLead] ?? lead.tipoLead}
