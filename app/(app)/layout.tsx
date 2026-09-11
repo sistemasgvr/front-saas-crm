@@ -8,7 +8,7 @@ import Backdrop from "@/src/components/layout/Backdrop";
 import AppShell from "@/src/components/layout/AppShell";
 import BackendUnavailable from "@/src/components/ui/BackendUnavailable";
 
-import { canManageOrganization } from "@/src/lib/roles";
+import { canManageOrganization, canViewOrgDashboard } from "@/src/lib/roles";
 
 const CLIENT_NAV_GROUPS: NavGroup[] = [
   {
@@ -52,6 +52,7 @@ function filtrarGrupo(
 ): NavGroup | null {
   const items = group.items.filter((item: NavItem) => {
     if (item.requiereModulo && !habilitados.has(item.requiereModulo)) return false;
+    if (item.path === "/dashboard" && !canViewOrgDashboard(rol)) return false;
     if (item.path === "/settings" && !canManageOrganization(rol)) return false;
     return true;
   });
