@@ -40,7 +40,10 @@ import {
 import { toast } from "sonner";
 import RenombrarInline from "@/src/components/ui/RenombrarInline";
 import { clearBorrador, setBorrador, useBorradorChat } from "./chat-borradores";
-import { previewUltimoMensaje } from "./preview-ultimo-mensaje";
+import {
+  etiquetaTipoMensajeVacio,
+  previewUltimoMensaje,
+} from "./preview-ultimo-mensaje";
 import { ChatBusquedaPanel } from "./ChatBusquedaPanel";
 import CrearLeadDesdeChatModal from "./CrearLeadDesdeChatModal";
 import CrearActividadAgendaModal from "@/src/modules/agenda/CrearActividadAgendaModal";
@@ -232,7 +235,7 @@ function resumenCitado(citado: {
   if (citado.tipo === "location") return "📍 Ubicación";
   if (citado.tipo === "contacts") return "👤 Contacto";
   if (citado.tieneMedia) return ETIQUETA_TIPO_MEDIA[citado.tipo] ?? "📎 Archivo adjunto";
-  return "(sin texto)";
+  return etiquetaTipoMensajeVacio(citado.tipo);
 }
 
 function ContenidoUbicacion({ ubicacion }: { ubicacion: UbicacionMensaje }) {
@@ -1066,9 +1069,14 @@ function Burbuja({
         {!mensaje.tieneMedia &&
           !TIPOS_MEDIA.has(mensaje.tipo) &&
           !mensaje.texto &&
+          !mensaje.mediaCaption &&
           !mensaje.ubicacion &&
           !mensaje.contactos?.length &&
-          !mensaje.interactivo && <p className="whitespace-pre-wrap break-words opacity-70">(sin texto)</p>}
+          !mensaje.interactivo && (
+            <p className="whitespace-pre-wrap break-words opacity-70">
+              {etiquetaTipoMensajeVacio(mensaje.tipo, mensaje.mediaEsVoz)}
+            </p>
+          )}
           </>
         )}
         <div

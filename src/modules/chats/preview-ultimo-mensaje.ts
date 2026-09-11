@@ -28,7 +28,33 @@ export function previewUltimoMensaje(m: Pick<Mensaje, "texto" | "mediaCaption" |
       return "Plantilla";
     case "interactive":
       return "Mensaje interactivo";
+    case "button":
+    case "button_reply":
+      return "Tocó un botón";
+    case "list_reply":
+      return "Eligió de la lista";
+    case "nfm_reply":
+      return "Respondió un formulario";
+    case "order":
+      return "Pedido";
+    case "system":
+      return "Mensaje del sistema";
+    case "unsupported":
+      return "Mensaje no soportado";
     default:
       return m.tipo ? "Mensaje" : null;
   }
+}
+
+/** Etiqueta visible cuando el mensaje no tiene texto/cuerpo recuperable. */
+export function etiquetaTipoMensajeVacio(
+  tipo: string,
+  mediaEsVoz?: boolean | null,
+): string {
+  return previewUltimoMensaje({
+    texto: null,
+    mediaCaption: null,
+    tipo,
+    mediaEsVoz: mediaEsVoz ?? null,
+  }) ?? "(sin contenido)";
 }

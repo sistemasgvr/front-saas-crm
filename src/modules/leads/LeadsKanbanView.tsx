@@ -29,6 +29,7 @@ import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
 import { toast } from "sonner";
 import { iniciarChatDesdeLeadAction } from "@/src/modules/chats/actions";
+import { puedeIniciarChatDesdeLead } from "./puede-iniciar-chat";
 import { gestionarLeadAction, tomarLeadAction } from "./actions";
 import { getMetaPipeline, getTablero } from "./queries";
 import ClasificarTipoLeadModal from "./ClasificarTipoLeadModal";
@@ -218,7 +219,7 @@ function LeadCardBody({
                 onClick={() => tomar.mutate()}
               />
             )}
-            {whatsappHabilitado && lead.telefono && (
+            {whatsappHabilitado && puedeIniciarChatDesdeLead(lead) && (
               <AccionCard
                 icon="mdi:whatsapp"
                 label="Iniciar chat"

@@ -15,6 +15,10 @@ import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
 import { iniciarChatDesdeLeadAction } from "@/src/modules/chats/actions";
+import {
+  puedeIniciarChatDesdeLead,
+  tituloIniciarChatDeshabilitado,
+} from "./puede-iniciar-chat";
 import LeadAssignmentActions from "./LeadAssignmentActions";
 import LeadInmuebleInteresBlock from "./LeadInmuebleInteresBlock";
 import LeadPipelinePanel from "./LeadPipelinePanel";
@@ -168,19 +172,13 @@ export default function LeadDetailModal({
               </div>
 
               <span
-                title={
-                  !whatsappHabilitado
-                    ? "Activa el módulo WhatsApp en Configuración"
-                    : !lead.telefono
-                      ? "Este lead no tiene teléfono registrado"
-                      : undefined
-                }
+                title={tituloIniciarChatDeshabilitado(whatsappHabilitado, lead)}
               >
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={!whatsappHabilitado || !lead.telefono}
+                  disabled={!whatsappHabilitado || !puedeIniciarChatDesdeLead(lead)}
                   loading={iniciarChat.isPending}
                   startIcon={<Icon name="mdi:whatsapp" size={16} />}
                   onClick={() =>

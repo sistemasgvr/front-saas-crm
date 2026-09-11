@@ -4,7 +4,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/src/components/ui/Icon";
 import EmptyState from "@/src/components/ui/EmptyState";
 import { useOpenTransition } from "@/src/components/ui/use-open-transition";
-import { previewUltimoMensaje } from "./preview-ultimo-mensaje";
+import { previewUltimoMensaje, etiquetaTipoMensajeVacio } from "./preview-ultimo-mensaje";
 import type { Mensaje } from "./types";
 
 const TZ = "America/Lima";
@@ -58,7 +58,7 @@ function previewResultado(mensaje: Mensaje): string {
   return (
     previewUltimoMensaje(mensaje) ??
     mensaje.mediaNombreArchivo?.trim() ??
-    "(sin texto)"
+    etiquetaTipoMensajeVacio(mensaje.tipo, mensaje.mediaEsVoz)
   );
 }
 
