@@ -390,7 +390,7 @@ export default function AgendaView({
         {!calendarioListo || (agendaQuery.isLoading && !agendaQuery.data) ? (
           <CalendarSkeleton />
         ) : (
-          <div className="agenda-calendar relative min-h-[28rem] text-theme-sm text-gray-800 sm:min-h-[32rem] dark:text-gray-200">
+          <div className="agenda-calendar relative h-[calc(100dvh-14rem)] min-h-[28rem] text-theme-sm text-gray-800 sm:min-h-[32rem] dark:text-gray-200">
             {agendaQuery.isFetching ? (
               <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-0.5 overflow-hidden bg-brand-100 dark:bg-brand-500/20">
                 <div className="h-full w-1/3 animate-pulse bg-brand-500" />
@@ -422,12 +422,12 @@ export default function AgendaView({
                     }
                   : false
               }
-              height="auto"
-              contentHeight="auto"
-              slotMinTime="06:00:00"
-              slotMaxTime="22:00:00"
+              height="100%"
+              slotMinTime="00:00:00"
+              slotMaxTime="24:00:00"
               slotDuration="00:30:00"
-              scrollTime="08:00:00"
+              scrollTime="07:00:00"
+              scrollTimeReset={false}
               allDaySlot={false}
               nowIndicator
               weekends

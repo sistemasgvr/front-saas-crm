@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -17,6 +17,7 @@ import {
 import Button from "@/src/components/ui/button/Button";
 import Select from "@/src/components/form/Select";
 import TextArea from "@/src/components/form/input/TextArea";
+import Input from "@/src/components/form/input/InputField";
 import { Icon } from "@/src/components/ui/Icon";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { QueryError } from "@/src/components/ui/PageLoader";
@@ -48,6 +49,30 @@ import { TIPOS_LEAD_INMOBILIARIA } from "./types";
 import type { ColumnaTablero, LeadTableroRow, MetaPipeline, MotivoMeta, TableroResultado } from "./types";
 
 type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
+
+function normalizarBusqueda(texto: string): string {
+  return texto
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .trim();
+}
+
+function leadCoincideBusqueda(lead: LeadTableroRow, q: string): boolean {
+  if (!q) return true;
+  const haystack = [
+    lead.nombre,
+    lead.telefono,
+    lead.email,
+    lead.asignado?.nombre,
+    lead.inmuebleInteres?.codigo,
+    lead.inmuebleInteres?.titulo,
+  ]
+    .filter(Boolean)
+    .map((v) => normalizarBusqueda(String(v)))
+    .join(" ");
+  return haystack.includes(q);
+}
 
 interface PendingClose {
   leadId: string;
@@ -284,7 +309,10 @@ function KanbanColumn({
   onVerDetalle: (leadId: string) => void;
   onClasificar: (leadId: string) => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: codigo });
+  const { setNodeRef, isOver } = useDroppable({
+    id: codigo,
+    data: { type: "column", codigo },
+  });
 
   return (
     <div
@@ -313,7 +341,11 @@ function KanbanColumn({
           <LeadCard
             key={lead.id}
             lead={lead}
-            puedeArrastrar={esAdmin || lead.asignado?.id === usuarioId}
+            puedeArrastrar={
+              esAdmin ||
+              !lead.asignado ||
+              lead.asignado?.id === usuarioId
+            }
             mostrarTipo={mostrarTipo}
             whatsappHabilitado={whatsappHabilitado}
             onVerDetalle={onVerDetalle}
@@ -338,6 +370,8 @@ export default function LeadsKanbanView({
 }) {
   const esAdmin = canManageOrganization(rol);
   const [tipoFiltro, setTipoFiltro] = useState<string | null>(null);
+  const [busqueda, setBusqueda] = useState("");
+  const busquedaDeferred = useDeferredValue(busqueda);
   const [pendingClose, setPendingClose] = useState<PendingClose | null>(null);
   const [pendingTransition, setPendingTransition] = useState<PendingTransition | null>(null);
   const [pendingClassify, setPendingClassify] = useState<PendingClassify | null>(null);
@@ -407,6 +441,22 @@ export default function LeadsKanbanView({
     return mapa;
   }, [tableroQuery.data]);
 
+  const qNorm = normalizarBusqueda(busquedaDeferred);
+  const columnasFiltradas = useMemo(() => {
+    const columnas = tableroQuery.data?.columnas ?? [];
+    if (!qNorm) return columnas;
+    return columnas.map((columna) => ({
+      ...columna,
+      leads: columna.leads.filter((lead) => leadCoincideBusqueda(lead, qNorm)),
+    }));
+  }, [tableroQuery.data, qNorm]);
+
+  const totalVisibles = useMemo(
+    () => columnasFiltradas.reduce((acc, c) => acc + c.leads.length, 0),
+    [columnasFiltradas],
+  );
+  const hayLeadsEnTablero = (tableroQuery.data?.columnas ?? []).some((c) => c.leads.length > 0);
+
   const motivosParaDestino = (destino: string, meta?: MetaPipeline): MotivoMeta[] => {
     if (!meta) return [];
     if (destino === "DESCARTADO") return meta.motivosDescarte;
@@ -458,11 +508,21 @@ export default function LeadsKanbanView({
     const { active, over } = event;
     if (!over) return;
     const leadId = String(active.id);
-    const destino = String(over.id);
     const lead = leadPorId.get(leadId);
-    if (!lead || lead.estadoGestion === destino) return;
+    if (!lead) return;
 
-    procesarAvance(lead, destino);
+    // Al soltar sobre otra card, `over.id` es el UUID del lead (también
+    // draggable). Hay que resolver la columna real; si no, la transición
+    // se valida contra un UUID y parece que “no se puede mover”.
+    const overId = String(over.id);
+    const columnas = tableroQuery.data?.columnas ?? [];
+    const destinoColumna =
+      columnas.find((c) => c.codigo === overId)?.codigo ??
+      leadPorId.get(overId)?.estadoGestion ??
+      null;
+    if (!destinoColumna || lead.estadoGestion === destinoColumna) return;
+
+    procesarAvance(lead, destinoColumna);
   };
 
   const handleDragCancel = () => {
@@ -509,7 +569,7 @@ export default function LeadsKanbanView({
     <div>
       <PageHeader
         title="Tablero"
-        description="Arrastra un lead a otra columna para avanzarlo en el pipeline — misma validación que la vista de detalle."
+        help="Arrastra un lead a otra columna para avanzarlo en el pipeline — misma validación que la vista de detalle."
         backHref="/leads"
         backLabel="Volver a la lista"
       >
@@ -542,6 +602,42 @@ export default function LeadsKanbanView({
         </div>
       </PageHeader>
 
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-sm">
+          <Icon
+            name="mdi:magnify"
+            size={18}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          />
+          <Input
+            type="search"
+            id="kanban-buscar-lead"
+            name="q"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar por nombre, teléfono, email…"
+            className="pl-10"
+            autoComplete="off"
+          />
+        </div>
+        {qNorm ? (
+          <p className="text-theme-xs text-gray-500 dark:text-gray-400">
+            {totalVisibles === 0
+              ? "Sin coincidencias"
+              : `${totalVisibles} lead${totalVisibles === 1 ? "" : "s"} encontrado${totalVisibles === 1 ? "" : "s"}`}
+            {busqueda.trim() ? (
+              <button
+                type="button"
+                className="ml-2 font-medium text-brand-500 hover:underline"
+                onClick={() => setBusqueda("")}
+              >
+                Limpiar
+              </button>
+            ) : null}
+          </p>
+        ) : null}
+      </div>
+
       {(metaCompra.isError || metaVenta.isError || metaOtro.isError) && (
         <QueryError error={metaCompra.error ?? metaVenta.error ?? metaOtro.error} />
       )}
@@ -550,11 +646,17 @@ export default function LeadsKanbanView({
         <KanbanBoardSkeleton />
       ) : tableroQuery.isError ? (
         <QueryError error={tableroQuery.error} />
-      ) : !tableroQuery.data || tableroQuery.data.columnas.every((c: ColumnaTablero) => c.leads.length === 0) ? (
+      ) : !hayLeadsEnTablero ? (
         <EmptyState
           icon="mdi:view-column-outline"
           title="No hay leads en el tablero"
           description={tipoFiltro ? "Prueba otro filtro o revisa la lista de leads." : "Cuando entren leads aparecerán aquí por etapa."}
+        />
+      ) : totalVisibles === 0 ? (
+        <EmptyState
+          icon="mdi:magnify"
+          title="Ningún lead coincide"
+          description={`No hay resultados para “${busqueda.trim()}”. Prueba con otro nombre o teléfono.`}
         />
       ) : (
         <DndContext
@@ -564,7 +666,7 @@ export default function LeadsKanbanView({
           onDragCancel={handleDragCancel}
         >
           <div className="thin-scrollbar flex gap-3 overflow-x-auto pb-2">
-            {tableroQuery.data.columnas.map((columna: ColumnaTablero) => (
+            {columnasFiltradas.map((columna: ColumnaTablero) => (
               <KanbanColumn
                 key={columna.codigo}
                 codigo={columna.codigo}

@@ -338,6 +338,21 @@
   max-width: 100%;
 }
 
+/* Scroll vertical del día/semana: el body del timegrid debe poder scrollear. */
+.agenda-calendar .fc,
+.agenda-calendar .fc .fc-view-harness {
+  height: 100%;
+}
+
+.agenda-calendar .fc .fc-scroller {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.agenda-calendar .fc .fc-timegrid-body {
+  min-height: 100%;
+}
+
 .agenda-calendar .fc .fc-col-header-cell-cushion,
 .agenda-calendar .fc .fc-timegrid-slot-label-cushion {
   font-size: 0.7rem;

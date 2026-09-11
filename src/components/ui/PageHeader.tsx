@@ -3,11 +3,14 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import Button from "@/src/components/ui/button/Button";
+import HelpTooltip from "@/src/components/ui/HelpTooltip";
 import { Icon } from "@/src/components/ui/Icon";
 
 interface PageHeaderProps {
   title: string;
   description?: string;
+  /** Texto de ayuda junto al título (icono ?). */
+  help?: string;
   backHref?: string;
   backLabel?: string;
   action?: {
@@ -21,6 +24,7 @@ interface PageHeaderProps {
 export default function PageHeader({
   title,
   description,
+  help,
   backHref,
   backLabel = "Volver",
   action,
@@ -38,7 +42,10 @@ export default function PageHeader({
             {backLabel}
           </Link>
         )}
-        <h1 className="text-xl font-semibold text-gray-800 sm:text-title-sm dark:text-white/90">{title}</h1>
+        <div className="flex items-center gap-1.5">
+          <h1 className="text-xl font-semibold text-gray-800 sm:text-title-sm dark:text-white/90">{title}</h1>
+          {help ? <HelpTooltip content={help} placement="bottom" /> : null}
+        </div>
         {description && (
           <p className="mt-1 text-theme-xs text-gray-500 sm:text-theme-sm dark:text-gray-400">{description}</p>
         )}
