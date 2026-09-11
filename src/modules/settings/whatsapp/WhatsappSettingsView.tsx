@@ -25,7 +25,7 @@ import type { WhatsappConexion } from "./types";
 const INVALIDATE = [queryKeys.whatsappConexiones, queryKeys.whatsappNumerosDisponibles];
 
 const AVISO_CAMPOS_META =
-  "En Meta Developers → Webhooks → WhatsApp Business Account suscribe también: history, smb_message_echoes, smb_app_state_sync";
+  "En Meta Developers → Webhooks → WhatsApp Business Account: messages, history, smb_message_echoes, smb_app_state_sync";
 
 function UnlinkAction({ id }: { id: string }) {
   const mutation = useAppMutation({
