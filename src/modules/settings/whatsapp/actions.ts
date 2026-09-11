@@ -30,6 +30,45 @@ export async function unlinkWhatsappNumeroAction(id: string): Promise<void> {
   }
 }
 
+export interface ResultadoResyncWebhookWhatsapp {
+  ok: true;
+  camposSuscritos: string[];
+  camposFaltantes: string[];
+}
+
+export async function resyncWhatsappWebhookAction(
+  id: string,
+): Promise<ResultadoResyncWebhookWhatsapp> {
+  try {
+    return await apiFetch<ResultadoResyncWebhookWhatsapp>(
+      `/whatsapp/connections/${id}/resync-webhook`,
+      { method: "POST" },
+    );
+  } catch (error) {
+    fail(error, "No se pudo re-suscribir el webhook");
+  }
+}
+
+export interface ResultadoSaludWebhookWhatsapp {
+  webhookSuscrito: boolean;
+  camposSuscritos: string[];
+  camposFaltantes: string[];
+  webhookUltimoError: string | null;
+}
+
+export async function verificarWhatsappWebhookAction(
+  id: string,
+): Promise<ResultadoSaludWebhookWhatsapp> {
+  try {
+    return await apiFetch<ResultadoSaludWebhookWhatsapp>(
+      `/whatsapp/connections/${id}/verificar-webhook`,
+      { method: "POST" },
+    );
+  } catch (error) {
+    fail(error, "No se pudo verificar el webhook en Meta");
+  }
+}
+
 export interface CrearPlantillaInput {
   nombre: string;
   categoria: "AUTHENTICATION" | "MARKETING" | "UTILITY";

@@ -39,6 +39,7 @@ import {
 } from "./actions";
 import { toast } from "sonner";
 import RenombrarInline from "@/src/components/ui/RenombrarInline";
+import HelpTooltip from "@/src/components/ui/HelpTooltip";
 import { clearBorrador, setBorrador, useBorradorChat } from "./chat-borradores";
 import {
   etiquetaTipoMensajeVacio,
@@ -2861,8 +2862,19 @@ export default function ChatDetailView({
         ) : (
           <div className="space-y-2">
             <p className="flex items-center gap-1.5 text-theme-xs text-warning-500">
-              <Icon name="mdi:clock-alert-outline" size={14} />
-              Pasaron 24h desde el último mensaje del contacto — hace falta enviar una plantilla aprobada.
+              <Icon name="mdi:clock-alert-outline" size={14} className="shrink-0" />
+              <span>
+                Pasaron 24h desde el último mensaje del contacto — hace falta una plantilla
+                aprobada.
+              </span>
+              <HelpTooltip
+                content="Si el contacto respondió en la app WhatsApp Business y acá no aparece, Meta no sincronizó ese mensaje al CRM (coexistencia). Pedile que escriba de nuevo: cuando llegue al CRM se reabre la ventana de 24h."
+                label="Ayuda sobre la ventana de 24h"
+                placement="top"
+                align="end"
+                iconSize={14}
+                className="shrink-0 text-warning-500"
+              />
             </p>
             <div className="flex items-end gap-2">
               <div className="flex-1">
