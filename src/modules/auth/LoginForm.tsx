@@ -124,6 +124,23 @@ export default function LoginForm() {
                   {login.isPending ? "Ingresando…" : "Ingresar"}
                 </Button>
               </div>
+
+              <p className="text-center text-theme-xs text-gray-400 dark:text-gray-500">
+                <a href="/privacidad" className="hover:text-brand-600 dark:hover:text-brand-400">
+                  Privacidad
+                </a>
+                {" · "}
+                <a href="/terminos" className="hover:text-brand-600 dark:hover:text-brand-400">
+                  Términos
+                </a>
+                {" · "}
+                <a
+                  href="/eliminacion-datos"
+                  className="hover:text-brand-600 dark:hover:text-brand-400"
+                >
+                  Eliminación de datos
+                </a>
+              </p>
             </fieldset>
           </form>
         </div>
