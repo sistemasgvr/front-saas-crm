@@ -48,7 +48,7 @@ export default function CrearLeadDesdeChatModal({
     setTipoLead("");
   }, [open, defaults.nombre, defaults.telefono]);
 
-  const puedeGuardar = nombre.trim().length > 0 && telefono.trim().length > 0;
+  const puedeGuardar = nombre.trim().length > 0;
 
   return (
     <Modal
@@ -102,7 +102,7 @@ export default function CrearLeadDesdeChatModal({
           />
         </div>
         <div>
-          <Label htmlFor="lead-wa-telefono">Teléfono</Label>
+          <Label htmlFor="lead-wa-telefono">Teléfono (opcional)</Label>
           <Input
             id="lead-wa-telefono"
             value={telefono}

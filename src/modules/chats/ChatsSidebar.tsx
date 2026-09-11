@@ -14,6 +14,7 @@ import { queryKeys } from "@/src/lib/query/keys";
 import OrigenLeadBadge from "@/src/modules/leads/OrigenLeadBadge";
 import { textoWhatsAppPlano } from "./texto-whatsapp-plano";
 import { filtrarConversaciones } from "./filtrar-conversaciones";
+import { etiquetaConversacion } from "./etiqueta-conversacion";
 import { useChatBorradores } from "./chat-borradores";
 import { getChats } from "./queries";
 
@@ -143,7 +144,7 @@ export default function ChatsSidebar({ rol: _rol }: { rol: Rol }) {
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-800">
             {chatsFiltrados.map((chat) => {
-              const nombre = chat.lead?.nombre ?? chat.nombreContacto ?? chat.waId;
+              const nombre = etiquetaConversacion(chat);
               const activo = chat.id === activeId;
               const asesor = chat.lead?.asignado?.nombre?.trim() || null;
               // Como WhatsApp: el borrador solo se ve en la lista si NO estás en ese chat.

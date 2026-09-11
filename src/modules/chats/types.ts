@@ -20,7 +20,11 @@ export interface LeadEnConversacion extends ReferenciaNombrada {
 
 export interface ConversacionResumen {
   id: string;
-  waId: string;
+  /** Teléfono E.164 sin '+' — null si Meta omitió wa_id (username privacy). */
+  waId: string | null;
+  /** Business-scoped user ID — identidad estable cuando no hay teléfono. */
+  bsuid?: string | null;
+  username?: string | null;
   nombreContacto: string | null;
   lead: LeadEnConversacion | null;
   ultimoMensajeEn: string | null;

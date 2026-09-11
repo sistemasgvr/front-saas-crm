@@ -66,6 +66,10 @@ import {
   quitarFavorito,
 } from "./sticker-favoritos";
 import { getChat, getTemplates, getChats } from "./queries";
+import {
+  etiquetaConversacion,
+  subtituloConversacion,
+} from "./etiqueta-conversacion";
 import ChatLeadInmuebleChip from "./ChatLeadInmuebleChip";
 import { markWhatsappNotificationsReadAction } from "@/src/modules/notifications/actions";
 import { dismissWhatsappOsNotification } from "@/src/modules/notifications/system-notifications";
@@ -1579,15 +1583,20 @@ export default function ChatDetailView({
     return (chatsQuery.data ?? [])
       .filter((c) => c.id !== id)
       .map((chat) => {
-        const etiqueta = chat.lead?.nombre ?? chat.nombreContacto ?? `+${chat.waId}`;
+        const etiqueta = etiquetaConversacion(chat);
         const enVentana = !chat.bloqueado && estaDentroDeVentana(chat.ventanaExpiraEn);
         return { chat, etiqueta, enVentana };
       })
       .filter(({ etiqueta, chat }) => {
         if (!term) return true;
+        const wa = (chat.waId ?? "").toLowerCase();
+        const user = (chat.username ?? "").toLowerCase();
+        const bsuid = (chat.bsuid ?? "").toLowerCase();
         return (
           etiqueta.toLowerCase().includes(term) ||
-          chat.waId.toLowerCase().includes(term)
+          wa.includes(term) ||
+          user.includes(term) ||
+          bsuid.includes(term)
         );
       })
       .sort((a, b) => {
@@ -2105,7 +2114,8 @@ export default function ChatDetailView({
   if (!chatQuery.data) return null;
 
   const chat = chatQuery.data;
-  const nombre = chat.lead?.nombre ?? chat.nombreContacto ?? chat.waId;
+  const nombre = etiquetaConversacion(chat);
+  const subtitulo = subtituloConversacion(chat);
 
   function elegirArchivo(file: File | undefined) {
     if (!file) return;
@@ -2133,16 +2143,20 @@ export default function ChatDetailView({
             {chat.lead?.origen ? <OrigenLeadBadge origen={chat.lead.origen} className="shrink-0" /> : null}
           </div>
           {chat.bloqueado ? (
-            <p className="truncate text-theme-xs text-error-500">+{chat.waId} · Bloqueado</p>
+            <p className="truncate text-theme-xs text-error-500">
+              {subtitulo ? `${subtitulo} · ` : ""}Bloqueado
+            </p>
           ) : chat.lead ? (
             <p className="truncate text-theme-xs text-gray-500 dark:text-gray-400">
-              +{chat.waId}
+              {subtitulo ?? "WhatsApp"}
               {chat.lead.asignado
                 ? ` · ${chat.lead.asignado.nombre}`
                 : " · Sin asignar"}
             </p>
           ) : (
-            <p className="truncate text-theme-xs text-warning-500">+{chat.waId} · Sin lead vinculado</p>
+            <p className="truncate text-theme-xs text-warning-500">
+              {subtitulo ? `${subtitulo} · ` : ""}Sin lead vinculado
+            </p>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
@@ -3271,7 +3285,13 @@ export default function ChatDetailView({
       onClose={() => setModalCrearLeadAbierto(false)}
       loading={crearLeadDesdeChat.isPending}
       defaults={{
-        nombre: chat.nombreContacto?.trim() || "",
+        nombre:
+          chat.nombreContacto?.trim() ||
+          (chat.username
+            ? chat.username.startsWith("@")
+              ? chat.username
+              : `@${chat.username}`
+            : ""),
         telefono: chat.waId ? `+${chat.waId}` : "",
       }}
       onSubmit={(values) => {
