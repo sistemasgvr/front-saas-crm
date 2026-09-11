@@ -440,6 +440,7 @@ const TIPOS_MEDIA = new Set(["image", "video", "audio", "document", "sticker"]);
 
 function ContenidoMedia({ mensaje, conversacionId }: { mensaje: Mensaje; conversacionId: string }) {
   const visor = useChatMediaLightbox();
+  const [vertical, setVertical] = useState(false);
 
   if (!mensaje.tieneMedia) {
     // Media que no se pudo descargar (caducó el media_id de Meta, etc.) —
@@ -479,14 +480,22 @@ function ContenidoMedia({ mensaje, conversacionId }: { mensaje: Mensaje; convers
       <button
         type="button"
         onClick={() => visor?.abrirMedia(mensaje.id)}
-        className="block max-w-full cursor-zoom-in overflow-hidden rounded-xl text-left"
+        className="block w-fit max-w-full cursor-zoom-in overflow-hidden rounded-xl text-left"
         aria-label="Ver imagen"
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- viene de un proxy propio, no de un dominio remoto configurable */}
         <img
           src={src}
           alt={mensaje.mediaCaption ?? "Imagen"}
-                  className="max-h-72 w-full max-w-[min(100%,320px)] object-contain bg-black/5 dark:bg-black/20"
+          onLoad={(e) => {
+            const img = e.currentTarget;
+            setVertical(img.naturalHeight > img.naturalWidth);
+          }}
+          className={
+            vertical
+              ? "h-auto max-h-[min(420px,60vh)] w-auto max-w-[min(100%,240px)] object-contain bg-black/5 dark:bg-black/20"
+              : "h-auto max-h-72 w-auto max-w-[min(100%,320px)] object-contain bg-black/5 dark:bg-black/20"
+          }
         />
       </button>
     );
@@ -496,7 +505,7 @@ function ContenidoMedia({ mensaje, conversacionId }: { mensaje: Mensaje; convers
       <button
         type="button"
         onClick={() => visor?.abrirMedia(mensaje.id)}
-        className="group relative block max-w-full cursor-pointer overflow-hidden rounded-xl text-left"
+        className="group relative block w-fit max-w-full cursor-pointer overflow-hidden rounded-xl text-left"
         aria-label="Reproducir video"
       >
         <video
@@ -504,11 +513,19 @@ function ContenidoMedia({ mensaje, conversacionId }: { mensaje: Mensaje; convers
           preload="metadata"
           muted
           playsInline
-          className="max-h-72 w-full max-w-[min(100%,320px)] bg-black object-cover"
+          onLoadedMetadata={(e) => {
+            const v = e.currentTarget;
+            setVertical(v.videoHeight > v.videoWidth);
+          }}
+          className={
+            vertical
+              ? "block h-auto max-h-[min(420px,60vh)] w-auto max-w-[min(100%,240px)] bg-black object-contain"
+              : "block h-auto max-h-72 w-auto max-w-[min(100%,320px)] bg-black object-contain"
+          }
         />
         <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25 transition group-hover:bg-black/35">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur-sm">
-            <Icon name="mdi:play" size={32} className="translate-x-0.5" />
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur-sm sm:h-14 sm:w-14">
+            <Icon name="mdi:play" size={28} className="translate-x-0.5" />
           </span>
         </span>
       </button>
@@ -1052,16 +1069,16 @@ function Burbuja({
       {checkboxSeleccion}
       {esSaliente && grupoAcciones}
       <div
-        className={`relative min-w-0 max-w-[calc(100%-4.5rem)] text-theme-sm sm:max-w-[75%] ${
+        className={`relative min-w-0 text-theme-sm ${
           esSticker
-            ? "space-y-1 px-1 py-1"
+            ? "max-w-[calc(100%-4.5rem)] space-y-1 px-1 py-1 sm:max-w-[75%]"
             : esMediaVisual
-              ? `space-y-1 overflow-hidden rounded-2xl p-1 ${
+              ? `w-fit max-w-[min(100%,calc(100%-4.5rem))] space-y-1 overflow-hidden rounded-2xl p-1 sm:max-w-[min(75%,280px)] ${
                   esSaliente
                     ? "bg-brand-500 text-white"
                     : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
                 }`
-              : `space-y-1.5 rounded-2xl px-3 py-2.5 sm:px-4 ${
+              : `max-w-[calc(100%-4.5rem)] space-y-1.5 rounded-2xl px-3 py-2.5 sm:max-w-[75%] sm:px-4 ${
                   esSaliente
                     ? "bg-brand-500 text-white"
                     : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
