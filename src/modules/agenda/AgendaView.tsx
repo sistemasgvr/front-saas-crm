@@ -16,6 +16,8 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
+import luxonPlugin from "@fullcalendar/luxon3";
+import { DateTime } from "luxon";
 import Select from "@/src/components/form/Select";
 import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
@@ -44,6 +46,8 @@ import CrearActividadAgendaModal from "./CrearActividadAgendaModal";
 
 const FullCalendar = dynamic(() => import("@fullcalendar/react"), { ssr: false });
 
+const ZONA_AGENDA = "America/Lima";
+
 type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 
 const COLOR_ESTADO: Record<string, string> = {
@@ -70,13 +74,16 @@ const ETIQUETA_ESTADO: Record<string, string> = {
   CANCELADA: "Cancelada",
 };
 
+/** Rango del mes calendario en America/Lima → ISO UTC reales. */
 function rangoInicial(cuandoIso?: string | null): { desde: string; hasta: string } {
-  const parseado = cuandoIso ? new Date(cuandoIso) : null;
-  const ancla =
-    parseado && !Number.isNaN(parseado.getTime()) ? parseado : new Date();
-  const desde = new Date(ancla.getFullYear(), ancla.getMonth(), 1);
-  const hasta = new Date(ancla.getFullYear(), ancla.getMonth() + 1, 0, 23, 59, 59, 999);
-  return { desde: desde.toISOString(), hasta: hasta.toISOString() };
+  const ancla = cuandoIso
+    ? DateTime.fromISO(cuandoIso, { zone: "utc" }).setZone(ZONA_AGENDA)
+    : DateTime.now().setZone(ZONA_AGENDA);
+  const base = ancla.isValid ? ancla : DateTime.now().setZone(ZONA_AGENDA);
+  return {
+    desde: base.startOf("month").toUTC().toISO()!,
+    hasta: base.endOf("month").toUTC().toISO()!,
+  };
 }
 
 function itemAEvento(item: AgendaItemRow): EventInput {
@@ -398,9 +405,15 @@ export default function AgendaView({
             ) : null}
             <FullCalendar
               key={esMovil ? "agenda-movil" : "agenda-desktop"}
-              plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
+              plugins={[
+                dayGridPlugin,
+                timeGridPlugin,
+                listPlugin,
+                interactionPlugin,
+                luxonPlugin,
+              ]}
               locale={esLocale}
-              timeZone="America/Lima"
+              timeZone={ZONA_AGENDA}
               initialView={vistaActual || vistaInicial}
               headerToolbar={
                 esMovil
