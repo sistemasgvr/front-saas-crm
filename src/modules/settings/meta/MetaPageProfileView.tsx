@@ -135,7 +135,13 @@ export default function MetaPageProfileView({ id }: { id: string }) {
           </ActionButton>
           <ActionButton
             action={async () => {
-              await healthCheckMetaPageAction(pagina.id);
+              const resultado = await healthCheckMetaPageAction(pagina.id);
+              if (!resultado.webhookSuscrito) {
+                throw new Error(
+                  resultado.webhookUltimoError ??
+                    "El webhook de la página no está suscrito en Meta",
+                );
+              }
             }}
             successMessage="Verificación completada"
             loadingText="Verificando…"

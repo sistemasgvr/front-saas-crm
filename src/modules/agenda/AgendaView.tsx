@@ -324,6 +324,8 @@ export default function AgendaView({
 
   function onDatesSet(arg: DatesSetArg) {
     setVistaActual(arg.view.type);
+    // No pisar el rango del deep-link mientras resolvemos la actividad.
+    if (tieneDeepLink && !deepLinkAplicado) return;
     const desde = arg.start.toISOString();
     const hasta = new Date(arg.end.getTime() - 1).toISOString();
     setRango((prev) => {
@@ -415,6 +417,11 @@ export default function AgendaView({
               locale={esLocale}
               timeZone={ZONA_AGENDA}
               initialView={vistaActual || vistaInicial}
+              initialDate={
+                deepLinkCuando && !Number.isNaN(Date.parse(deepLinkCuando))
+                  ? deepLinkCuando
+                  : undefined
+              }
               headerToolbar={
                 esMovil
                   ? {

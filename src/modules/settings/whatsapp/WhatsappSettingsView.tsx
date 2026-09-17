@@ -49,6 +49,11 @@ function ConexionWebhookActions({
         action={async () => {
           const resultado = await resyncWhatsappWebhookAction(conexion.id);
           onCamposFaltantes(resultado.camposFaltantes);
+          if (resultado.camposFaltantes.length > 0) {
+            throw new Error(
+              `Webhook re-suscrito, pero faltan campos en Meta: ${resultado.camposFaltantes.join(", ")}`,
+            );
+          }
         }}
         successMessage="Webhook re-suscrito"
         loadingText="Re-suscribiendo…"
@@ -61,6 +66,17 @@ function ConexionWebhookActions({
         action={async () => {
           const resultado = await verificarWhatsappWebhookAction(conexion.id);
           onCamposFaltantes(resultado.camposFaltantes);
+          if (!resultado.webhookSuscrito) {
+            throw new Error(
+              resultado.webhookUltimoError ??
+                "La app no está suscrita al WABA en Meta",
+            );
+          }
+          if (resultado.camposFaltantes.length > 0) {
+            throw new Error(
+              `Faltan campos de webhook: ${resultado.camposFaltantes.join(", ")}`,
+            );
+          }
         }}
         successMessage="Verificación completada"
         loadingText="Verificando…"
