@@ -26,6 +26,12 @@ import {
   registrarServiceWorker,
 } from "./web-push";
 import { resolverRutaNotificacion, type NotificacionEventoSocket } from "./types";
+import { iniciarRingLlamada, detenerRingLlamada } from "@/src/modules/calls/call-sounds";
+import { useCallStore } from "@/src/modules/calls/call-store";
+import type {
+  LlamadaEndedSocket,
+  LlamadaIncomingSocket,
+} from "@/src/modules/calls/types";
 
 /** Sube el chat al tope, suma no leídos y refresca preview sin esperar el GET.
  * @returns true si el chat ya estaba en la lista y se pudo parchear. */
@@ -286,7 +292,22 @@ export function useNotificationsSocket(enabled: boolean) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
     });
 
+    socket.on("call:incoming", (data: LlamadaIncomingSocket) => {
+      useCallStore.getState().setIncoming(data);
+      iniciarRingLlamada();
+      toast.info("Llamada entrante de WhatsApp", {
+        description: data.nombreContacto || data.waId || "Contacto",
+      });
+    });
+
+    socket.on("call:ended", (data: LlamadaEndedSocket) => {
+      detenerRingLlamada();
+      useCallStore.getState().onRemoteEnded(data);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappCalls });
+    });
+
     return () => {
+      detenerRingLlamada();
       socket?.disconnect();
       socket = null;
       navigator.serviceWorker?.removeEventListener("message", onSwMessage);

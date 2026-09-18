@@ -22,6 +22,10 @@ export interface WhatsappConexion {
   numeroDisplay: string | null;
   nombreVerificado: string | null;
   estadoNumero: string | null;
+  /** MENSAJES | LLAMADAS | AMBOS */
+  rolLinea?: string | null;
+  callingHabilitado?: boolean;
+  callingUltimoError?: string | null;
   webhookSuscrito: boolean;
   webhookSuscritoEn: string | null;
   webhookUltimoCheckEn: string | null;

@@ -34,6 +34,7 @@ const CLIENT_NAV_GROUPS: NavGroup[] = [
     title: "WhatsApp",
     items: [
       { name: "Chats", icon: "mdi:whatsapp", path: "/chats", requiereModulo: "WHATSAPP" },
+      { name: "Llamadas", icon: "mdi:phone", path: "/llamadas", requiereModulo: "WHATSAPP" },
     ],
   },
   {

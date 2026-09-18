@@ -19,6 +19,7 @@ import LeadAssignmentActions from "./LeadAssignmentActions";
 import LeadInmuebleInteresBlock from "./LeadInmuebleInteresBlock";
 import LeadPipelinePanel from "./LeadPipelinePanel";
 import LeadVisitasPanel from "./LeadVisitasPanel";
+import LeadLlamadasPanel from "@/src/modules/calls/LeadLlamadasPanel";
 import OrigenLeadBadge from "./OrigenLeadBadge";
 import {
   etiquetaCampoMeta,
@@ -360,6 +361,17 @@ export default function LeadDetailView({
           <LeadVisitasPanel leadId={id} crmHabilitado={crmHabilitado} />
         </div>
       </CollapsibleSection>
+
+      {whatsappHabilitado ? (
+        <CollapsibleSection
+          title="Llamadas"
+          icon="mdi:phone"
+          description="Historial de llamadas WhatsApp asociadas a este lead."
+          defaultOpen={false}
+        >
+          <LeadLlamadasPanel leadId={id} />
+        </CollapsibleSection>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <CollapsibleSection

@@ -78,6 +78,8 @@ import {
 } from "./etiqueta-conversacion";
 import ChatLeadInmuebleChip from "./ChatLeadInmuebleChip";
 import { markWhatsappNotificationsReadAction } from "@/src/modules/notifications/actions";
+import { ChatCallControls } from "@/src/modules/calls/ChatCallControls";
+import ChatLlamadasStrip from "@/src/modules/calls/ChatLlamadasStrip";
 import { dismissWhatsappOsNotification } from "@/src/modules/notifications/system-notifications";
 import type {
   ConversacionDetalle,
@@ -2330,6 +2332,13 @@ export default function ChatDetailView({
             </button>
           ) : null}
 
+          <ChatCallControls
+            conversacionId={id}
+            nombreContacto={nombre}
+            waId={chat.waId}
+            leadId={chat.lead?.id}
+          />
+
           <button
             type="button"
             onClick={() => setBusquedaAbierta(true)}
@@ -2443,6 +2452,14 @@ export default function ChatDetailView({
                   Registrar actividad
                 </DropdownItem>
               ) : null}
+              <ChatCallControls
+                conversacionId={id}
+                nombreContacto={nombre}
+                waId={chat.waId}
+                leadId={chat.lead?.id}
+                variant="menu"
+                onMenuClose={() => setMenuAccionesAbierto(false)}
+              />
               <DropdownItem
                 onClick={() => {
                   setMenuAccionesAbierto(false);
@@ -2492,6 +2509,7 @@ export default function ChatDetailView({
         className="thin-scrollbar h-full overflow-y-auto overflow-x-hidden overscroll-contain px-2 py-3 [-webkit-overflow-scrolling:touch] sm:px-5 sm:py-4"
       >
         <div ref={contenidoListaRef} className="w-full min-w-0 max-w-full space-y-3">
+          <ChatLlamadasStrip conversacionId={id} />
           {chat.mensajes.length === 0 ? (
             <p className="text-center text-theme-sm text-gray-500 dark:text-gray-400">
               Todavía no hay mensajes en esta conversación.

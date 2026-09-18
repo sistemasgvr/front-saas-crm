@@ -5,6 +5,7 @@ import { ThemeToggleButton } from "@/src/components/common/ThemeToggleButton";
 import AppLogo from "@/src/components/ui/AppLogo";
 import { Icon } from "@/src/components/ui/Icon";
 import NotificationBell from "@/src/modules/notifications/NotificationBell";
+import CallProvider from "@/src/modules/calls/CallProvider";
 import { useSidebar } from "./SidebarContext";
 import UserMenu from "./UserMenu";
 
@@ -82,6 +83,7 @@ export default function Header({
             )}
             <ThemeToggleButton />
             {organizacionId && <NotificationBell organizacionId={organizacionId} />}
+            {organizacionId && <CallProvider enabled />}
           </div>
           <UserMenu nombre={nombre} email={email} profileHref={profileHref} settingsHref={settingsHref} />
         </div>

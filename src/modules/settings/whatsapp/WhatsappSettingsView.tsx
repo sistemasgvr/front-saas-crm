@@ -13,6 +13,7 @@ import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import MetaLinkResourcePanel from "../meta/MetaLinkResourcePanel";
 import WhatsappTemplatesPanel from "./WhatsappTemplatesPanel";
+import CallingSettingsPanel from "@/src/modules/calls/CallingSettingsPanel";
 import {
   linkWhatsappNumeroAction,
   resyncWhatsappWebhookAction,
@@ -25,7 +26,7 @@ import type { WhatsappConexion } from "./types";
 const INVALIDATE = [queryKeys.whatsappConexiones, queryKeys.whatsappNumerosDisponibles];
 
 const AVISO_CAMPOS_META =
-  "En Meta Developers → Webhooks → WhatsApp Business Account: messages, history, smb_message_echoes, smb_app_state_sync";
+  "En Meta Developers → Webhooks → WhatsApp Business Account: messages, history, smb_message_echoes, smb_app_state_sync, calls";
 
 function UnlinkAction({ id }: { id: string }) {
   const mutation = useAppMutation({
@@ -153,40 +154,43 @@ export default function WhatsappSettingsView() {
             return (
               <div
                 key={conexion.id}
-                className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:flex-row sm:items-center sm:justify-between"
+                className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]"
               >
-                <div className="flex items-center gap-4">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-400">
-                    <Icon name="mdi:whatsapp" size={22} />
-                  </span>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium text-gray-800 dark:text-white/90">
-                        {conexion.numeroDisplay ?? conexion.phoneNumberId}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-4">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-400">
+                      <Icon name="mdi:whatsapp" size={22} />
+                    </span>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium text-gray-800 dark:text-white/90">
+                          {conexion.numeroDisplay ?? conexion.phoneNumberId}
+                        </p>
+                        <Badge color={conexion.webhookSuscrito ? "success" : "warning"} size="sm">
+                          {conexion.webhookSuscrito ? "Webhook activo" : "Webhook sin confirmar"}
+                        </Badge>
+                      </div>
+                      <p className="mt-0.5 text-theme-sm text-gray-500 dark:text-gray-400">
+                        {conexion.nombreVerificado ?? "Sin nombre verificado"}
                       </p>
-                      <Badge color={conexion.webhookSuscrito ? "success" : "warning"} size="sm">
-                        {conexion.webhookSuscrito ? "Webhook activo" : "Webhook sin confirmar"}
-                      </Badge>
+                      {conexion.webhookUltimoError && (
+                        <p className="mt-0.5 text-theme-xs text-error-500">{conexion.webhookUltimoError}</p>
+                      )}
+                      {faltantes.length > 0 && (
+                        <p className="mt-1 text-theme-xs text-warning-600 dark:text-warning-400">
+                          Campos faltantes: {faltantes.join(", ")}. {AVISO_CAMPOS_META}
+                        </p>
+                      )}
                     </div>
-                    <p className="mt-0.5 text-theme-sm text-gray-500 dark:text-gray-400">
-                      {conexion.nombreVerificado ?? "Sin nombre verificado"}
-                    </p>
-                    {conexion.webhookUltimoError && (
-                      <p className="mt-0.5 text-theme-xs text-error-500">{conexion.webhookUltimoError}</p>
-                    )}
-                    {faltantes.length > 0 && (
-                      <p className="mt-1 text-theme-xs text-warning-600 dark:text-warning-400">
-                        Campos faltantes: {faltantes.join(", ")}. {AVISO_CAMPOS_META}
-                      </p>
-                    )}
                   </div>
+                  <ConexionWebhookActions
+                    conexion={conexion}
+                    onCamposFaltantes={(campos) =>
+                      setCamposFaltantesPorId((prev) => ({ ...prev, [conexion.id]: campos }))
+                    }
+                  />
                 </div>
-                <ConexionWebhookActions
-                  conexion={conexion}
-                  onCamposFaltantes={(campos) =>
-                    setCamposFaltantesPorId((prev) => ({ ...prev, [conexion.id]: campos }))
-                  }
-                />
+                <CallingSettingsPanel conexion={conexion} />
               </div>
             );
           })}

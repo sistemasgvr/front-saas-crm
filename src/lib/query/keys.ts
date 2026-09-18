@@ -74,4 +74,14 @@ export const queryKeys = {
   whatsappChat: (id: string) => ["whatsapp", "chats", id] as const,
   whatsappTemplates: ["whatsapp", "templates"] as const,
   whatsappTemplatesAll: ["whatsapp", "templates", "all"] as const,
+  /** Prefijo para invalidar listados/detalle de llamadas. */
+  whatsappCalls: ["whatsapp", "calls"] as const,
+  whatsappCallsList: (filtro: Record<string, string | number | undefined | null> = {}) =>
+    ["whatsapp", "calls", "list", filtro] as const,
+  whatsappCallCapacidad: ["whatsapp", "calls", "capacidad"] as const,
+  whatsappCallPermiso: (conversacionId: string) =>
+    ["whatsapp", "calls", "permiso", conversacionId] as const,
+  whatsappCallPresencia: ["whatsapp", "calls", "presencia"] as const,
+  whatsappCallSettings: ["whatsapp", "calls", "settings"] as const,
+  whatsappCallMetricas: ["whatsapp", "calls", "metricas"] as const,
 };
