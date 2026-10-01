@@ -50,7 +50,14 @@ export async function resyncWhatsappWebhookAction(
 }
 
 export interface ResultadoSaludWebhookWhatsapp {
-  webhookSuscrito: boolean;
+  webhookSuscrito: boolean | null;
+  suscripcionAppActiva: boolean | null;
+  camposVerificados: boolean;
+  numero: { estado: string | null; plataforma: string | null; enAppBusiness: boolean | null; verificacionCodigo: string | null; saludEnvio: string | null };
+  erroresEnvio: { codigo: number | null; descripcion: string; solucion: string | null }[];
+  erroresVerificacion: string[];
+  verificadoEn: string;
+  ultimoMensajeEntranteEn: string | null;
   camposSuscritos: string[];
   camposFaltantes: string[];
   webhookUltimoError: string | null;
