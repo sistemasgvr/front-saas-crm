@@ -7,6 +7,7 @@ function fail(error: unknown, fallback: string): never {
 }
 
 export interface UpdateLeadAutoAsignacionConfigInput {
+  limitesDiarios?: Record<string, number>;
   habilitado: boolean;
   usuarioIds: string[];
 }
@@ -20,6 +21,7 @@ export async function updateLeadAutoAsignacionConfigAction(
       body: JSON.stringify({
         habilitado: input.habilitado,
         usuarioIds: input.usuarioIds,
+        limitesDiarios: input.limitesDiarios,
       }),
     });
   } catch (error) {

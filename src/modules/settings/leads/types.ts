@@ -1,4 +1,7 @@
 export interface LeadAutoAsignacionConfig {
+  limitesDiarios?: Record<string, number>;
+  asignadosHoy?: Record<string, number>;
+  diaConsumo?: string;
   habilitado: boolean;
   /**
    * Back nuevo: lista completa de usuarios del round-robin.
