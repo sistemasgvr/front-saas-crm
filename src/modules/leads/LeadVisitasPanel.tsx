@@ -1,5 +1,8 @@
 "use client";
+import { usePaginationPage } from "@/src/components/ui/use-pagination-page";
 
+import Pagination from "@/src/components/ui/Pagination";
+import { QueryError } from "@/src/components/ui/PageLoader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Icon } from "@/src/components/ui/Icon";
@@ -51,22 +54,26 @@ export default function LeadVisitasPanel({
   leadId: string;
   inmueblesHabilitado?: boolean;
 }) {
-  const { data: visitas = [], isLoading } = useQuery({
-    queryKey: queryKeys.leadVisitas(leadId),
-    queryFn: () => getVisitasLead(leadId),
+  const [page, setPage] = usePaginationPage(leadId);
+  const query = useQuery({
+    queryKey: [...queryKeys.leadVisitas(leadId), page],
+    queryFn: () => getVisitasLead(leadId, page),
   });
 
-  const proximas = visitas.filter(
+  const visitas = query.data?.data ?? [];
+  const items = visitas;
+  const proximas = items.filter(
     (v: LeadVisitaRow) => v.estado === "PROGRAMADA",
   );
-  const pasadas = visitas.filter(
+  const pasadas = items.filter(
     (v: LeadVisitaRow) => v.estado !== "PROGRAMADA",
   );
 
-  if (isLoading) {
+  if (query.isLoading) {
     return <VisitasSkeleton />;
   }
 
+  if (query.isError) return <QueryError error={query.error} onRetry={() => void query.refetch()} />;
   if (visitas.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-gray-200 px-4 py-6 text-center text-theme-xs text-gray-400 dark:border-gray-800">
@@ -111,6 +118,7 @@ export default function LeadVisitasPanel({
           </ul>
         </section>
       )}
+      {query.data && <Pagination {...query.data} onPageChange={setPage} itemLabel="visitas" />}
     </div>
   );
 }

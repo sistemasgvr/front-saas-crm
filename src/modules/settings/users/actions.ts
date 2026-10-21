@@ -1,9 +1,15 @@
 "use server";
+import { apiFetchCollection } from "@/src/lib/api-collection";
+import type { UsuarioEmpresa } from "./types";
 import { apiFetch, ApiError } from "@/src/lib/api";
 import type { UsuariosEmpresaResponse } from "./types";
 
-export async function getUsuariosEmpresa() {
-  return apiFetch<UsuariosEmpresaResponse>("/organizations/current/users");
+export async function getUsuariosEmpresa(params: { page?: number; q?: string; rol?: string; estado?: string } = {}) {
+  const search = new URLSearchParams({ page: String(params.page ?? 1), pageSize: "20" });
+  for (const key of ["q", "rol", "estado"] as const) {
+    if (params[key]) search.set(key, params[key]);
+  }
+  return apiFetch<UsuariosEmpresaResponse>(`/organizations/current/users?${search}`);
 }
 export async function guardarUsuarioEmpresa(
   id: string | null,
@@ -67,4 +73,8 @@ export async function reasignarLeadsUsuario(
       e instanceof ApiError ? e.message : "No se pudieron reasignar los leads",
     );
   }
+}
+
+export async function getUsuariosEmpresaDestinos() {
+  return apiFetchCollection<UsuarioEmpresa>("/organizations/current/users?estado=activo");
 }

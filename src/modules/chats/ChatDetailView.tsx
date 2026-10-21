@@ -1,9 +1,14 @@
 "use client";
 
+import { mergeMessageHistory } from "./merge-message-history";
+import { getMensajesAnteriores } from "./queries";
+import Pagination from "@/src/components/ui/Pagination";
+import { useClientPagination } from "@/src/components/ui/use-client-pagination";
+import { updateChatList, type ChatListCache } from "./chat-list-cache";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "motion/react";
 import EmojiPicker, {
   Theme as TemaEmojiPicker,
@@ -1571,11 +1576,38 @@ export default function ChatDetailView({
 
   const chatQuery = useQuery<ConversacionDetalle>({
     queryKey: queryKeys.whatsappChat(id),
-    queryFn: () => getChat(id),
+    queryFn: async () => mergeMessageHistory(await getChat(id), queryClient.getQueryData<ConversacionDetalle>(queryKeys.whatsappChat(id))),
     // Mensajes en vivo vía socket + refetch forzado; stale corto para no
     // bloquear actualizaciones tras notificaciones.
     staleTime: 5_000,
     refetchInterval: () => intervaloSiVisible(INTERVALO_REFRESCO_MS),
+  });
+
+  const anteriores = useMutation({
+    mutationFn: async () => {
+      const before = chatQuery.data?.mensajes[0]?.id;
+      if (!before) throw new Error("No hay mensajes anteriores");
+      return getMensajesAnteriores(id, before);
+    },
+    onSuccess: (result) => {
+      const current = result.id === id;
+      const list = current ? listaRef.current : null;
+      const height = list?.scrollHeight ?? 0;
+      const top = list?.scrollTop ?? 0;
+      if (current) {
+        pegarAlFondoRef.current = false;
+        for (const message of result.mensajes) mensajesVistosRef.current.add(message.id);
+      }
+      queryClient.setQueryData<ConversacionDetalle>(queryKeys.whatsappChat(result.id), (previous) => {
+        if (!previous) return previous;
+        const ids = new Set(previous.mensajes.map((message) => message.id));
+        return { ...previous, hayMensajesAnteriores: result.hayMensajesAnteriores,
+          mensajes: [...result.mensajes.filter((message) => !ids.has(message.id)), ...previous.mensajes] };
+      });
+      requestAnimationFrame(() => {
+        if (list) list.scrollTop = top + list.scrollHeight - height;
+      });
+    },
   });
 
   const controlQuery = useChatControl(id);
@@ -1622,11 +1654,10 @@ export default function ChatDetailView({
       ? previewUltimoMensaje(ultimo)
       : chatQuery.data.ultimoMensajeTexto;
 
-    queryClient.setQueriesData<ConversacionResumen[]>(
+    queryClient.setQueriesData<ChatListCache>(
       { queryKey: ["whatsapp", "chats", "list"] },
-      (prev) => {
-        if (!Array.isArray(prev)) return prev;
-        return prev
+      (prev) => updateChatList(prev, (items) => {
+        return items
           .map((c) =>
             c.id === id
               ? {
@@ -1646,7 +1677,7 @@ export default function ChatDetailView({
               : 0;
             return tb - ta;
           });
-      },
+      }),
     );
     if (unreadInvalidadoParaId.current !== id) {
       unreadInvalidadoParaId.current = id;
@@ -1923,6 +1954,7 @@ export default function ChatDetailView({
         return a.etiqueta.localeCompare(b.etiqueta, "es");
       });
   }, [busquedaDestinoReenvio, chatsQuery.data, id]);
+  const forwardingPage = useClientPagination(destiniosReenvioLista, 20, `${id}:${busquedaDestinoReenvio}`);
 
   const bloquear = useAppMutation({
     mutationFn: (bloquearContacto: boolean) =>
@@ -2376,11 +2408,10 @@ export default function ChatDetailView({
         };
       },
     );
-    queryClient.setQueriesData<ConversacionResumen[]>(
+    queryClient.setQueriesData<ChatListCache>(
       { queryKey: ["whatsapp", "chats", "list"] },
-      (prev) => {
-        if (!Array.isArray(prev)) return prev;
-        return prev
+      (prev) => updateChatList(prev, (items) => {
+        return items
           .map((c) =>
             c.id === id
               ? {
@@ -2399,7 +2430,7 @@ export default function ChatDetailView({
               : 0;
             return tb - ta;
           });
-      },
+      }),
     );
   }
 
@@ -2853,6 +2884,14 @@ export default function ChatDetailView({
                 ref={contenidoListaRef}
                 className="w-full min-w-0 max-w-full space-y-3"
               >
+                {chat.hayMensajesAnteriores && (
+                  <div className="text-center">
+                    <Button size="sm" variant="outline" loading={anteriores.isPending} onClick={() => anteriores.mutate()}>
+                      Cargar mensajes anteriores
+                    </Button>
+                    {anteriores.isError && <p role="alert" className="mt-2 text-xs text-error-600">{anteriores.error.message}</p>}
+                  </div>
+                )}
                 <ChatLlamadasStrip conversacionId={id} />
                 {chat.mensajes.length === 0 ? (
                   <p className="text-center text-theme-sm text-gray-500 dark:text-gray-400">
@@ -3877,7 +3916,7 @@ export default function ChatDetailView({
                     No hay chats para mostrar con ese filtro.
                   </p>
                 ) : (
-                  destiniosReenvioLista.map(({ chat, enVentana, etiqueta }) => {
+                  forwardingPage.items.map(({ chat, enVentana, etiqueta }) => {
                     const checked = destinoReenvioIds.includes(chat.id);
                     const sinControl =
                       chat.modoAtencion === "TOMANDO_CONTROL" ||
@@ -3921,6 +3960,7 @@ export default function ChatDetailView({
                   })
                 )}
               </div>
+              <Pagination {...forwardingPage.pagination} itemLabel="chats" />
               {(chatsQuery.data ?? []).some(
                 (c) =>
                   c.id !== id &&

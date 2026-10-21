@@ -1,4 +1,5 @@
 "use server";
+import { apiFetchCollection } from "@/src/lib/api-collection";
 
 import { apiFetch, ApiError } from "@/src/lib/api";
 import type { ModuloAdmin, ModuloGrupo } from "../types";
@@ -9,7 +10,7 @@ import type {
 import type { ResultadoControl } from "../../chats/control-types";
 
 export async function getAdminModules() {
-  return apiFetch<ModuloAdmin[]>("/admin/modules");
+  return apiFetchCollection<ModuloAdmin>("/admin/modules");
 }
 export async function getAutomationIntegration() {
   return apiFetch<AutomationIntegration>("/admin/automations/integration");
@@ -35,5 +36,5 @@ export async function guardarAutomationIntegration(
 }
 
 export async function getAdminModuleGroups() {
-  return apiFetch<ModuloGrupo[]>("/admin/module-groups");
+  return apiFetchCollection<ModuloGrupo>("/admin/module-groups");
 }

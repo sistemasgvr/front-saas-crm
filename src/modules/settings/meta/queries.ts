@@ -1,4 +1,6 @@
 "use server";
+import { apiFetchCollection } from "@/src/lib/api-collection";
+import type { PaginatedResult } from "@/src/lib/pagination";
 
 import { apiFetch, ApiError } from "@/src/lib/api";
 import type {
@@ -39,7 +41,7 @@ export async function getMetaPagesVinculadas(page: number) {
 }
 
 export async function getMetaPagesAvailable() {
-  const data = await apiFetch<MetaOption[]>("/meta/pages/available");
+  const data = await apiFetchCollection<MetaOption>("/meta/pages/available");
   return Array.isArray(data) ? data : [];
 }
 
@@ -52,7 +54,7 @@ export async function getMetaAdAccountsVinculadas(page: number) {
 }
 
 export async function getMetaAdAccountsAvailable() {
-  const data = await apiFetch<MetaOption[]>("/meta/ad-accounts/available");
+  const data = await apiFetchCollection<MetaOption>("/meta/ad-accounts/available");
   return Array.isArray(data) ? data : [];
 }
 
@@ -60,9 +62,9 @@ export async function getMetaAdAccountProfile(id: string) {
   return apiFetch<MetaCuentaPublicitariaPerfil>(`/meta/ad-accounts/${id}`);
 }
 
-export async function getMetaPageForms(pageId: string) {
-  const data = await apiFetch<MetaFormulario[]>(`/meta/pages/${pageId}/forms`);
-  return Array.isArray(data) ? data : [];
+export async function getMetaPageForms(pageId: string, page = 1) {
+  const data = await apiFetch<PaginatedResult<MetaFormulario>>(`/meta/pages/${pageId}/forms?page=${page}&pageSize=20`);
+  return data;
 }
 
 /** Totales reales en Meta por formId (POST Graph; usado al cargar y tras reimportar).

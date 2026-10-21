@@ -2,6 +2,7 @@
 
 import { useDeferredValue, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
+import Pagination from "@/src/components/ui/Pagination";
 import Label from "@/src/components/form/Label";
 import Select from "@/src/components/form/Select";
 import Input from "@/src/components/form/input/InputField";
@@ -40,6 +41,7 @@ import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import {
   getUsuariosEmpresa,
+  getUsuariosEmpresaDestinos,
   guardarUsuarioEmpresa,
   estadoUsuarioEmpresa,
   passwordTemporalEmpresa,
@@ -89,7 +91,7 @@ export default function UsuariosEmpresaView({
 }: {
   usuarioId: string;
 }) {
-  const query = useQuery({ queryKey: key, queryFn: getUsuariosEmpresa });
+  const [page, setPage] = useState(1);
   const [editor, setEditor] = useState<UsuarioEmpresa | "nuevo" | null>(null);
   const [rolEditor, setRolEditor] = useState("USUARIO");
   const [estado, setEstado] = useState<UsuarioEmpresa | null>(null);
@@ -100,6 +102,13 @@ export default function UsuariosEmpresaView({
   const busqueda = useDeferredValue(filtros.q ?? "")
     .trim()
     .toLowerCase();
+  const params = { page, q: busqueda, rol: filtros.rol, estado: filtros.estado };
+  const query = useQuery({ queryKey: [...key, params], queryFn: () => getUsuariosEmpresa(params) });
+  const destinos = useQuery({
+    queryKey: [...key, "destinos"],
+    queryFn: getUsuariosEmpresaDestinos,
+    enabled: !!reasignar,
+  });
   const invalidar = [key, queryKeys.me];
   const guardar = useAppMutation({
     mutationFn: async ({
@@ -146,25 +155,11 @@ export default function UsuariosEmpresaView({
   if (query.isLoading) return <PageLoader label="Cargando usuarios…" />;
   if (query.isError) return <QueryError error={query.error} />;
   if (!query.data) return null;
-  const { usuarios, activos, limite } = query.data;
+  const { data: usuarios, activos, limite } = query.data;
   const lleno = limite !== null && activos >= limite;
   const superado = limite !== null && activos > limite;
   const actual = editor && editor !== "nuevo" ? editor : null;
-  const filtrados = usuarios.filter((u) => {
-    const coincideTexto =
-      `${u.nombre} ${u.apellido ?? ""} ${u.email} ${u.telefono ?? ""}`
-        .toLowerCase()
-        .includes(busqueda);
-    const coincideRol = !filtros.rol || u.rol === filtros.rol;
-    const coincideEstado =
-      !filtros.estado ||
-      (filtros.estado === "suspendido"
-        ? !u.cuentaActiva
-        : filtros.estado === "activo"
-          ? u.estado === 1 && u.cuentaActiva
-          : u.estado === 0 && u.cuentaActiva);
-    return coincideTexto && coincideRol && coincideEstado;
-  });
+  const filtrados = usuarios;
   const abrirEditor = (u: UsuarioEmpresa | "nuevo") => {
     guardar.reset();
     setRolEditor(u === "nuevo" ? "USUARIO" : u.rol);
@@ -285,7 +280,7 @@ export default function UsuariosEmpresaView({
         <DynamicFilters
           fields={campos}
           values={filtros}
-          onChange={setFiltros}
+          onChange={(value) => { setPage(1); setFiltros(value); }}
         />
         <Button
           size="sm"
@@ -386,6 +381,7 @@ export default function UsuariosEmpresaView({
           </Table>
         </TableCard>
       </div>
+      <Pagination {...query.data} onPageChange={setPage} itemLabel="usuarios" />
       <Modal
         open={!!editor}
         onClose={() => {
@@ -617,11 +613,8 @@ export default function UsuariosEmpresaView({
             onChange={setDestino}
             placeholder="Selecciona un usuario activo"
             searchPlaceholder="Buscar usuario por nombre o email"
-            options={usuarios
-              .filter(
-                (u) =>
-                  u.estado === 1 && u.cuentaActiva && u.id !== reasignar?.id,
-              )
+            options={(destinos.data ?? [])
+              .filter((u) => u.id !== reasignar?.id)
               .map((u) => ({
                 value: u.id,
                 label: `${u.nombre} ${u.apellido ?? ""} · ${u.email}`,

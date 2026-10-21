@@ -1,4 +1,6 @@
 "use client";
+import Pagination from "@/src/components/ui/Pagination";
+import { useClientPagination } from "@/src/components/ui/use-client-pagination";
 import { useState } from "react";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { queryKeys } from "@/src/lib/query/keys";
@@ -31,6 +33,8 @@ export default function ModulesMatrix({
   modulos: GrupoMatriz[];
   activa?: boolean;
 }) {
+  const groupPage = useClientPagination(grupos, 10, organizacionId);
+  const [modulePages, setModulePages] = useState<Record<string, number>>({});
   const [confirmacion, setConfirmacion] = useState<Cambio | null>(null);
   const modulos = grupos.flatMap((g) => g.modulos);
   const mutation = useAppMutation({
@@ -109,7 +113,9 @@ export default function ModulesMatrix({
   const enCurso = mutation.isPending ? mutation.variables?.id : undefined;
   return (
     <div className="space-y-4">
-      {grupos.map(({ grupo, modulos: filas, habilitado }) => {
+      {groupPage.items.map(({ grupo, modulos: filas, habilitado }) => {
+        const totalPages = Math.max(1, Math.ceil(filas.length / 10));
+        const page = Math.min(modulePages[grupo.id] ?? 1, totalPages);
         const activos = filas.filter((m) => m.habilitado).length;
         return (
           <section
@@ -161,7 +167,7 @@ export default function ModulesMatrix({
               </div>
             </header>
             <ul className="divide-y divide-gray-100 dark:divide-gray-800">
-              {filas.map((m) => (
+              {filas.slice((page - 1) * 10, page * 10).map((m) => (
                 <li key={m.id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex min-w-0 items-start gap-3">
@@ -224,9 +230,11 @@ export default function ModulesMatrix({
                 </li>
               ))}
             </ul>
+            <Pagination page={page} pageSize={10} total={filas.length} totalPages={totalPages} onPageChange={(next) => setModulePages((prev) => ({ ...prev, [grupo.id]: next }))} itemLabel="módulos" className="px-4 py-3" />
           </section>
         );
       })}
+      <Pagination {...groupPage.pagination} itemLabel="grupos" />
       <ConfirmModal
         open={!!confirmacion}
         title={

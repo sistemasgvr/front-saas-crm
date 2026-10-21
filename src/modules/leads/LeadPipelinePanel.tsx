@@ -1,5 +1,7 @@
 "use client";
+import { usePaginationPage } from "@/src/components/ui/use-pagination-page";
 
+import Pagination from "@/src/components/ui/Pagination";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
@@ -108,20 +110,19 @@ export default function LeadPipelinePanel({
   const [motivoForm, setMotivoForm] = useState("");
   const [notaForm, setNotaForm] = useState("");
   const [reabrirAbierto, setReabrirAbierto] = useState(false);
-  const [historialExpandido, setHistorialExpandido] = useState(false);
+  const [historyPage, setHistoryPage] = usePaginationPage(leadId);
   const [tipoPendienteConfirmacion, setTipoPendienteConfirmacion] = useState<
     string | null
   >(null);
 
-  const LIMITE_HISTORIAL = 5;
 
   const metaQuery = useQuery<MetaPipeline>({
     queryKey: queryKeys.leadPipelineMeta(tipoLead),
     queryFn: () => getMetaPipeline(tipoLead),
   });
   const historialQuery = useQuery({
-    queryKey: queryKeys.leadHistorial(leadId),
-    queryFn: () => getHistorialLead(leadId),
+    queryKey: [...queryKeys.leadHistorial(leadId), historyPage],
+    queryFn: () => getHistorialLead(leadId, historyPage),
   });
 
   const gestionar = useAppMutation({
@@ -243,14 +244,8 @@ export default function LeadPipelinePanel({
 
   const resultado = RESULTADO_CIERRE[estadoGestion];
 
-  const historialCompleto = historialQuery.data ?? [];
-  const historialOcultos = Math.max(
-    0,
-    historialCompleto.length - LIMITE_HISTORIAL,
-  );
-  const historialVisible = historialExpandido
-    ? historialCompleto
-    : historialCompleto.slice(-LIMITE_HISTORIAL);
+  const historialCompleto = historialQuery.data?.data ?? [];
+  const historialVisible = historialCompleto;
 
   const reiniciaPorTipo = cambioTipoReiniciaEmbudo(estadoGestion);
 
@@ -572,7 +567,8 @@ export default function LeadPipelinePanel({
         </div>
       </Modal>
 
-      {/* Timeline — colapsable visualmente separado */}
+      {historialQuery.isError && <QueryError error={historialQuery.error} onRetry={() => void historialQuery.refetch()} />}
+      {/* Historial paginado */}
       {historialCompleto.length > 0 && (
         <div className="rounded-xl border border-gray-100 bg-gray-50/50 dark:border-gray-800 dark:bg-white/[0.02]">
           <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
@@ -580,30 +576,19 @@ export default function LeadPipelinePanel({
               <Icon name="mdi:history" size={14} />
               Actividad reciente
               <span className="rounded-full bg-gray-200/80 px-1.5 py-0.5 text-[10px] font-medium normal-case text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                {historialCompleto.length}
+                {historialQuery.data?.total ?? 0}
               </span>
             </p>
-            {historialOcultos > 0 && (
-              <button
-                type="button"
-                onClick={() => setHistorialExpandido((prev) => !prev)}
-                className="text-theme-xs font-medium text-brand-600 hover:underline dark:text-brand-400"
-              >
-                {historialExpandido
-                  ? "Ver menos"
-                  : `Ver ${historialOcultos} más`}
-              </button>
-            )}
+
           </div>
           <div
-            className={`px-4 py-3 ${
-              historialExpandido ? "max-h-80 overflow-y-auto" : ""
-            }`}
+            className="px-4 py-3"
           >
             <PipelineTimeline
               filas={historialVisible}
               inmueblesHabilitado={inmueblesHabilitado}
             />
+            {historialQuery.data && <Pagination {...historialQuery.data} onPageChange={setHistoryPage} itemLabel="cambios" className="mt-4" />}
           </div>
         </div>
       )}

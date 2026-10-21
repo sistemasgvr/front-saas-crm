@@ -1,5 +1,7 @@
 "use client";
 
+import Pagination from "@/src/components/ui/Pagination";
+import { useClientPagination } from "@/src/components/ui/use-client-pagination";
 import { useState } from "react";
 import type { QueryKey } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
@@ -45,6 +47,7 @@ export default function MetaLinkResourcePanel({
     enabled: open,
   });
 
+  const availablePage = useClientPagination(availableQuery.data ?? []);
   const vincular = useAppMutation({
     mutationFn: onLink,
     successMessage,
@@ -82,7 +85,7 @@ export default function MetaLinkResourcePanel({
             <EmptyState icon="mdi:link-off" title={emptyMessage} />
           )}
           <div className="space-y-2">
-            {(availableQuery.data ?? []).map((item) => (
+            {availablePage.items.map((item) => (
               <div
                 key={item.id}
                 className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 px-4 py-3 dark:border-gray-800"
@@ -99,6 +102,7 @@ export default function MetaLinkResourcePanel({
                 </Button>
               </div>
             ))}
+            <Pagination {...availablePage.pagination} itemLabel="recursos" />
           </div>
         </div>
       )}

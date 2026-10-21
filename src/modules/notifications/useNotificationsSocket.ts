@@ -1,5 +1,6 @@
 "use client";
 
+import { updateChatList, type ChatListCache } from "@/src/modules/chats/chat-list-cache";
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { io, type Socket } from "socket.io-client";
@@ -48,10 +49,10 @@ function parchearListaChatsWhatsapp(
   let sumoNoLeido = false;
   let parcheado = false;
 
-  queryClient.setQueriesData<ConversacionResumen[]>(
+  queryClient.setQueriesData<ChatListCache>(
     { queryKey: ["whatsapp", "chats", "list"] },
-    (prev) => {
-    if (!Array.isArray(prev) || prev.length === 0) return prev;
+    (cache) => updateChatList(cache, (prev) => {
+    if (prev.length === 0) return prev;
     const idx = prev.findIndex((c) => c.id === conversacionId);
     if (idx < 0) return prev;
 
@@ -67,7 +68,7 @@ function parchearListaChatsWhatsapp(
       noLeidos,
     };
     return [actualizado, ...prev.filter((c) => c.id !== conversacionId)];
-  },
+  }),
   );
 
   if (sumoNoLeido) {
@@ -98,12 +99,11 @@ function invalidarCachesNotificacion(
   const preview =
     typeof payload?.ultimoMensajeTexto === "string" ? payload.ultimoMensajeTexto : null;
 
-  let listaParcheada = false;
   if (conversacionId) {
-    listaParcheada = parchearListaChatsWhatsapp(queryClient, conversacionId, preview);
+    parchearListaChatsWhatsapp(queryClient, conversacionId, preview);
   }
 
-  if (conversacionId && !listaParcheada) {
+  if (conversacionId) {
     void queryClient.refetchQueries({
       queryKey: queryKeys.whatsappChats,
       type: "active",

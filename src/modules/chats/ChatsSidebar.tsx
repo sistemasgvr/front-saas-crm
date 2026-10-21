@@ -1,7 +1,8 @@
 "use client";
 
+import Pagination from "@/src/components/ui/Pagination";
 import Link from "next/link";
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Avatar from "@/src/components/ui/avatar/Avatar";
@@ -13,11 +14,10 @@ import { Skeleton } from "@/src/components/ui/Skeleton";
 import { queryKeys } from "@/src/lib/query/keys";
 import OrigenLeadBadge from "@/src/modules/leads/OrigenLeadBadge";
 import { textoWhatsAppPlano } from "./texto-whatsapp-plano";
-import { filtrarConversaciones } from "./filtrar-conversaciones";
 import { etiquetaConversacion } from "./etiqueta-conversacion";
 import { ControlBadge } from './ChatControlPanel';
 import { useChatBorradores } from "./chat-borradores";
-import { getChats } from "./queries";
+import { getChatsPage } from "./queries";
 
 const INTERVALO_REFRESCO_MS = 45_000;
 
@@ -62,6 +62,7 @@ function ChatsListSkeleton() {
 /** Lista de conversaciones tipo WhatsApp Web — vive en el layout de /chats,
  * así se mantiene montada (sin recargar) al navegar entre conversaciones. */
 export default function ChatsSidebar({ rol: _rol }: { rol: Rol }) {
+  const [page, setPage] = useState(1);
   const pathname = usePathname();
   const activeId = pathname.match(/^\/chats\/([^/]+)/)?.[1];
   const [soloMios, setSoloMios] = useState(false);
@@ -69,16 +70,16 @@ export default function ChatsSidebar({ rol: _rol }: { rol: Rol }) {
   const [busqueda, setBusqueda] = useState("");
   const busquedaDeferred = useDeferredValue(busqueda);
   const borradores = useChatBorradores();
+  const draftIds = Object.entries(borradores)
+    .filter(([, value]) => busquedaDeferred.trim() && value?.toLowerCase().includes(busquedaDeferred.trim().toLowerCase()))
+    .map(([id]) => id).slice(0, 100).join(",");
   const chatsQuery = useQuery({
-    queryKey: queryKeys.whatsappChatsList(asignadoFiltro),
-    queryFn: () => getChats(asignadoFiltro),
+    queryKey: [...queryKeys.whatsappChatsList(asignadoFiltro), { page, q: busquedaDeferred, draftIds }],
+    queryFn: () => getChatsPage(asignadoFiltro, page, busquedaDeferred, draftIds),
     refetchInterval: () => intervaloSiVisible(INTERVALO_REFRESCO_MS),
   });
 
-  const chatsFiltrados = useMemo(
-    () => filtrarConversaciones(chatsQuery.data ?? [], busquedaDeferred, borradores),
-    [chatsQuery.data, busquedaDeferred, borradores],
-  );
+  const chatsFiltrados = chatsQuery.data?.data ?? [];
 
   return (
     <div className="flex h-full flex-col">
@@ -91,7 +92,7 @@ export default function ChatsSidebar({ rol: _rol }: { rol: Rol }) {
           <Switch
             label={soloMios ? "Solo míos" : "Todos"}
             checked={soloMios}
-            onChange={setSoloMios}
+            onChange={(value) => { setPage(1); setSoloMios(value); }}
           />
         </div>
         <div className="relative mt-3">
@@ -103,7 +104,7 @@ export default function ChatsSidebar({ rol: _rol }: { rol: Rol }) {
           <input
             type="search"
             value={busqueda}
-            onChange={(event) => setBusqueda(event.target.value)}
+            onChange={(event) => { setPage(1); setBusqueda(event.target.value); }}
             placeholder="Buscar un chat"
             aria-label="Buscar un chat"
             className="h-9 w-full rounded-lg border-0 bg-gray-100 py-2 pl-9 pr-8 text-theme-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:bg-gray-800 dark:text-white/90 dark:placeholder:text-gray-500"
@@ -111,7 +112,7 @@ export default function ChatsSidebar({ rol: _rol }: { rol: Rol }) {
           {busqueda && (
             <button
               type="button"
-              onClick={() => setBusqueda("")}
+              onClick={() => { setPage(1); setBusqueda(""); }}
               className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200"
               aria-label="Limpiar búsqueda"
             >
@@ -126,7 +127,7 @@ export default function ChatsSidebar({ rol: _rol }: { rol: Rol }) {
           <ChatsListSkeleton />
         ) : chatsQuery.isError ? (
           <QueryError error={chatsQuery.error} onRetry={() => void chatsQuery.refetch()} />
-        ) : chatsQuery.data?.length === 0 ? (
+        ) : chatsQuery.data?.data.length === 0 ? (
           <div className="p-4">
             <EmptyState
               icon="mdi:whatsapp"
@@ -220,6 +221,7 @@ export default function ChatsSidebar({ rol: _rol }: { rol: Rol }) {
           </div>
         )}
       </div>
+      {chatsQuery.isSuccess && <Pagination {...chatsQuery.data!} onPageChange={setPage} compact itemLabel="chats" className="shrink-0 border-t border-gray-100 p-3 dark:border-gray-800" />}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 "use server";
+import type { PaginatedResult } from "@/src/lib/pagination";
 
 import { apiFetch, ApiError } from "@/src/lib/api";
 import type {
@@ -30,8 +31,8 @@ export async function getInmueble(id: string) {
 }
 
 /** Leads interesados ordenados de más a menos probabilidad de adquisición. */
-export async function getInmuebleInteresados(id: string) {
-  return apiFetch<InmuebleInteresadoRankeado[]>(`/inmuebles/${id}/interesados`);
+export async function getInmuebleInteresados(id: string, page = 1) {
+  return apiFetch<PaginatedResult<InmuebleInteresadoRankeado>>(`/inmuebles/${id}/interesados?page=${page}&pageSize=10`);
 }
 
 /** Lista liviana para selects de visitas / pipeline.

@@ -1,5 +1,7 @@
 "use client";
 
+import Pagination from "@/src/components/ui/Pagination";
+import { useClientPagination } from "@/src/components/ui/use-client-pagination";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Avatar from "@/src/components/ui/avatar/Avatar";
@@ -43,6 +45,8 @@ export default function ModulesView() {
     queryFn: () => getAdminModules(),
   });
 
+  const groupPage = useClientPagination(groupsQuery.data ?? [], 10);
+  const [modulePages, setModulePages] = useState<Record<string, number>>({});
   const [formModulo, setFormModulo] = useState<FormularioModulo | null>(null);
   const [formGrupo, setFormGrupo] = useState<{ grupo: ModuloGrupo | null } | null>(
     null,
@@ -146,6 +150,10 @@ export default function ModulesView() {
   };
 
   const renderGrupo = (grupo: ModuloGrupo | null, filas: ModuloAdmin[]) => {
+    const groupId = grupo?.id ?? SIN_GRUPO;
+    const totalPages = Math.max(1, Math.ceil(filas.length / 10));
+    const page = Math.min(modulePages[groupId] ?? 1, totalPages);
+    const visibles = filas.slice((page - 1) * 10, page * 10);
     const activo = grupo ? grupo.estado === 1 : true;
     const activos = filas.filter((m) => m.estado === 1).length;
     return (
@@ -229,9 +237,10 @@ export default function ModulesView() {
           </p>
         ) : (
           <ul className="divide-y divide-gray-100 dark:divide-gray-800">
-            {filas.map(renderModulo)}
+            {visibles.map(renderModulo)}
           </ul>
         )}
+        <Pagination page={page} pageSize={10} total={filas.length} totalPages={totalPages} onPageChange={(next) => setModulePages((prev) => ({ ...prev, [groupId]: next }))} itemLabel="módulos" className="px-5 py-3" />
       </section>
     );
   };
@@ -284,12 +293,13 @@ export default function ModulesView() {
         </div>
       ) : (
         <div className="space-y-5">
-          {grupos.map((grupo) =>
+          {groupPage.items.map((grupo) =>
             renderGrupo(
               grupo,
               modulos.filter((m) => m.grupoId === grupo.id),
             ),
           )}
+          <Pagination {...groupPage.pagination} itemLabel="grupos" />
           {huerfanos.length > 0 && renderGrupo(null, huerfanos)}
         </div>
       )}

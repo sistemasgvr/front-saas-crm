@@ -1,5 +1,6 @@
 "use client";
 
+import Pagination from "@/src/components/ui/Pagination";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -56,26 +57,6 @@ import type {
 } from "./types";
 
 type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
-
-function normalizarBusqueda(texto: string): string {
-  return texto.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
-}
-
-function leadCoincideBusqueda(lead: LeadTableroRow, q: string): boolean {
-  if (!q) return true;
-  const haystack = [
-    lead.nombre,
-    lead.telefono,
-    lead.email,
-    lead.asignado?.nombre,
-    lead.inmuebleInteres?.codigo,
-    lead.inmuebleInteres?.titulo,
-  ]
-    .filter(Boolean)
-    .map((v) => normalizarBusqueda(String(v)))
-    .join(" ");
-  return haystack.includes(q);
-}
 
 interface PendingClose {
   leadId: string;
@@ -411,6 +392,7 @@ export default function LeadsKanbanView({
   whatsappHabilitado: boolean;
   inmueblesHabilitado?: boolean;
 }) {
+  const [page, setPage] = useState(1);
   const esAdmin = canManageOrganization(rol);
   const [tipoFiltro, setTipoFiltro] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState("");
@@ -430,8 +412,8 @@ export default function LeadsKanbanView({
   );
 
   const tableroQuery = useQuery<TableroResultado>({
-    queryKey: queryKeys.leadsTablero(tipoFiltro),
-    queryFn: () => getTablero(tipoFiltro ?? undefined),
+    queryKey: [...queryKeys.leadsTablero(tipoFiltro), { page, q: busquedaDeferred }],
+    queryFn: () => getTablero(tipoFiltro ?? undefined, undefined, page, busquedaDeferred),
   });
 
   const metaCompra = useQuery<MetaPipeline>({
@@ -495,15 +477,7 @@ export default function LeadsKanbanView({
     return mapa;
   }, [tableroQuery.data]);
 
-  const qNorm = normalizarBusqueda(busquedaDeferred);
-  const columnasFiltradas = useMemo(() => {
-    const columnas = tableroQuery.data?.columnas ?? [];
-    if (!qNorm) return columnas;
-    return columnas.map((columna) => ({
-      ...columna,
-      leads: columna.leads.filter((lead) => leadCoincideBusqueda(lead, qNorm)),
-    }));
-  }, [tableroQuery.data, qNorm]);
+  const columnasFiltradas = useMemo(() => tableroQuery.data?.columnas ?? [], [tableroQuery.data]);
 
   const totalVisibles = useMemo(
     () => columnasFiltradas.reduce((acc, c) => acc + c.leads.length, 0),
@@ -646,7 +620,7 @@ export default function LeadsKanbanView({
         <div className="flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1 dark:bg-white/5">
           <button
             type="button"
-            onClick={() => setTipoFiltro(null)}
+            onClick={() => { setPage(1); setTipoFiltro(null); }}
             className={`rounded-md px-3 py-1.5 text-theme-sm font-medium transition ${
               tipoFiltro === null
                 ? "bg-white text-brand-500 shadow-theme-xs dark:bg-gray-800 dark:text-brand-400"
@@ -659,7 +633,7 @@ export default function LeadsKanbanView({
             <button
               key={tipo}
               type="button"
-              onClick={() => setTipoFiltro(tipo)}
+              onClick={() => { setPage(1); setTipoFiltro(tipo); }}
               className={`rounded-md px-3 py-1.5 text-theme-sm font-medium transition ${
                 tipoFiltro === tipo
                   ? "bg-white text-brand-500 shadow-theme-xs dark:bg-gray-800 dark:text-brand-400"
@@ -684,13 +658,13 @@ export default function LeadsKanbanView({
             id="kanban-buscar-lead"
             name="q"
             value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
+            onChange={(e) => { setPage(1); setBusqueda(e.target.value); }}
             placeholder="Buscar por nombre, teléfono, email…"
             className="pl-10"
             autoComplete="off"
           />
         </div>
-        {qNorm ? (
+        {busquedaDeferred.trim() ? (
           <p className="text-theme-xs text-gray-500 dark:text-gray-400">
             {totalVisibles === 0
               ? "Sin coincidencias"
@@ -699,7 +673,7 @@ export default function LeadsKanbanView({
               <button
                 type="button"
                 className="ml-2 font-medium text-brand-500 hover:underline"
-                onClick={() => setBusqueda("")}
+                onClick={() => { setPage(1); setBusqueda(""); }}
               >
                 Limpiar
               </button>
@@ -768,6 +742,7 @@ export default function LeadsKanbanView({
         </DndContext>
       )}
 
+      {tableroQuery.data && <Pagination {...tableroQuery.data} onPageChange={setPage} itemLabel="leads" className="mt-4" />}
       {pendingClose && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4">
           <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">

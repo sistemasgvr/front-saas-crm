@@ -1,5 +1,6 @@
 "use client";
 
+import Pagination from "@/src/components/ui/Pagination";
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Badge from "@/src/components/ui/badge/Badge";
@@ -178,9 +179,10 @@ export default function WhatsappTemplatesPanel() {
   const cuerpoRef = useRef<HTMLTextAreaElement>(null);
   const encabezadoRef = useRef<HTMLInputElement>(null);
 
+  const [page, setPage] = useState(1);
   const plantillasQuery = useQuery({
-    queryKey: queryKeys.whatsappTemplatesAll,
-    queryFn: getPlantillasWhatsAppTodas,
+    queryKey: [...queryKeys.whatsappTemplatesAll, page],
+    queryFn: () => getPlantillasWhatsAppTodas(page),
   });
 
   const crear = useAppMutation({
@@ -391,11 +393,11 @@ export default function WhatsappTemplatesPanel() {
           <PageLoader />
         ) : plantillasQuery.isError ? (
           <QueryError error={plantillasQuery.error} />
-        ) : plantillasQuery.data?.length === 0 ? (
+        ) : plantillasQuery.data?.data.length === 0 ? (
           <EmptyState icon="mdi:script-text-outline" title="Todavía no hay plantillas" />
         ) : (
           <div className="space-y-2">
-            {(plantillasQuery.data ?? []).map((plantilla) => (
+            {(plantillasQuery.data?.data ?? []).map((plantilla) => (
               <div
                 key={`${plantilla.nombre}-${plantilla.idioma}`}
                 className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 px-4 py-3 dark:border-gray-800"
@@ -413,6 +415,7 @@ export default function WhatsappTemplatesPanel() {
                 </Badge>
               </div>
             ))}
+            {plantillasQuery.data && <Pagination {...plantillasQuery.data} onPageChange={setPage} itemLabel="plantillas" />}
           </div>
         )}
       </div>

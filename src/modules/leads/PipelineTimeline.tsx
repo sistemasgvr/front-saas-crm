@@ -1,5 +1,6 @@
 "use client";
 
+
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -67,7 +68,7 @@ export default function PipelineTimeline({
   filas: HistorialEstadoRow[];
   inmueblesHabilitado?: boolean;
 }) {
-  const ordenDesc = [...filas].reverse();
+  const ordenDesc = filas;
 
   return (
     <div className="relative pl-1">

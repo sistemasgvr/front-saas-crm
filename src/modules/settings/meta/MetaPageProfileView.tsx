@@ -1,5 +1,7 @@
 "use client";
+import { usePaginationPage } from "@/src/components/ui/use-pagination-page";
 
+import Pagination from "@/src/components/ui/Pagination";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -46,6 +48,7 @@ function etiquetaEstadoFormulario(estado: string | null) {
 
 export default function MetaPageProfileView({ id }: { id: string }) {
   const router = useRouter();
+  const [page, setPage] = usePaginationPage(id);
   const [backfillFormId, setBackfillFormId] = useState<string | null>(null);
 
   const { data: pagina, isLoading, isError, error } = useQuery({
@@ -54,8 +57,8 @@ export default function MetaPageProfileView({ id }: { id: string }) {
   });
 
   const formsQuery = useQuery({
-    queryKey: queryKeys.metaPageForms(id),
-    queryFn: () => getMetaPageForms(id),
+    queryKey: [...queryKeys.metaPageForms(id), page],
+    queryFn: () => getMetaPageForms(id, page),
   });
 
   // Comparar con Meta al cargar (y tras invalidate post-reimport / botón manual).
@@ -200,7 +203,7 @@ export default function MetaPageProfileView({ id }: { id: string }) {
           <PageLoader />
         ) : formsQuery.isError ? (
           <QueryError error={formsQuery.error} />
-        ) : formsQuery.data && formsQuery.data.length === 0 ? (
+        ) : formsQuery.data && formsQuery.data.data.length === 0 ? (
           <EmptyState
             icon="mdi:form-select"
             title="Sin formularios sincronizados"
@@ -235,7 +238,7 @@ export default function MetaPageProfileView({ id }: { id: string }) {
                 </TableRow>
               </TableHeader>
               <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {(formsQuery.data ?? []).map((formulario) => {
+                {(formsQuery.data?.data ?? []).map((formulario) => {
                   const abierto = backfillFormId === formulario.formId;
                   return (
                     <TableRow
@@ -294,6 +297,7 @@ export default function MetaPageProfileView({ id }: { id: string }) {
                 })}
               </TableBody>
             </Table>
+            <Pagination {...formsQuery.data!} onPageChange={setPage} itemLabel="formularios" className="p-4" />
           </div>
         )}
 
@@ -302,9 +306,9 @@ export default function MetaPageProfileView({ id }: { id: string }) {
             pageId={pagina.id}
             formId={backfillFormId}
             formNombre={
-              formsQuery.data?.find((f) => f.formId === backfillFormId)?.nombre ?? backfillFormId
+              formsQuery.data?.data.find((f) => f.formId === backfillFormId)?.nombre ?? backfillFormId
             }
-            fechaCreacion={formsQuery.data?.find((f) => f.formId === backfillFormId)?.fechaCreacion}
+            fechaCreacion={formsQuery.data?.data.find((f) => f.formId === backfillFormId)?.fechaCreacion}
             onClose={() => setBackfillFormId(null)}
           />
         )}

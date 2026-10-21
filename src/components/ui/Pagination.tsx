@@ -10,6 +10,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
   itemLabel?: string;
   className?: string;
+  compact?: boolean;
 }
 
 function pageNumbers(page: number, totalPages: number): (number | "…")[] {
@@ -33,6 +34,7 @@ export default function Pagination({
   onPageChange,
   itemLabel = "resultados",
   className = "",
+  compact = false,
 }: PaginationProps) {
   if (total === 0) return null;
 
@@ -60,7 +62,7 @@ export default function Pagination({
           <Icon name="mdi:chevron-left" size={18} />
         </button>
 
-        <div className="hidden items-center gap-1 sm:flex">
+        <div className={compact ? "hidden" : "hidden items-center gap-1 sm:flex"}>
           {pageNumbers(page, totalPages).map((p, idx) =>
             p === "…" ? (
               <span
@@ -87,7 +89,7 @@ export default function Pagination({
           )}
         </div>
 
-        <span className="px-2 text-theme-sm text-gray-600 dark:text-gray-300 sm:hidden">
+        <span className={`px-2 text-theme-sm text-gray-600 dark:text-gray-300 ${compact ? "" : "sm:hidden"}`}>
           {page} / {totalPages}
         </span>
 

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import Pagination from "@/src/components/ui/Pagination";
 import Badge from "@/src/components/ui/badge/Badge";
 import EmptyState from "@/src/components/ui/EmptyState";
 import { Icon } from "@/src/components/ui/Icon";
@@ -84,8 +85,8 @@ export default function LlamadasListView() {
 
   const items = listQuery.data?.items ?? [];
   const total = listQuery.data?.total ?? 0;
-  const pageSize = 20;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const pageSize = listQuery.data?.pageSize ?? 20;
+  const totalPages = listQuery.data?.totalPages ?? 1;
   const metricas = metricasQuery.data;
 
   return (
@@ -258,31 +259,8 @@ export default function LlamadasListView() {
               </tbody>
             </table>
           </div>
-          {totalPages > 1 ? (
-            <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 dark:border-gray-800">
-              <p className="text-theme-xs text-gray-500">
-                Página {page} de {totalPages} · {total} llamadas
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="rounded-lg border border-gray-200 px-3 py-1.5 text-theme-xs disabled:opacity-40 dark:border-gray-700"
-                >
-                  Anterior
-                </button>
-                <button
-                  type="button"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="rounded-lg border border-gray-200 px-3 py-1.5 text-theme-xs disabled:opacity-40 dark:border-gray-700"
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
-          ) : null}
+          <Pagination page={page} pageSize={pageSize} total={total} totalPages={totalPages}
+            onPageChange={setPage} itemLabel="llamadas" className="border-t border-gray-100 px-4 py-3 dark:border-gray-800" />
         </div>
       )}
     </div>

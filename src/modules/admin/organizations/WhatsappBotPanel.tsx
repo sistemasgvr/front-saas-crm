@@ -1,4 +1,6 @@
 "use client";
+import { usePaginationPage } from "@/src/components/ui/use-pagination-page";
+import Pagination from "@/src/components/ui/Pagination";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -30,6 +32,7 @@ export default function WhatsappBotPanel({
   automatizacionesHabilitado: boolean;
 }) {
   const cache = useQueryClient();
+  const [historyPage, setHistoryPage] = usePaginationPage(id);
   const [objetivo, setObjetivo] = useState<boolean | null>(null);
   const [motivo, setMotivo] = useState("");
   const [versionConfirmacion, setVersionConfirmacion] = useState(0);
@@ -56,8 +59,8 @@ export default function WhatsappBotPanel({
         : false,
   });
   const historial = useQuery({
-    queryKey: queryKeys.adminWhatsappBotHistorial(id),
-    queryFn: async () => resolverControl(await getBotHistorial(id)),
+    queryKey: [...queryKeys.adminWhatsappBotHistorial(id), historyPage],
+    queryFn: async () => resolverControl(await getBotHistorial(id, historyPage)),
     enabled: verHistorial,
     retry: false,
   });
@@ -201,9 +204,10 @@ export default function WhatsappBotPanel({
             <p role="status">Cargando…</p>
           ) : historial.isError ? (
             <button onClick={() => void historial.refetch()}>Reintentar</button>
-          ) : historial.data?.length ? (
+          ) : historial.data?.data.length ? (
+            <>
             <ol className="divide-y divide-gray-100 dark:divide-gray-800">
-              {historial.data.map((e) => (
+              {historial.data.data.map((e) => (
                 <li key={e.id} className="flex items-start gap-3 py-3 text-xs">
                   <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${e.habilitadoNuevo ? "bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-300" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}><Icon name={e.habilitadoNuevo ? "mdi:shield-check-outline" : "mdi:shield-off-outline"} size={16} /></span>
                   <div className="min-w-0"><p className="font-medium">
@@ -221,6 +225,8 @@ export default function WhatsappBotPanel({
                 </li>
               ))}
             </ol>
+            <Pagination {...historial.data} onPageChange={setHistoryPage} itemLabel="eventos" />
+            </>
           ) : (
             <p className="text-sm">Sin cambios registrados.</p>
           )}

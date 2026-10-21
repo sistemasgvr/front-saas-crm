@@ -1,5 +1,7 @@
 "use client";
 
+import Pagination from "@/src/components/ui/Pagination";
+import { useClientPagination } from "@/src/components/ui/use-client-pagination";
 import { useQuery } from "@tanstack/react-query";
 import EmptyState from "@/src/components/ui/EmptyState";
 import PageHeader from "@/src/components/ui/PageHeader";
@@ -20,6 +22,7 @@ export default function WhatsappSettingsView() {
     queryFn: getWhatsappConexiones,
   });
 
+  const connectionsPage = useClientPagination(conexionesQuery.data ?? []);
   return (
     <div className="space-y-6">
       <PageHeader
@@ -69,12 +72,13 @@ export default function WhatsappSettingsView() {
         />
       ) : (
         <div className="space-y-3">
-          {(conexionesQuery.data ?? []).map((conexion) => (
+          {connectionsPage.items.map((conexion) => (
             <WhatsappConnectionCard key={conexion.id} conexion={conexion} />
           ))}
         </div>
       )}
 
+      <Pagination {...connectionsPage.pagination} itemLabel="números" />
       <WhatsappTemplatesPanel />
     </div>
   );

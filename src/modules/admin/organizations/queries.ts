@@ -1,4 +1,5 @@
 "use server";
+import { apiFetchCollection } from "@/src/lib/api-collection";
 
 import { apiFetch } from "@/src/lib/api";
 import type {
@@ -30,5 +31,5 @@ export async function getAdminOrganization(id: string) {
 }
 
 export async function getAdminOrganizationModules(id: string) {
-  return apiFetch<GrupoMatriz[]>(`/admin/organizations/${id}/modules`);
+  return apiFetchCollection<GrupoMatriz>(`/admin/organizations/${id}/modules`);
 }

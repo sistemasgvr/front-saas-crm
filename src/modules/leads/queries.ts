@@ -1,4 +1,5 @@
 "use server";
+import type { PaginatedResult } from "@/src/lib/pagination";
 
 import { apiFetch } from "@/src/lib/api";
 import type {
@@ -40,14 +41,14 @@ export async function getLead(id: string): Promise<LeadDetalle> {
   return apiFetch<LeadDetalle>(`/leads/${id}`);
 }
 
-export async function getHistorialLead(id: string): Promise<HistorialEstadoRow[]> {
-  const data = await apiFetch<HistorialEstadoRow[]>(`/leads/${id}/historial-estados`);
-  return Array.isArray(data) ? data : [];
+export async function getHistorialLead(id: string, page = 1): Promise<PaginatedResult<HistorialEstadoRow>> {
+  const data = await apiFetch<PaginatedResult<HistorialEstadoRow>>(`/leads/${id}/historial-estados?page=${page}&pageSize=10`);
+  return data;
 }
 
-export async function getVisitasLead(id: string): Promise<LeadVisitaRow[]> {
-  const data = await apiFetch<LeadVisitaRow[]>(`/leads/${id}/visitas`);
-  return Array.isArray(data) ? data : [];
+export async function getVisitasLead(id: string, page = 1): Promise<PaginatedResult<LeadVisitaRow>> {
+  const data = await apiFetch<PaginatedResult<LeadVisitaRow>>(`/leads/${id}/visitas?page=${page}&pageSize=10`);
+  return data;
 }
 
 export async function getAgendaVisitas(filtro: {
@@ -69,8 +70,11 @@ export async function getMetaPipeline(tipoLead?: string | null): Promise<MetaPip
   return apiFetch<MetaPipeline>(`/leads/pipeline/meta${params}`);
 }
 
-export async function getTablero(tipoLead?: string | null, asignado?: string): Promise<TableroResultado> {
+export async function getTablero(tipoLead?: string | null, asignado?: string, page = 1, q = ""): Promise<TableroResultado> {
   const params = new URLSearchParams();
+  params.set("page", String(page));
+  params.set("pageSize", "100");
+  if (q) params.set("q", q);
   if (tipoLead) params.set("tipoLead", tipoLead);
   if (asignado) params.set("asignado", asignado);
   const qs = params.toString();

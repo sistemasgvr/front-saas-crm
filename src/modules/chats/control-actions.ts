@@ -1,4 +1,5 @@
 "use server";
+import type { PaginatedResult } from "@/src/lib/pagination";
 import { apiFetch, ApiError } from "@/src/lib/api";
 import type {
   EstadoControl,
@@ -25,8 +26,8 @@ async function resultado<T>(
 export async function getControlAction(id: string) {
   return resultado<EstadoControl>(`/whatsapp/chats/${id}/control`);
 }
-export async function getHistorialControlAction(id: string) {
-  return resultado<EventoControl[]>(`/whatsapp/chats/${id}/control/historial`);
+export async function getHistorialControlAction(id: string, page = 1) {
+  return resultado<PaginatedResult<EventoControl>>(`/whatsapp/chats/${id}/control/historial?page=${page}&pageSize=20`);
 }
 export async function getAsesoresControlAction(id: string) {
   return resultado<(PersonaControl & { rol: string })[]>(

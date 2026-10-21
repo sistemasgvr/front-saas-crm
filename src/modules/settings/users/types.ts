@@ -1,3 +1,4 @@
+import type { PaginatedResult } from "@/src/lib/pagination";
 export interface UsuarioEmpresa {
   id: string;
   email: string;
@@ -10,8 +11,7 @@ export interface UsuarioEmpresa {
   debeCambiarPassword: number;
   leadsAsignados: number;
 }
-export interface UsuariosEmpresaResponse {
-  usuarios: UsuarioEmpresa[];
+export interface UsuariosEmpresaResponse extends PaginatedResult<UsuarioEmpresa> {
   activos: number;
   limite: number | null;
 }

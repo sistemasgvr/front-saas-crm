@@ -51,12 +51,15 @@ export async function listarLlamadas(
     leadId: filtro.leadId,
     conversacionId: filtro.conversacionId,
     page: filtro.page,
+    pageSize: filtro.pageSize,
   });
   const data = await apiFetch<ListarLlamadasResultado>(`/whatsapp/calls${q}`);
   return {
     items: Array.isArray(data?.items) ? data.items : [],
     total: data?.total ?? 0,
     page: data?.page ?? 1,
+    pageSize: data.pageSize,
+    totalPages: data.totalPages,
   };
 }
 

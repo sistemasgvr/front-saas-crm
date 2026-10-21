@@ -119,6 +119,10 @@ export interface ColumnaTablero {
 }
 
 export interface TableroResultado {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
   columnas: ColumnaTablero[];
 }
 

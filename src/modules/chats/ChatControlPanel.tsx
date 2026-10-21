@@ -1,4 +1,6 @@
 "use client";
+import { usePaginationPage } from "@/src/components/ui/use-pagination-page";
+import Pagination from "@/src/components/ui/Pagination";
 import { useState, type ReactNode } from "react";
 import {
   useMutation,
@@ -91,6 +93,7 @@ export default function ChatControlPanel({
   const [modal, setModal] = useState<
     "detalle" | "tomar" | "humano" | "transferir" | "historial" | "bot" | null
   >(null);
+  const [historyPage, setHistoryPage] = usePaginationPage(id);
   const [destino, setDestino] = useState("");
   const [version, setVersion] = useState(0);
   const [asignadoEsperado, setAsignadoEsperado] = useState<string | null>(null);
@@ -109,8 +112,8 @@ export default function ChatControlPanel({
     refetchOnWindowFocus: "always",
   });
   const historial = useQuery({
-    queryKey: queryKeys.whatsappControlHistorial(id),
-    queryFn: async () => resolverControl(await getHistorialControlAction(id)),
+    queryKey: [...queryKeys.whatsappControlHistorial(id), historyPage],
+    queryFn: async () => resolverControl(await getHistorialControlAction(id, historyPage)),
     enabled: modal === "historial",
     retry: false,
   });
@@ -612,9 +615,10 @@ export default function ChatControlPanel({
                   Reintentar
                 </Button>
               </div>
-            ) : historial.data?.length ? (
+            ) : historial.data?.data.length ? (
+              <>
               <ol className="space-y-4">
-                {historial.data.map((e) => (
+                {historial.data.data.map((e) => (
                   <li
                     key={e.id}
                     className="border-b border-gray-100 pb-3 dark:border-gray-800"
@@ -640,6 +644,8 @@ export default function ChatControlPanel({
                   </li>
                 ))}
               </ol>
+            <Pagination {...historial.data} onPageChange={setHistoryPage} itemLabel="eventos" />
+            </>
             ) : (
               <p>No hay cambios de atención registrados.</p>
             ))}

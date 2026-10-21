@@ -1,4 +1,5 @@
 "use server";
+import type { PaginatedResult } from "@/src/lib/pagination";
 import { apiFetch, ApiError } from "@/src/lib/api";
 import type { ResultadoControl } from "@/src/modules/chats/control-types";
 import type { BotOrganizacion, BotConfiguracionEvento } from "./bot-types";
@@ -22,9 +23,9 @@ async function request<T>(
 export async function getBotOrganizacion(id: string) {
   return request<BotOrganizacion>(`/admin/organizations/${id}/whatsapp-bot`);
 }
-export async function getBotHistorial(id: string) {
-  return request<BotConfiguracionEvento[]>(
-    `/admin/organizations/${id}/whatsapp-bot/historial`,
+export async function getBotHistorial(id: string, page = 1) {
+  return request<PaginatedResult<BotConfiguracionEvento>>(
+    `/admin/organizations/${id}/whatsapp-bot/historial?page=${page}&pageSize=20`,
   );
 }
 export async function actualizarBotOrganizacion(

@@ -1,5 +1,8 @@
 "use client";
+import { usePaginationPage } from "@/src/components/ui/use-pagination-page";
 
+import Pagination from "@/src/components/ui/Pagination";
+import { QueryError } from "@/src/components/ui/PageLoader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import Badge from "@/src/components/ui/badge/Badge";
@@ -28,9 +31,10 @@ export default function LeadLlamadasPanel({
   leadId,
   conversacionId: conversacionIdProp,
 }: LeadLlamadasPanelProps) {
+  const [page, setPage] = usePaginationPage(leadId);
   const query = useQuery({
-    queryKey: queryKeys.whatsappCallsList({ leadId }),
-    queryFn: () => listarLlamadas({ leadId, page: 1 }),
+    queryKey: queryKeys.whatsappCallsList({ leadId, page, pageSize: 8 }),
+    queryFn: () => listarLlamadas({ leadId, page, pageSize: 8 }),
     staleTime: 20_000,
   });
 
@@ -58,13 +62,15 @@ export default function LeadLlamadasPanel({
 
       {query.isLoading ? (
         <p className="text-theme-sm text-gray-400">Cargando llamadas…</p>
+      ) : query.isError ? (
+        <QueryError error={query.error} onRetry={() => void query.refetch()} />
       ) : items.length === 0 ? (
         <p className="text-theme-sm text-gray-500 dark:text-gray-400">
           Todavía no hay llamadas registradas para este lead.
         </p>
       ) : (
         <ul className="divide-y divide-gray-100 dark:divide-gray-800">
-          {items.slice(0, 8).map((l) => (
+          {items.map((l) => (
             <li key={l.id} className="flex items-center justify-between gap-3 py-2.5">
               <div className="min-w-0">
                 <p className="flex items-center gap-1.5 text-theme-sm text-gray-700 dark:text-gray-200">
@@ -97,6 +103,7 @@ export default function LeadLlamadasPanel({
           ))}
         </ul>
       )}
+      {query.data && <Pagination {...query.data} onPageChange={setPage} itemLabel="llamadas" />}
     </div>
   );
 }

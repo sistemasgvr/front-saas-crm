@@ -1,5 +1,7 @@
 "use client";
+import { usePaginationPage } from "@/src/components/ui/use-pagination-page";
 
+import Pagination from "@/src/components/ui/Pagination";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import Button from "@/src/components/ui/button/Button";
@@ -44,11 +46,13 @@ function colorOrigen(origen: OrigenInteresInmueble): "info" | "warning" | "succe
 }
 
 function InteresadosSection({ inmuebleId }: { inmuebleId: string }) {
+  const [page, setPage] = usePaginationPage(inmuebleId);
   const query = useQuery({
-    queryKey: queryKeys.inmuebleInteresados(inmuebleId),
-    queryFn: () => getInmuebleInteresados(inmuebleId),
+    queryKey: [...queryKeys.inmuebleInteresados(inmuebleId), page],
+    queryFn: () => getInmuebleInteresados(inmuebleId, page),
   });
 
+  const offset = (page - 1) * (query.data?.pageSize ?? 10);
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
       <div className="mb-4 flex items-start gap-3">
@@ -69,21 +73,21 @@ function InteresadosSection({ inmuebleId }: { inmuebleId: string }) {
         <ListItemSkeleton count={5} />
       ) : query.isError ? (
         <QueryError error={query.error} />
-      ) : !query.data?.length ? (
+      ) : !query.data?.data.length ? (
         <p className="rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center text-theme-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
           Aún no hay leads con interés o visitas a este inmueble.
         </p>
       ) : (
         <ol className="divide-y divide-gray-100 dark:divide-gray-800">
-          {query.data.map((item: InmuebleInteresadoRankeado, index: number) => (
+          {query.data.data.map((item: InmuebleInteresadoRankeado, index: number) => (
             <li key={item.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
               <span
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-theme-sm font-semibold ${
-                  index === 0
+                  offset + index === 0
                     ? "bg-brand-500 text-white"
                     : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
                 }`}
-                aria-label={`Puesto ${index + 1}`}
+                aria-label={`Puesto ${offset + index + 1}`}
               >
                 {index + 1}
               </span>
@@ -120,6 +124,7 @@ function InteresadosSection({ inmuebleId }: { inmuebleId: string }) {
           ))}
         </ol>
       )}
+      {query.data && <Pagination {...query.data} onPageChange={setPage} itemLabel="interesados" className="mt-4" />}
     </section>
   );
 }

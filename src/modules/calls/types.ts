@@ -105,12 +105,15 @@ export type ListarLlamadasFiltro = {
   leadId?: string;
   conversacionId?: string;
   page?: number;
+  pageSize?: number;
 };
 
 export type ListarLlamadasResultado = {
   items: WhatsappLlamada[];
   total: number;
   page: number;
+  pageSize: number;
+  totalPages: number;
 };
 
 /** Respuesta cruda de Meta Graph (snake_case). */

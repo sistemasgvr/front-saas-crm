@@ -127,6 +127,7 @@ export interface MensajeCitado {
 }
 
 export interface ConversacionDetalle extends ConversacionResumen {
+  hayMensajesAnteriores?: boolean;
   mensajes: Mensaje[];
 }
 
