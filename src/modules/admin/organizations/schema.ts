@@ -53,6 +53,7 @@ export const createOrganizationSchema = z
   });
 
 export const updateOrganizationAdminSchema = z.object({
+  limiteUsuarios: z.string().trim().refine(v => v === '' || (/^[1-9]\d*$/.test(v) && Number.isSafeInteger(Number(v)) && Number(v) <= 2147483647), 'Ingresa un entero mayor o igual a 1, o déjalo vacío'),
   nombre: z.string().trim().min(1, "El nombre es obligatorio").max(200),
   slug: slugSchema,
   razonSocial: optionalMax(255),

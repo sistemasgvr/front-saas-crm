@@ -2,18 +2,32 @@
 
 import { useDeferredValue, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/src/components/tables";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from "@/src/components/tables";
 import EntityCell from "@/src/components/ui/avatar/EntityCell";
-import { StatusBadge } from "@/src/components/ui/badge/Badge";
+import Badge, { StatusBadge } from "@/src/components/ui/badge/Badge";
 import EmptyState from "@/src/components/ui/EmptyState";
 import DynamicFilters from "@/src/components/ui/filters/DynamicFilters";
-import type { DynamicFilterFieldDef, DynamicFilterValues } from "@/src/components/ui/filters/types";
+import type {
+  DynamicFilterFieldDef,
+  DynamicFilterValues,
+} from "@/src/components/ui/filters/types";
 import PageHeader from "@/src/components/ui/PageHeader";
 import Pagination from "@/src/components/ui/Pagination";
 import { QueryError } from "@/src/components/ui/PageLoader";
 import { TablePageSkeleton } from "@/src/components/ui/skeletons";
 import TableAction from "@/src/components/ui/TableAction";
-import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
+import TableCard, {
+  tdClass,
+  tdPrimaryClass,
+  thClass,
+  thClassEnd,
+} from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
 import type { OrganizacionAdmin } from "../types";
 import { getAdminOrganizations } from "./queries";
@@ -21,7 +35,12 @@ import { getAdminOrganizations } from "./queries";
 const PAGE_SIZE = 20;
 
 const FIELDS: DynamicFilterFieldDef[] = [
-  { key: "q", label: "Buscar", type: "text", placeholder: "Nombre, slug, RUC o email" },
+  {
+    key: "q",
+    label: "Buscar",
+    type: "text",
+    placeholder: "Nombre, slug, RUC o email",
+  },
   {
     key: "estado",
     label: "Estado",
@@ -53,11 +72,28 @@ function OrganizationMobileCard({ org }: { org: OrganizacionAdmin }) {
           size="sm"
         />
         <div className="shrink-0">
-          <StatusBadge active={org.estado === 1} activeLabel="Activa" inactiveLabel="Desactivada" />
+          <StatusBadge
+            active={org.estado === 1}
+            activeLabel="Activa"
+            inactiveLabel="Desactivada"
+          />
         </div>
       </div>
 
       <div className="mt-3 flex items-center justify-end border-t border-gray-100 pt-3 dark:border-gray-800">
+        <span className="mr-auto">
+          <Badge
+            color={
+              org.limiteUsuarios !== null &&
+              org.usuariosActivos > org.limiteUsuarios
+                ? "error"
+                : "info"
+            }
+          >
+            Usuarios: {org.usuariosActivos} /{" "}
+            {org.limiteUsuarios ?? "Sin límite"}
+          </Badge>
+        </span>
         <TableAction
           href={`/admin/organizations/${org.id}`}
           icon="mdi:eye-outline"
@@ -91,7 +127,11 @@ export default function OrganizationsView() {
       <PageHeader
         title="Empresas"
         description="Organizaciones cliente de la plataforma."
-        action={{ href: "/admin/organizations/new", label: "Nueva empresa", icon: "mdi:domain-plus" }}
+        action={{
+          href: "/admin/organizations/new",
+          label: "Nueva empresa",
+          icon: "mdi:domain-plus",
+        }}
       >
         <DynamicFilters
           fields={FIELDS}
@@ -104,7 +144,7 @@ export default function OrganizationsView() {
       </PageHeader>
 
       {isLoading ? (
-        <TablePageSkeleton cols={3} />
+        <TablePageSkeleton cols={4} />
       ) : isError ? (
         <QueryError error={error} />
       ) : (
@@ -119,7 +159,9 @@ export default function OrganizationsView() {
                 />
               </div>
             ) : (
-              orgs.map((org) => <OrganizationMobileCard key={org.id} org={org} />)
+              orgs.map((org) => (
+                <OrganizationMobileCard key={org.id} org={org} />
+              ))
             )}
           </div>
 
@@ -147,6 +189,9 @@ export default function OrganizationsView() {
                     <TableCell isHeader className={thClass}>
                       Estado
                     </TableCell>
+                    <TableCell isHeader className={thClass}>
+                      Usuarios activos / límite
+                    </TableCell>
                     <TableCell isHeader className={thClassEnd}>
                       Acción
                     </TableCell>
@@ -155,7 +200,7 @@ export default function OrganizationsView() {
                 <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {orgs.length === 0 && (
                     <EmptyState
-                      colSpan={3}
+                      colSpan={4}
                       icon="mdi:office-building-outline"
                       title="No hay empresas con estos filtros."
                       description="Prueba otra búsqueda o cambia el estado."
@@ -173,7 +218,28 @@ export default function OrganizationsView() {
                         />
                       </TableCell>
                       <TableCell className={tdClass}>
-                        <StatusBadge active={org.estado === 1} activeLabel="Activa" inactiveLabel="Desactivada" />
+                        <StatusBadge
+                          active={org.estado === 1}
+                          activeLabel="Activa"
+                          inactiveLabel="Desactivada"
+                        />
+                      </TableCell>
+                      <TableCell className={tdClass}>
+                        <Badge
+                          color={
+                            org.limiteUsuarios !== null &&
+                            org.usuariosActivos > org.limiteUsuarios
+                              ? "error"
+                              : "info"
+                          }
+                        >
+                          {org.usuariosActivos} /{" "}
+                          {org.limiteUsuarios ?? "Sin límite"}
+                          {org.limiteUsuarios !== null &&
+                          org.usuariosActivos > org.limiteUsuarios
+                            ? " · Superado"
+                            : ""}
+                        </Badge>
                       </TableCell>
                       <TableCell className="px-5 py-4">
                         <div className="flex justify-end">

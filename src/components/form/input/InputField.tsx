@@ -15,6 +15,8 @@ interface InputProps {
   step?: number;
   disabled?: boolean;
   required?: boolean;
+  minLength?: number;
+  maxLength?: number;
   autoComplete?: string;
   success?: boolean;
   error?: boolean;
@@ -37,6 +39,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     step,
     disabled = false,
     required = false,
+    minLength,
+    maxLength,
     autoComplete,
     success = false,
     error = false,
@@ -73,6 +77,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         step={step}
         disabled={disabled}
         required={required}
+        minLength={minLength}
+        maxLength={maxLength}
         autoComplete={autoComplete}
         className={inputClasses}
       />

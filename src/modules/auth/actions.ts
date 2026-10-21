@@ -6,7 +6,7 @@ import { clearSessionCookies, getRefreshToken, setSessionCookies } from "@/src/l
 type LoginResponse = {
   accessToken: string;
   refreshToken: string;
-  usuario: { esAdminPlataforma: boolean };
+  usuario: { esAdminPlataforma: boolean; debeCambiarPassword: boolean };
 };
 
 export async function loginAction(formData: FormData): Promise<{ redirectTo: string }> {
@@ -44,7 +44,7 @@ export async function loginAction(formData: FormData): Promise<{ redirectTo: str
 
   // Destino inmediato desde la respuesta de login (sin GET /me extra).
   // Clientes van a /dashboard; si no tienen el módulo, esa página redirige.
-  const redirectTo = data.usuario.esAdminPlataforma ? "/admin/organizations" : "/dashboard";
+  const redirectTo = data.usuario.debeCambiarPassword ? '/cambiar-password' : data.usuario.esAdminPlataforma ? "/admin/organizations" : "/dashboard";
 
   return { redirectTo };
 }

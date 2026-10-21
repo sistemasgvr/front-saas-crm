@@ -10,6 +10,7 @@ interface TableActionProps {
   label: string;
   variant?: "default" | "danger";
   className?: string;
+  disabled?: boolean;
 }
 
 const styles = {
@@ -19,11 +20,19 @@ const styles = {
     "text-gray-500 hover:bg-error-50 hover:text-error-600 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-400",
 };
 
-export default function TableAction({ href, onClick, icon, label, variant = "default", className = "" }: TableActionProps) {
+export default function TableAction({
+  href,
+  onClick,
+  icon,
+  label,
+  variant = "default",
+  className = "",
+  disabled = false,
+}: TableActionProps) {
   const classes =
     `inline-flex h-9 w-9 items-center justify-center rounded-lg transition ${styles[variant]} ${className}`.trim();
 
-  if (href) {
+  if (href && !disabled) {
     return (
       <Link href={href} aria-label={label} title={label} className={classes}>
         <Icon name={icon} size={18} />
@@ -32,7 +41,14 @@ export default function TableAction({ href, onClick, icon, label, variant = "def
   }
 
   return (
-    <button type="button" onClick={onClick} aria-label={label} title={label} className={classes}>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={`${classes} disabled:cursor-not-allowed disabled:opacity-40`}
+    >
       <Icon name={icon} size={18} />
     </button>
   );

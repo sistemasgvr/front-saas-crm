@@ -13,6 +13,7 @@ export interface MeResponse {
     apellido: string | null;
     telefono: string | null;
     esAdminPlataforma: boolean;
+    debeCambiarPassword: boolean;
   };
   organizacion: { id: string; nombre: string; slug: string } | null;
   rol: 'PROPIETARIO' | 'ADMINISTRADOR' | 'USUARIO' | null;

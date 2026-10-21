@@ -3,10 +3,14 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/src/components/ui/Icon";
-import { popoverMotionClass, useOpenTransition } from "@/src/components/ui/use-open-transition";
+import {
+  popoverMotionClass,
+  useOpenTransition,
+} from "@/src/components/ui/use-open-transition";
 import type { DynamicFilterOption } from "./types";
 
 interface SelectSearchProps {
+  id?: string;
   value: string;
   options: DynamicFilterOption[];
   placeholder?: string;
@@ -17,6 +21,7 @@ interface SelectSearchProps {
 }
 
 export default function SelectSearch({
+  id,
   value,
   options,
   placeholder = "Seleccionar",
@@ -37,7 +42,9 @@ export default function SelectSearch({
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     if (!term) return options;
-    return options.filter((option) => option.label.toLowerCase().includes(term));
+    return options.filter((option) =>
+      option.label.toLowerCase().includes(term),
+    );
   }, [options, q]);
 
   useEffect(() => {
@@ -51,7 +58,10 @@ export default function SelectSearch({
     const minWidth = Math.max(rect.width, 280);
     const maxWidth = Math.min(window.innerWidth - 32, 420);
     const width = Math.min(Math.max(rect.width, minWidth), maxWidth);
-    const left = Math.min(Math.max(16, rect.left), window.innerWidth - width - 16);
+    const left = Math.min(
+      Math.max(16, rect.left),
+      window.innerWidth - width - 16,
+    );
     setMenuStyle({ top: rect.bottom + 4, left, width });
   };
 
@@ -64,7 +74,11 @@ export default function SelectSearch({
     if (!open) return;
     const onPointerDown = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      if (
+        triggerRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      )
+        return;
       setOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
@@ -87,7 +101,11 @@ export default function SelectSearch({
       ref={menuRef}
       role="listbox"
       className={`app-select-search-dropdown fixed z-[100001] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-theme-lg dark:border-gray-700 dark:bg-gray-900 ${popoverMotionClass(entered)}`}
-      style={{ top: menuStyle.top, left: menuStyle.left, width: menuStyle.width }}
+      style={{
+        top: menuStyle.top,
+        left: menuStyle.left,
+        width: menuStyle.width,
+      }}
     >
       <div className="border-b border-gray-100 p-2 dark:border-gray-800">
         <input
@@ -141,6 +159,7 @@ export default function SelectSearch({
   return (
     <div className="relative min-w-0">
       <button
+        id={id}
         ref={triggerRef}
         type="button"
         disabled={disabled}
@@ -159,7 +178,9 @@ export default function SelectSearch({
             : "border-gray-300 text-gray-400 dark:border-gray-700 dark:text-gray-400"
         }`}
       >
-        <span className="min-w-0 truncate">{selected?.label ?? placeholder}</span>
+        <span className="min-w-0 truncate">
+          {selected?.label ?? placeholder}
+        </span>
         <Icon
           name="mdi:chevron-down"
           size={18}

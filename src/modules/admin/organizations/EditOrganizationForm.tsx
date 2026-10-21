@@ -22,6 +22,7 @@ export default function EditOrganizationForm({ org }: { org: OrganizacionAdmin }
   } = useForm<UpdateOrganizationAdminValues>({
     resolver: zodResolver(updateOrganizationAdminSchema),
     defaultValues: {
+      limiteUsuarios: org.limiteUsuarios?.toString() ?? '',
       nombre: org.nombre,
       slug: org.slug,
       razonSocial: org.razonSocial ?? "",
@@ -45,6 +46,11 @@ export default function EditOrganizationForm({ org }: { org: OrganizacionAdmin }
     <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="space-y-5" noValidate>
       <fieldset disabled={mutation.isPending} className="space-y-5">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <Label htmlFor="limiteUsuarios">Límite de usuarios</Label>
+            <Input id="limiteUsuarios" type="number" min={1} step={1} placeholder="Sin límite" error={Boolean(errors.limiteUsuarios)} hint={errors.limiteUsuarios?.message} {...register('limiteUsuarios')} />
+            <p className="mt-1 text-sm text-gray-500">{org.usuariosActivos} usuarios activos. Vacío significa sin límite. Bajar el límite no desactiva usuarios existentes.</p>
+          </div>
           <div>
             <Label htmlFor="nombre">Nombre</Label>
             <Input id="nombre" error={Boolean(errors.nombre)} hint={errors.nombre?.message} {...register("nombre")} />

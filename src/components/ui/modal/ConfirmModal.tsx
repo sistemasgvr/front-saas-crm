@@ -2,6 +2,7 @@
 
 import Button from "@/src/components/ui/button/Button";
 import Modal from "@/src/components/ui/modal/Modal";
+import ModalHeading from "./ModalHeading";
 
 /** Confirmación simple (Tomar lead, bloquear, etc.) — evita window.confirm. */
 export default function ConfirmModal({
@@ -12,6 +13,8 @@ export default function ConfirmModal({
   cancelLabel = "Cancelar",
   loading = false,
   variant = "brand",
+  error,
+  icon,
   onConfirm,
   onClose,
 }: {
@@ -22,6 +25,8 @@ export default function ConfirmModal({
   cancelLabel?: string;
   loading?: boolean;
   variant?: "brand" | "danger";
+  error?: string;
+  icon?: string;
   onConfirm: () => void;
   onClose: () => void;
 }) {
@@ -32,13 +37,21 @@ export default function ConfirmModal({
       className="max-w-sm"
       showCloseButton={false}
       header={
-        <div className="px-5 pb-1 pt-5">
-          <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">{title}</h3>
-        </div>
+        <ModalHeading
+          title={title}
+          icon={icon ?? "mdi:help-circle-outline"}
+          danger={variant === "danger"}
+        />
       }
       footer={
         <div className="flex justify-end gap-2 px-5 py-4">
-          <Button type="button" size="sm" variant="outline" disabled={loading} onClick={onClose}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={loading}
+            onClick={onClose}
+          >
             {cancelLabel}
           </Button>
           <Button
@@ -53,7 +66,14 @@ export default function ConfirmModal({
         </div>
       }
     >
-      <p className="px-5 pb-2 text-theme-sm text-gray-600 dark:text-gray-300">{description}</p>
+      <p className="px-5 pb-2 text-theme-sm text-gray-600 dark:text-gray-300">
+        {description}
+      </p>
+      {error && (
+        <p role="alert" className="px-5 pb-3 text-sm text-error-600">
+          {error}
+        </p>
+      )}
     </Modal>
   );
 }

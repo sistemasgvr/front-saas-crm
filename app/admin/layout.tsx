@@ -23,6 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/login");
   }
   const me = session.me;
+  if (me.usuario.debeCambiarPassword) redirect('/cambiar-password');
 
   if (!me.usuario.esAdminPlataforma) {
     redirect("/dashboard");

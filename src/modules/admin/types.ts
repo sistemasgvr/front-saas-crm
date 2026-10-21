@@ -1,4 +1,6 @@
 export interface OrganizacionAdmin {
+  limiteUsuarios: number | null;
+  usuariosActivos: number;
   id: string;
   nombre: string;
   slug: string;

@@ -48,6 +48,7 @@ export async function updateOrganizationAdminAction(id: string, formData: FormDa
     await apiFetch(`/admin/organizations/${id}`, {
       method: "PATCH",
       body: JSON.stringify({
+        limiteUsuarios: String(formData.get('limiteUsuarios') ?? '').trim() === '' ? null : Number(formData.get('limiteUsuarios')),
         nombre: String(formData.get("nombre") ?? "").trim(),
         slug: String(formData.get("slug") ?? "").trim(),
         razonSocial: emptyToUndefined(String(formData.get("razonSocial") ?? "")),

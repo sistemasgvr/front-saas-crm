@@ -70,6 +70,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect("/login");
   }
   const me = session.me;
+  if (me.usuario.debeCambiarPassword) redirect('/cambiar-password');
 
   if (me.usuario.esAdminPlataforma) {
     redirect("/admin/organizations");

@@ -10,6 +10,8 @@ interface PasswordInputProps {
   placeholder?: string;
   defaultValue?: string;
   required?: boolean;
+  minLength?: number;
+  maxLength?: number;
   disabled?: boolean;
   autoComplete?: string;
   error?: boolean;
@@ -19,7 +21,7 @@ interface PasswordInputProps {
 }
 
 const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(function PasswordInput(
-  { id, name, placeholder, defaultValue, required, disabled, autoComplete, error, hint, onChange, onBlur },
+  { id, name, placeholder, defaultValue, required, minLength, maxLength, disabled, autoComplete, error, hint, onChange, onBlur },
   ref,
 ) {
   const [showPassword, setShowPassword] = useState(false);
@@ -35,6 +37,8 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(function 
           placeholder={placeholder}
           defaultValue={defaultValue}
           required={required}
+          minLength={minLength}
+          maxLength={maxLength}
           disabled={disabled}
           autoComplete={autoComplete}
           error={error}
