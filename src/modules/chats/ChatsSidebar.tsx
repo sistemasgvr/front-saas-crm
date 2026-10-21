@@ -221,7 +221,7 @@ export default function ChatsSidebar({ rol: _rol }: { rol: Rol }) {
           </div>
         )}
       </div>
-      {chatsQuery.isSuccess && <Pagination {...chatsQuery.data!} onPageChange={setPage} compact itemLabel="chats" className="shrink-0 border-t border-gray-100 p-3 dark:border-gray-800" />}
+      {chatsQuery.isSuccess && <Pagination {...chatsQuery.data!} onPageChange={setPage} compact itemLabel="chats" className="shrink-0 border-t border-gray-100 px-3 py-1.5 dark:border-gray-800" />}
     </div>
   );
 }

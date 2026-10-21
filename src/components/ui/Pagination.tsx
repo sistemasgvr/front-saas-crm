@@ -41,6 +41,45 @@ export default function Pagination({
   const desde = (page - 1) * pageSize + 1;
   const hasta = Math.min(page * pageSize, total);
 
+  // Variante de una sola fila para paneles estrechos (p. ej. lista de chats).
+  if (compact) {
+    const navBtn =
+      "flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-400 dark:hover:bg-white/[0.05]";
+    return (
+      <div className={`flex items-center justify-between gap-2 ${className}`}>
+        <p className="min-w-0 truncate text-theme-xs text-gray-500 dark:text-gray-400">
+          <span className="font-medium text-gray-700 dark:text-gray-300">
+            {desde}–{hasta}
+          </span>{" "}
+          de <span className="font-medium text-gray-700 dark:text-gray-300">{total}</span> {itemLabel}
+        </p>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => onPageChange(page - 1)}
+            disabled={page <= 1}
+            aria-label="Página anterior"
+            className={navBtn}
+          >
+            <Icon name="mdi:chevron-left" size={18} />
+          </button>
+          <span className="whitespace-nowrap px-1 text-theme-xs tabular-nums text-gray-600 dark:text-gray-300">
+            {page}/{totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => onPageChange(page + 1)}
+            disabled={page >= totalPages}
+            aria-label="Página siguiente"
+            className={navBtn}
+          >
+            <Icon name="mdi:chevron-right" size={18} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${className}`}
@@ -62,7 +101,7 @@ export default function Pagination({
           <Icon name="mdi:chevron-left" size={18} />
         </button>
 
-        <div className={compact ? "hidden" : "hidden items-center gap-1 sm:flex"}>
+        <div className="hidden items-center gap-1 sm:flex">
           {pageNumbers(page, totalPages).map((p, idx) =>
             p === "…" ? (
               <span
@@ -89,7 +128,7 @@ export default function Pagination({
           )}
         </div>
 
-        <span className={`px-2 text-theme-sm text-gray-600 dark:text-gray-300 ${compact ? "" : "sm:hidden"}`}>
+        <span className="px-2 text-theme-sm text-gray-600 dark:text-gray-300 sm:hidden">
           {page} / {totalPages}
         </span>
 
