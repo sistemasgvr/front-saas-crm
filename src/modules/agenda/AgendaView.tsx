@@ -44,7 +44,9 @@ import type {
 import AgendaItemDetalleModal from "./AgendaItemDetalleModal";
 import CrearActividadAgendaModal from "./CrearActividadAgendaModal";
 
-const FullCalendar = dynamic(() => import("@fullcalendar/react"), { ssr: false });
+const FullCalendar = dynamic(() => import("@fullcalendar/react"), {
+  ssr: false,
+});
 
 const ZONA_AGENDA = "America/Lima";
 
@@ -75,7 +77,10 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 };
 
 /** Rango del mes calendario en America/Lima → ISO UTC reales. */
-function rangoInicial(cuandoIso?: string | null): { desde: string; hasta: string } {
+function rangoInicial(cuandoIso?: string | null): {
+  desde: string;
+  hasta: string;
+} {
   const ancla = cuandoIso
     ? DateTime.fromISO(cuandoIso, { zone: "utc" }).setZone(ZONA_AGENDA)
     : DateTime.now().setZone(ZONA_AGENDA);
@@ -168,12 +173,18 @@ function EventoContenido({ arg }: { arg: EventContentArg }) {
   }
   return (
     <div className="fc-event-main-frame overflow-hidden px-0.5 leading-tight">
-      {arg.timeText ? <div className="fc-event-time text-[10px] opacity-90">{arg.timeText}</div> : null}
+      {arg.timeText ? (
+        <div className="fc-event-time text-[10px] opacity-90">
+          {arg.timeText}
+        </div>
+      ) : null}
       <div className="fc-event-title-container">
         <div className="fc-event-title truncate text-[11px] font-semibold">
           {String(p.tipo)} · {String(p.titulo ?? "")}
         </div>
-        <div className="truncate text-[10px] opacity-90">{String(p.leadNombre ?? "")}</div>
+        <div className="truncate text-[10px] opacity-90">
+          {String(p.leadNombre ?? "")}
+        </div>
       </div>
     </div>
   );
@@ -182,11 +193,11 @@ function EventoContenido({ arg }: { arg: EventContentArg }) {
 export default function AgendaView({
   rol,
   usuarioId,
-  crmHabilitado = false,
+  inmueblesHabilitado = false,
 }: {
   rol: Rol;
   usuarioId: string;
-  crmHabilitado?: boolean;
+  inmueblesHabilitado?: boolean;
 }) {
   const esAdmin = canManageOrganization(rol);
   const searchParams = useSearchParams();
@@ -195,12 +206,15 @@ export default function AgendaView({
   const deepLinkCuando = searchParams.get("cuando");
   const tieneDeepLink = Boolean(deepLinkVisitaId || deepLinkActividadId);
   const [rango, setRango] = useState(() => rangoInicial(deepLinkCuando));
-  const [asignadoFiltro, setAsignadoFiltro] = useState(esAdmin ? "todos" : "mios");
+  const [asignadoFiltro, setAsignadoFiltro] = useState(
+    esAdmin ? "todos" : "mios",
+  );
   const [vistaInicial, setVistaInicial] = useState("timeGridWeek");
   const [vistaActual, setVistaActual] = useState("timeGridWeek");
   const [esMovil, setEsMovil] = useState(false);
   const [calendarioListo, setCalendarioListo] = useState(false);
-  const [itemSeleccionado, setItemSeleccionado] = useState<AgendaItemRow | null>(null);
+  const [itemSeleccionado, setItemSeleccionado] =
+    useState<AgendaItemRow | null>(null);
   const [crearAbierto, setCrearAbierto] = useState(false);
   const [slotInicial, setSlotInicial] = useState<string | null>(null);
   const [deepLinkAplicado, setDeepLinkAplicado] = useState(false);
@@ -265,7 +279,8 @@ export default function AgendaView({
     }: {
       actividadId: string;
       input: ActualizarActividadAgendaInput;
-    }) => unwrapAction(await actualizarActividadAgendaAction(actividadId, input)),
+    }) =>
+      unwrapAction(await actualizarActividadAgendaAction(actividadId, input)),
     successMessage: "Actividad actualizada",
     invalidateKeys: [queryKeys.leadsAgendaAll, queryKeys.leadsAll],
   });
@@ -380,16 +395,20 @@ export default function AgendaView({
 
       <div className="flex flex-wrap gap-x-3 gap-y-2 text-theme-xs text-gray-500 dark:text-gray-400">
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-brand-500" /> Programada
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-brand-500" />{" "}
+          Programada
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-success-500" /> Completada
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-success-500" />{" "}
+          Completada
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-warning-500" /> No show
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-warning-500" />{" "}
+          No show
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-gray-400" /> Cancelada
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-gray-400" />{" "}
+          Cancelada
         </span>
       </div>
 
@@ -462,7 +481,11 @@ export default function AgendaView({
               eventClick={onEventClick}
               select={onDateSelect}
               eventContent={(arg) => <EventoContenido arg={arg} />}
-              eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
+              eventTimeFormat={{
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              }}
               buttonText={{
                 today: "Hoy",
                 month: "Mes",
@@ -479,7 +502,7 @@ export default function AgendaView({
         <AgendaItemDetalleModal
           item={itemSeleccionado}
           loading={actualizarVisita.isPending || actualizarActividad.isPending}
-          crmHabilitado={crmHabilitado}
+          inmueblesHabilitado={inmueblesHabilitado}
           onClose={() => setItemSeleccionado(null)}
           onActualizarVisita={(visitaId, input) => {
             actualizarVisita.mutate(

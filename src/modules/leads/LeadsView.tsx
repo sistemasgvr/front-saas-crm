@@ -310,7 +310,7 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
     <div>
       <PageHeader
         title="Leads"
-        description="Contactos captados desde formularios de Meta."
+        description="Contactos captados desde Meta, WhatsApp o registrados manualmente."
         action={{ href: "/leads/tablero", label: "Tablero", icon: "mdi:view-column-outline" }}
       >
         <DynamicFilters

@@ -22,8 +22,21 @@ import TransicionPipelineModal from "./TransicionPipelineModal";
 import Modal from "@/src/components/ui/modal/Modal";
 import HelpTooltip from "@/src/components/ui/HelpTooltip";
 import { camposParaDestino } from "./pipeline-transicion";
-import { cambioTipoReiniciaEmbudo, esEstadoTerminal, ETIQUETA_TIPO_LEAD, claseEstadoGestion, etiquetaEstadoGestion, iconoEstadoGestion, requiereClasificarTipo } from "./pipeline";
-import { TIPOS_LEAD_INMOBILIARIA, type EstadoPipelineMeta, type MetaPipeline, type MotivoMeta } from "./types";
+import {
+  cambioTipoReiniciaEmbudo,
+  esEstadoTerminal,
+  ETIQUETA_TIPO_LEAD,
+  claseEstadoGestion,
+  etiquetaEstadoGestion,
+  iconoEstadoGestion,
+  requiereClasificarTipo,
+} from "./pipeline";
+import {
+  TIPOS_LEAD_INMOBILIARIA,
+  type EstadoPipelineMeta,
+  type MetaPipeline,
+  type MotivoMeta,
+} from "./types";
 
 const ESTADOS_REAPERTURA = ["CONTACTADO", "CALIFICADO"];
 
@@ -36,11 +49,13 @@ const ICONO_TIPO_LEAD: Record<string, string> = {
 const RESULTADO_CIERRE: Record<string, { icon: string; clase: string }> = {
   CERRADO_GANADO: {
     icon: "mdi:trophy-outline",
-    clase: "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-400",
+    clase:
+      "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-400",
   },
   CERRADO_PERDIDO: {
     icon: "mdi:close-circle-outline",
-    clase: "bg-error-50 text-error-700 dark:bg-error-500/10 dark:text-error-400",
+    clase:
+      "bg-error-50 text-error-700 dark:bg-error-500/10 dark:text-error-400",
   },
   DESCARTADO: {
     icon: "mdi:cancel",
@@ -73,7 +88,7 @@ export default function LeadPipelinePanel({
   notaCierre,
   esAdmin,
   puedeGestionar,
-  crmHabilitado = false,
+  inmueblesHabilitado = false,
 }: {
   leadId: string;
   tipoLead: string | null;
@@ -83,16 +98,20 @@ export default function LeadPipelinePanel({
   notaCierre: string | null;
   esAdmin: boolean;
   puedeGestionar: boolean;
-  crmHabilitado?: boolean;
+  inmueblesHabilitado?: boolean;
 }) {
   const [destinoCierre, setDestinoCierre] = useState<string | null>(null);
-  const [destinoTransicion, setDestinoTransicion] = useState<string | null>(null);
+  const [destinoTransicion, setDestinoTransicion] = useState<string | null>(
+    null,
+  );
   const [esReapertura, setEsReapertura] = useState(false);
   const [motivoForm, setMotivoForm] = useState("");
   const [notaForm, setNotaForm] = useState("");
   const [reabrirAbierto, setReabrirAbierto] = useState(false);
   const [historialExpandido, setHistorialExpandido] = useState(false);
-  const [tipoPendienteConfirmacion, setTipoPendienteConfirmacion] = useState<string | null>(null);
+  const [tipoPendienteConfirmacion, setTipoPendienteConfirmacion] = useState<
+    string | null
+  >(null);
 
   const LIMITE_HISTORIAL = 5;
 
@@ -109,17 +128,29 @@ export default function LeadPipelinePanel({
     mutationFn: async (input: Parameters<typeof gestionarLeadAction>[1]) =>
       unwrapAction(await gestionarLeadAction(leadId, input)),
     successMessage: "Gestión actualizada",
-    invalidateKeys: [queryKeys.lead(leadId), queryKeys.leadsAll, queryKeys.leadHistorial(leadId), queryKeys.leadVisitas(leadId), queryKeys.leadPipelineMeta(tipoLead), queryKeys.leadsAgendaAll],
+    invalidateKeys: [
+      queryKeys.lead(leadId),
+      queryKeys.leadsAll,
+      queryKeys.leadHistorial(leadId),
+      queryKeys.leadVisitas(leadId),
+      queryKeys.leadPipelineMeta(tipoLead),
+      queryKeys.leadsAgendaAll,
+    ],
   });
 
   const estadoActualMeta = metaQuery.data?.estados.find(
     (estado: EstadoPipelineMeta) => estado.codigo === estadoGestion,
   );
   const siguientes = estadoActualMeta?.siguientes ?? [];
-  const necesitaClasificar = requiereClasificarTipo({ estadoGestion, tipoLead });
+  const necesitaClasificar = requiereClasificarTipo({
+    estadoGestion,
+    tipoLead,
+  });
   const terminal = esEstadoTerminal(estadoGestion);
   const estadosNoTerminales =
-    metaQuery.data?.estados.filter((estado: EstadoPipelineMeta) => !esEstadoTerminal(estado.codigo)) ?? [];
+    metaQuery.data?.estados.filter(
+      (estado: EstadoPipelineMeta) => !esEstadoTerminal(estado.codigo),
+    ) ?? [];
 
   const motivosParaDestino = (destino: string | null) => {
     if (!metaQuery.data || !destino) return [];
@@ -129,9 +160,14 @@ export default function LeadPipelinePanel({
     return [];
   };
 
-  const iniciarCambio = (destino: string, opciones?: { reapertura?: boolean }) => {
+  const iniciarCambio = (
+    destino: string,
+    opciones?: { reapertura?: boolean },
+  ) => {
     if (necesitaClasificar) {
-      toast.error("Clasifica el lead (Compra, Venta u Otro) antes de avanzar desde Nuevo");
+      toast.error(
+        "Clasifica el lead (Compra, Venta u Otro) antes de avanzar desde Nuevo",
+      );
       return;
     }
 
@@ -179,7 +215,11 @@ export default function LeadPipelinePanel({
   const confirmarCierre = () => {
     if (!destinoCierre || !motivoForm) return;
     gestionar.mutate(
-      { estadoGestion: destinoCierre, motivoCierre: motivoForm, notaCierre: notaForm || undefined },
+      {
+        estadoGestion: destinoCierre,
+        motivoCierre: motivoForm,
+        notaCierre: notaForm || undefined,
+      },
       { onSuccess: () => setDestinoCierre(null) },
     );
   };
@@ -204,7 +244,10 @@ export default function LeadPipelinePanel({
   const resultado = RESULTADO_CIERRE[estadoGestion];
 
   const historialCompleto = historialQuery.data ?? [];
-  const historialOcultos = Math.max(0, historialCompleto.length - LIMITE_HISTORIAL);
+  const historialOcultos = Math.max(
+    0,
+    historialCompleto.length - LIMITE_HISTORIAL,
+  );
   const historialVisible = historialExpandido
     ? historialCompleto
     : historialCompleto.slice(-LIMITE_HISTORIAL);
@@ -218,7 +261,8 @@ export default function LeadPipelinePanel({
         <div className="flex flex-wrap items-center gap-2">
           {necesitaClasificar && (
             <p className="w-full text-theme-xs font-medium text-amber-700 dark:text-amber-400">
-              Clasifica el lead (Compra, Venta u Otro) antes de moverlo en el embudo.
+              Clasifica el lead (Compra, Venta u Otro) antes de moverlo en el
+              embudo.
             </p>
           )}
           <div className="flex w-full flex-wrap gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1 sm:inline-flex sm:w-auto dark:border-gray-700 dark:bg-gray-900/50">
@@ -234,7 +278,10 @@ export default function LeadPipelinePanel({
                     : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                 }`}
               >
-                <Icon name={ICONO_TIPO_LEAD[tipo] ?? "mdi:circle-outline"} size={16} />
+                <Icon
+                  name={ICONO_TIPO_LEAD[tipo] ?? "mdi:circle-outline"}
+                  size={16}
+                />
                 {ETIQUETA_TIPO_LEAD[tipo] ?? tipo}
               </button>
             ))}
@@ -251,7 +298,9 @@ export default function LeadPipelinePanel({
       ) : !puedeGestionar ? (
         tipoLead && (
           <div className="flex items-center gap-2">
-            <span className="text-theme-sm text-gray-500 dark:text-gray-400">Tipo:</span>
+            <span className="text-theme-sm text-gray-500 dark:text-gray-400">
+              Tipo:
+            </span>
             <Badge size="sm" color="light">
               {ETIQUETA_TIPO_LEAD[tipoLead] ?? tipoLead}
             </Badge>
@@ -265,12 +314,19 @@ export default function LeadPipelinePanel({
 
         {terminal ? (
           /* Resultado final — banner distinto al recorrido, no compite por espacio con la barra de pasos. */
-          <div className={`rounded-xl p-4 ${resultado?.clase ?? "bg-gray-100 text-gray-700 dark:bg-white/5 dark:text-gray-300"}`}>
+          <div
+            className={`rounded-xl p-4 ${resultado?.clase ?? "bg-gray-100 text-gray-700 dark:bg-white/5 dark:text-gray-300"}`}
+          >
             <div className="flex items-center gap-2">
               <Icon name={resultado?.icon ?? "mdi:flag-outline"} size={20} />
-              <p className="text-theme-sm font-semibold">{etiquetaEstadoGestion(tipoLead, estadoGestion)}</p>
+              <p className="text-theme-sm font-semibold">
+                {etiquetaEstadoGestion(tipoLead, estadoGestion)}
+              </p>
               {estadoGestionEn && (
-                <span className="text-theme-xs opacity-70" title={formatearFechaCompleta(estadoGestionEn)}>
+                <span
+                  className="text-theme-xs opacity-70"
+                  title={formatearFechaCompleta(estadoGestionEn)}
+                >
                   · {formatearRelativo(estadoGestionEn)}
                 </span>
               )}
@@ -285,12 +341,18 @@ export default function LeadPipelinePanel({
             {puedeGestionar && esAdmin && (
               <div className="mt-3">
                 {!reabrirAbierto ? (
-                  <button type="button" onClick={() => setReabrirAbierto(true)} className="text-theme-xs underline underline-offset-2 opacity-80 hover:opacity-100">
+                  <button
+                    type="button"
+                    onClick={() => setReabrirAbierto(true)}
+                    className="text-theme-xs underline underline-offset-2 opacity-80 hover:opacity-100"
+                  >
                     Reabrir lead
                   </button>
                 ) : (
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-theme-xs opacity-80">Reabrir hacia:</span>
+                    <span className="text-theme-xs opacity-80">
+                      Reabrir hacia:
+                    </span>
                     {ESTADOS_REAPERTURA.map((codigo) => (
                       <Button
                         key={codigo}
@@ -298,12 +360,18 @@ export default function LeadPipelinePanel({
                         size="sm"
                         variant="outline"
                         disabled={gestionar.isPending}
-                        onClick={() => iniciarCambio(codigo, { reapertura: true })}
+                        onClick={() =>
+                          iniciarCambio(codigo, { reapertura: true })
+                        }
                       >
                         {etiquetaEstadoGestion(tipoLead, codigo)}
                       </Button>
                     ))}
-                    <button type="button" onClick={() => setReabrirAbierto(false)} className="text-theme-xs opacity-70 hover:underline">
+                    <button
+                      type="button"
+                      onClick={() => setReabrirAbierto(false)}
+                      className="text-theme-xs opacity-70 hover:underline"
+                    >
                       Cancelar
                     </button>
                   </div>
@@ -322,7 +390,9 @@ export default function LeadPipelinePanel({
                     <Icon name={iconoEstadoGestion(estadoGestion)} size={22} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-theme-xs text-gray-500 dark:text-gray-400">Estado del lead</p>
+                    <p className="text-theme-xs text-gray-500 dark:text-gray-400">
+                      Estado del lead
+                    </p>
                     <p className="text-base font-semibold text-gray-800 dark:text-white/90">
                       {etiquetaEstadoGestion(tipoLead, estadoGestion)}
                     </p>
@@ -341,7 +411,9 @@ export default function LeadPipelinePanel({
               <PipelineStepper
                 estados={estadosNoTerminales}
                 estadoActual={estadoGestion}
-                siguientes={puedeGestionar && !necesitaClasificar ? siguientes : []}
+                siguientes={
+                  puedeGestionar && !necesitaClasificar ? siguientes : []
+                }
                 disabled={!puedeGestionar || gestionar.isPending}
                 onSelect={iniciarCambio}
               />
@@ -382,13 +454,16 @@ export default function LeadPipelinePanel({
         {destinoCierre && (
           <div className="mt-4 space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-white/[0.03]">
             <p className="text-theme-xs font-medium text-gray-700 dark:text-gray-200">
-              Pasar a {etiquetaEstadoGestion(tipoLead, destinoCierre)} — hace falta un motivo
+              Pasar a {etiquetaEstadoGestion(tipoLead, destinoCierre)} — hace
+              falta un motivo
             </p>
             <Select
-              options={motivosParaDestino(destinoCierre).map((motivo: MotivoMeta) => ({
-                value: motivo.codigo,
-                label: motivo.etiqueta,
-              }))}
+              options={motivosParaDestino(destinoCierre).map(
+                (motivo: MotivoMeta) => ({
+                  value: motivo.codigo,
+                  label: motivo.etiqueta,
+                }),
+              )}
               placeholder="Elige un motivo"
               value={motivoForm}
               onChange={setMotivoForm}
@@ -409,7 +484,12 @@ export default function LeadPipelinePanel({
               >
                 Confirmar
               </Button>
-              <Button type="button" size="sm" variant="outline" onClick={() => setDestinoCierre(null)}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setDestinoCierre(null)}
+              >
                 Cancelar
               </Button>
             </div>
@@ -422,7 +502,11 @@ export default function LeadPipelinePanel({
           open
           titulo={`Pasar a ${etiquetaEstadoGestion(tipoLead, destinoTransicion)}`}
           descripcion="Completa los datos de esta etapa antes de confirmar el cambio."
-          campos={camposParaDestino(metaQuery.data, destinoTransicion, esReapertura)}
+          campos={camposParaDestino(
+            metaQuery.data,
+            destinoTransicion,
+            esReapertura,
+          )}
           loading={gestionar.isPending}
           onConfirmar={confirmarTransicion}
           onCancelar={() => {
@@ -432,7 +516,10 @@ export default function LeadPipelinePanel({
         />
       )}
 
-      <Modal open={Boolean(tipoPendienteConfirmacion)} onClose={() => setTipoPendienteConfirmacion(null)}>
+      <Modal
+        open={Boolean(tipoPendienteConfirmacion)}
+        onClose={() => setTipoPendienteConfirmacion(null)}
+      >
         <div className="p-5 sm:p-6">
           <div className="flex items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
@@ -440,25 +527,45 @@ export default function LeadPipelinePanel({
             </span>
             <div>
               <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
-                Cambiar a {ETIQUETA_TIPO_LEAD[tipoPendienteConfirmacion ?? ""] ?? tipoPendienteConfirmacion}
+                Cambiar a{" "}
+                {ETIQUETA_TIPO_LEAD[tipoPendienteConfirmacion ?? ""] ??
+                  tipoPendienteConfirmacion}
               </h3>
               <p className="mt-2 text-theme-sm text-gray-600 dark:text-gray-300">
                 El lead está en{" "}
-                <span className="font-medium">{etiquetaEstadoGestion(tipoLead, estadoGestion)}</span>.
-                Al cambiar el tipo se hará lo siguiente:
+                <span className="font-medium">
+                  {etiquetaEstadoGestion(tipoLead, estadoGestion)}
+                </span>
+                . Al cambiar el tipo se hará lo siguiente:
               </p>
               <ul className="mt-3 list-disc space-y-1.5 pl-5 text-theme-sm text-gray-600 dark:text-gray-300">
-                <li>El embudo volverá a <span className="font-medium">Contactado</span></li>
+                <li>
+                  El embudo volverá a{" "}
+                  <span className="font-medium">Contactado</span>
+                </li>
                 <li>Se cancelarán las visitas programadas pendientes</li>
-                <li>El historial y calificaciones anteriores se conservan como registro</li>
+                <li>
+                  El historial y calificaciones anteriores se conservan como
+                  registro
+                </li>
               </ul>
             </div>
           </div>
           <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button type="button" size="sm" variant="outline" onClick={() => setTipoPendienteConfirmacion(null)}>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setTipoPendienteConfirmacion(null)}
+            >
               Cancelar
             </Button>
-            <Button type="button" size="sm" loading={gestionar.isPending} onClick={confirmarCambioTipo}>
+            <Button
+              type="button"
+              size="sm"
+              loading={gestionar.isPending}
+              onClick={confirmarCambioTipo}
+            >
               Sí, cambiar tipo
             </Button>
           </div>
@@ -482,7 +589,9 @@ export default function LeadPipelinePanel({
                 onClick={() => setHistorialExpandido((prev) => !prev)}
                 className="text-theme-xs font-medium text-brand-600 hover:underline dark:text-brand-400"
               >
-                {historialExpandido ? "Ver menos" : `Ver ${historialOcultos} más`}
+                {historialExpandido
+                  ? "Ver menos"
+                  : `Ver ${historialOcultos} más`}
               </button>
             )}
           </div>
@@ -491,7 +600,10 @@ export default function LeadPipelinePanel({
               historialExpandido ? "max-h-80 overflow-y-auto" : ""
             }`}
           >
-            <PipelineTimeline filas={historialVisible} crmHabilitado={crmHabilitado} />
+            <PipelineTimeline
+              filas={historialVisible}
+              inmueblesHabilitado={inmueblesHabilitado}
+            />
           </div>
         </div>
       )}

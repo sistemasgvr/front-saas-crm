@@ -8,7 +8,7 @@ export default async function LeadsTableroPage() {
   if (!me) {
     redirect("/login");
   }
-  if (!isModuloHabilitado(me.modulos, "META_LEADS")) {
+  if (!isModuloHabilitado(me.modulos, "LEADS")) {
     redirect(getDefaultClientRoute(me));
   }
 
@@ -17,7 +17,7 @@ export default async function LeadsTableroPage() {
       rol={me.rol}
       usuarioId={me.usuario.id}
       whatsappHabilitado={isModuloHabilitado(me.modulos, "WHATSAPP")}
-      crmHabilitado={isModuloHabilitado(me.modulos, "CRM")}
+      inmueblesHabilitado={isModuloHabilitado(me.modulos, "INMUEBLES")}
     />
   );
 }

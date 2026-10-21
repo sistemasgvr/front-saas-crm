@@ -10,7 +10,7 @@ export default async function AgendaPage() {
   if (!me) {
     redirect("/login");
   }
-  if (!isModuloHabilitado(me.modulos, "META_LEADS")) {
+  if (!isModuloHabilitado(me.modulos, "LEADS")) {
     redirect(getDefaultClientRoute(me));
   }
 
@@ -19,7 +19,7 @@ export default async function AgendaPage() {
       <AgendaView
         rol={me.rol}
         usuarioId={me.usuario.id}
-        crmHabilitado={isModuloHabilitado(me.modulos, "CRM")}
+        inmueblesHabilitado={isModuloHabilitado(me.modulos, "INMUEBLES")}
       />
     </Suspense>
   );

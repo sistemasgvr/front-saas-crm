@@ -1,7 +1,12 @@
 "use server";
 
 import { apiFetch } from "@/src/lib/api";
-import type { FiltroAdminOrganizaciones, ListaOrganizacionesResultado, ModuloMatriz, OrganizacionAdmin } from "../types";
+import type {
+  FiltroAdminOrganizaciones,
+  ListaOrganizacionesResultado,
+  GrupoMatriz,
+  OrganizacionAdmin,
+} from "../types";
 
 function toSearch(params?: FiltroAdminOrganizaciones) {
   const search = new URLSearchParams();
@@ -12,8 +17,12 @@ function toSearch(params?: FiltroAdminOrganizaciones) {
   return search.toString();
 }
 
-export async function getAdminOrganizations(params?: FiltroAdminOrganizaciones) {
-  return apiFetch<ListaOrganizacionesResultado>(`/admin/organizations?${toSearch(params)}`);
+export async function getAdminOrganizations(
+  params?: FiltroAdminOrganizaciones,
+) {
+  return apiFetch<ListaOrganizacionesResultado>(
+    `/admin/organizations?${toSearch(params)}`,
+  );
 }
 
 export async function getAdminOrganization(id: string) {
@@ -21,5 +30,5 @@ export async function getAdminOrganization(id: string) {
 }
 
 export async function getAdminOrganizationModules(id: string) {
-  return apiFetch<ModuloMatriz[]>(`/admin/organizations/${id}/modules`);
+  return apiFetch<GrupoMatriz[]>(`/admin/organizations/${id}/modules`);
 }

@@ -8,7 +8,7 @@ export default async function LeadsPage() {
   if (!me) {
     redirect("/login");
   }
-  if (!isModuloHabilitado(me.modulos, "META_LEADS")) {
+  if (!isModuloHabilitado(me.modulos, "LEADS")) {
     redirect(getDefaultClientRoute(me));
   }
 

@@ -1,7 +1,7 @@
 "use server";
 
 import { apiFetch, ApiError } from "@/src/lib/api";
-import type { ModuloAdmin } from "../types";
+import type { ModuloAdmin, ModuloGrupo } from "../types";
 import type {
   AutomationIntegration,
   AutomationIntegrationInput,
@@ -32,4 +32,8 @@ export async function guardarAutomationIntegration(
       status: e instanceof ApiError ? e.status : 0,
     };
   }
+}
+
+export async function getAdminModuleGroups() {
+  return apiFetch<ModuloGrupo[]>("/admin/module-groups");
 }

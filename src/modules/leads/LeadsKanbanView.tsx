@@ -47,16 +47,18 @@ import {
   tipoLeadClasificado,
 } from "./pipeline";
 import { TIPOS_LEAD_INMOBILIARIA } from "./types";
-import type { ColumnaTablero, LeadTableroRow, MetaPipeline, MotivoMeta, TableroResultado } from "./types";
+import type {
+  ColumnaTablero,
+  LeadTableroRow,
+  MetaPipeline,
+  MotivoMeta,
+  TableroResultado,
+} from "./types";
 
 type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 
 function normalizarBusqueda(texto: string): string {
-  return texto
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .trim();
+  return texto.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
 }
 
 function leadCoincideBusqueda(lead: LeadTableroRow, q: string): boolean {
@@ -120,7 +122,11 @@ function AccionCard({
           : "text-gray-400 hover:bg-gray-100 hover:text-brand-500 dark:hover:bg-white/5"
       }`}
     >
-      <Icon name={loading ? "mdi:loading" : icon} size={15} className={loading ? "animate-spin" : ""} />
+      <Icon
+        name={loading ? "mdi:loading" : icon}
+        size={15}
+        className={loading ? "animate-spin" : ""}
+      />
     </button>
   );
 }
@@ -198,15 +204,27 @@ function LeadCardBody({
           <Icon name="mdi:home-city-outline" size={13} className="shrink-0" />
           <span className="truncate">
             {lead.inmuebleInteres.codigo}
-            {lead.inmuebleInteres.titulo ? ` · ${lead.inmuebleInteres.titulo}` : ""}
+            {lead.inmuebleInteres.titulo
+              ? ` · ${lead.inmuebleInteres.titulo}`
+              : ""}
           </span>
         </p>
       ) : null}
 
       <div className="mt-2 flex items-center justify-between gap-2 border-t border-gray-50 pt-2 dark:border-gray-800">
         <p className="flex min-w-0 items-center gap-1 text-theme-xs text-gray-400">
-          <Icon name={lead.asignado ? "mdi:account-check-outline" : "mdi:account-question-outline"} size={13} className="shrink-0" />
-          <span className="truncate">{lead.asignado?.nombre ?? "Sin asignar"}</span>
+          <Icon
+            name={
+              lead.asignado
+                ? "mdi:account-check-outline"
+                : "mdi:account-question-outline"
+            }
+            size={13}
+            className="shrink-0"
+          />
+          <span className="truncate">
+            {lead.asignado?.nombre ?? "Sin asignar"}
+          </span>
         </p>
         {interactive && onVerDetalle ? (
           <div className="flex shrink-0 items-center gap-0.5">
@@ -226,12 +244,17 @@ function LeadCardBody({
                 loading={iniciarChat.isPending}
                 onClick={() =>
                   iniciarChat.mutate(undefined, {
-                    onSuccess: (resultado) => router.push(`/chats/${resultado.conversacionId}`),
+                    onSuccess: (resultado) =>
+                      router.push(`/chats/${resultado.conversacionId}`),
                   })
                 }
               />
             )}
-            <AccionCard icon="mdi:eye-outline" label="Ver detalle" onClick={() => onVerDetalle(lead.id)} />
+            <AccionCard
+              icon="mdi:eye-outline"
+              label="Ver detalle"
+              onClick={() => onVerDetalle(lead.id)}
+            />
           </div>
         ) : null}
       </div>
@@ -266,7 +289,9 @@ function LeadCard({
       ref={setNodeRef}
       {...(puedeArrastrar ? { ...listeners, ...attributes } : {})}
       className={`rounded-lg border border-gray-100 bg-white p-3 shadow-theme-xs dark:border-gray-800 dark:bg-gray-900 ${
-        puedeArrastrar ? "cursor-grab active:cursor-grabbing" : "cursor-default opacity-90"
+        puedeArrastrar
+          ? "cursor-grab active:cursor-grabbing"
+          : "cursor-default opacity-90"
       } ${isDragging ? "opacity-40" : ""}`}
     >
       <LeadCardBody
@@ -281,10 +306,21 @@ function LeadCard({
   );
 }
 
-function LeadCardOverlay({ lead, mostrarTipo }: { lead: LeadTableroRow; mostrarTipo: boolean }) {
+function LeadCardOverlay({
+  lead,
+  mostrarTipo,
+}: {
+  lead: LeadTableroRow;
+  mostrarTipo: boolean;
+}) {
   return (
     <div className="w-72 cursor-grabbing rounded-lg border border-brand-200 bg-white p-3 shadow-theme-lg dark:border-brand-800 dark:bg-gray-900">
-      <LeadCardBody lead={lead} mostrarTipo={mostrarTipo} whatsappHabilitado={false} interactive={false} />
+      <LeadCardBody
+        lead={lead}
+        mostrarTipo={mostrarTipo}
+        whatsappHabilitado={false}
+        interactive={false}
+      />
     </div>
   );
 }
@@ -319,11 +355,17 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       className={`flex w-72 shrink-0 flex-col rounded-xl border bg-gray-50/80 dark:bg-white/[0.02] ${
-        isOver ? "border-brand-300 bg-brand-50/40 dark:border-brand-800" : "border-gray-100 dark:border-gray-800"
+        isOver
+          ? "border-brand-300 bg-brand-50/40 dark:border-brand-800"
+          : "border-gray-100 dark:border-gray-800"
       }`}
     >
-      <div className={`flex items-center gap-2 rounded-t-xl border-b border-gray-100 px-3 py-2.5 dark:border-gray-800`}>
-        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${puntoEstadoGestion(codigo)}`} />
+      <div
+        className={`flex items-center gap-2 rounded-t-xl border-b border-gray-100 px-3 py-2.5 dark:border-gray-800`}
+      >
+        <span
+          className={`h-2.5 w-2.5 shrink-0 rounded-full ${puntoEstadoGestion(codigo)}`}
+        />
         <p className="min-w-0 flex-1 truncate text-theme-sm font-semibold text-gray-700 dark:text-gray-200">
           {etiqueta}
         </p>
@@ -336,16 +378,16 @@ function KanbanColumn({
         style={{ maxHeight: "calc(100vh - 320px)", minHeight: 120 }}
       >
         {leads.length === 0 && (
-          <p className="px-2 py-6 text-center text-theme-xs text-gray-400">Sin leads</p>
+          <p className="px-2 py-6 text-center text-theme-xs text-gray-400">
+            Sin leads
+          </p>
         )}
         {leads.map((lead) => (
           <LeadCard
             key={lead.id}
             lead={lead}
             puedeArrastrar={
-              esAdmin ||
-              !lead.asignado ||
-              lead.asignado?.id === usuarioId
+              esAdmin || !lead.asignado || lead.asignado?.id === usuarioId
             }
             mostrarTipo={mostrarTipo}
             whatsappHabilitado={whatsappHabilitado}
@@ -362,26 +404,30 @@ export default function LeadsKanbanView({
   rol,
   usuarioId,
   whatsappHabilitado,
-  crmHabilitado = false,
+  inmueblesHabilitado = false,
 }: {
   rol: Rol;
   usuarioId: string;
   whatsappHabilitado: boolean;
-  crmHabilitado?: boolean;
+  inmueblesHabilitado?: boolean;
 }) {
   const esAdmin = canManageOrganization(rol);
   const [tipoFiltro, setTipoFiltro] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState("");
   const busquedaDeferred = useDeferredValue(busqueda);
   const [pendingClose, setPendingClose] = useState<PendingClose | null>(null);
-  const [pendingTransition, setPendingTransition] = useState<PendingTransition | null>(null);
-  const [pendingClassify, setPendingClassify] = useState<PendingClassify | null>(null);
+  const [pendingTransition, setPendingTransition] =
+    useState<PendingTransition | null>(null);
+  const [pendingClassify, setPendingClassify] =
+    useState<PendingClassify | null>(null);
   const [motivoForm, setMotivoForm] = useState("");
   const [notaForm, setNotaForm] = useState("");
   const [leadDetalleId, setLeadDetalleId] = useState<string | null>(null);
   const [draggingLeadId, setDraggingLeadId] = useState<string | null>(null);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  );
 
   const tableroQuery = useQuery<TableroResultado>({
     queryKey: queryKeys.leadsTablero(tipoFiltro),
@@ -404,7 +450,10 @@ export default function LeadsKanbanView({
     enabled: tipoFiltro === null || tipoFiltro === "OTRO",
   });
 
-  const metaParaLead = (lead?: LeadTableroRow, tipoOverride?: string): MetaPipeline | undefined => {
+  const metaParaLead = (
+    lead?: LeadTableroRow,
+    tipoOverride?: string,
+  ): MetaPipeline | undefined => {
     const tipo = tipoOverride ?? lead?.tipoLead;
     if (!tipoLeadClasificado(tipo)) return undefined;
     if (tipo === "COMPRA") return metaCompra.data;
@@ -431,7 +480,11 @@ export default function LeadsKanbanView({
       metadata?: Record<string, string>;
     }) => unwrapAction(await gestionarLeadAction(leadId, input)),
     successMessage: "Lead movido",
-    invalidateKeys: [queryKeys.leadsAll, queryKeys.leadsNuevosCount, queryKeys.leadsAgendaAll],
+    invalidateKeys: [
+      queryKeys.leadsAll,
+      queryKeys.leadsNuevosCount,
+      queryKeys.leadsAgendaAll,
+    ],
   });
 
   const leadPorId = useMemo(() => {
@@ -456,9 +509,14 @@ export default function LeadsKanbanView({
     () => columnasFiltradas.reduce((acc, c) => acc + c.leads.length, 0),
     [columnasFiltradas],
   );
-  const hayLeadsEnTablero = (tableroQuery.data?.columnas ?? []).some((c) => c.leads.length > 0);
+  const hayLeadsEnTablero = (tableroQuery.data?.columnas ?? []).some(
+    (c) => c.leads.length > 0,
+  );
 
-  const motivosParaDestino = (destino: string, meta?: MetaPipeline): MotivoMeta[] => {
+  const motivosParaDestino = (
+    destino: string,
+    meta?: MetaPipeline,
+  ): MotivoMeta[] => {
     if (!meta) return [];
     if (destino === "DESCARTADO") return meta.motivosDescarte;
     if (destino === "CERRADO_PERDIDO") return meta.motivosPerdido;
@@ -466,14 +524,21 @@ export default function LeadsKanbanView({
     return [];
   };
 
-  const procesarAvance = (lead: LeadTableroRow, destino: string, tipoLead?: string) => {
+  const procesarAvance = (
+    lead: LeadTableroRow,
+    destino: string,
+    tipoLead?: string,
+  ) => {
     if (requiereClasificarTipo(lead)) {
       setPendingClassify({ leadId: lead.id, destino });
       return;
     }
 
     const meta = metaParaLead(lead, tipoLead);
-    if (!meta || !esTransicionPermitidaEnMeta(meta, lead.estadoGestion, destino)) {
+    if (
+      !meta ||
+      !esTransicionPermitidaEnMeta(meta, lead.estadoGestion, destino)
+    ) {
       toast.error("Esa transición no es válida para este lead");
       return;
     }
@@ -560,8 +625,12 @@ export default function LeadsKanbanView({
     );
   };
 
-  const leadEnCierre = pendingClose ? leadPorId.get(pendingClose.leadId) : undefined;
-  const leadEnTransicion = pendingTransition ? leadPorId.get(pendingTransition.leadId) : undefined;
+  const leadEnCierre = pendingClose
+    ? leadPorId.get(pendingClose.leadId)
+    : undefined;
+  const leadEnTransicion = pendingTransition
+    ? leadPorId.get(pendingTransition.leadId)
+    : undefined;
   const metaTransicion = leadEnTransicion
     ? metaParaLead(leadEnTransicion, pendingTransition?.tipoLead)
     : undefined;
@@ -640,7 +709,9 @@ export default function LeadsKanbanView({
       </div>
 
       {(metaCompra.isError || metaVenta.isError || metaOtro.isError) && (
-        <QueryError error={metaCompra.error ?? metaVenta.error ?? metaOtro.error} />
+        <QueryError
+          error={metaCompra.error ?? metaVenta.error ?? metaOtro.error}
+        />
       )}
 
       {tableroQuery.isLoading ? (
@@ -651,7 +722,11 @@ export default function LeadsKanbanView({
         <EmptyState
           icon="mdi:view-column-outline"
           title="No hay leads en el tablero"
-          description={tipoFiltro ? "Prueba otro filtro o revisa la lista de leads." : "Cuando entren leads aparecerán aquí por etapa."}
+          description={
+            tipoFiltro
+              ? "Prueba otro filtro o revisa la lista de leads."
+              : "Cuando entren leads aparecerán aquí por etapa."
+          }
         />
       ) : totalVisibles === 0 ? (
         <EmptyState
@@ -697,13 +772,22 @@ export default function LeadsKanbanView({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4">
           <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
             <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">
-              Mover a {etiquetaEstadoGestion(tipoDeLead(leadEnCierre), pendingClose.destino)}
+              Mover a{" "}
+              {etiquetaEstadoGestion(
+                tipoDeLead(leadEnCierre),
+                pendingClose.destino,
+              )}
               {leadEnCierre?.nombre ? ` — ${leadEnCierre.nombre}` : ""}
             </p>
-            <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">Hace falta un motivo para cerrar el lead.</p>
+            <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
+              Hace falta un motivo para cerrar el lead.
+            </p>
             <div className="mt-3 space-y-2">
               <Select
-                options={motivosParaDestino(pendingClose.destino, metaParaLead(leadEnCierre)).map((m: MotivoMeta) => ({
+                options={motivosParaDestino(
+                  pendingClose.destino,
+                  metaParaLead(leadEnCierre),
+                ).map((m: MotivoMeta) => ({
                   value: m.codigo,
                   label: m.etiqueta,
                 }))}
@@ -711,13 +795,29 @@ export default function LeadsKanbanView({
                 value={motivoForm}
                 onChange={setMotivoForm}
               />
-              <TextArea rows={2} placeholder="Nota (opcional)" value={notaForm} onChange={(e) => setNotaForm(e.target.value)} />
+              <TextArea
+                rows={2}
+                placeholder="Nota (opcional)"
+                value={notaForm}
+                onChange={(e) => setNotaForm(e.target.value)}
+              />
             </div>
             <div className="mt-4 flex justify-end gap-2">
-              <Button type="button" size="sm" variant="outline" onClick={() => setPendingClose(null)}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setPendingClose(null)}
+              >
                 Cancelar
               </Button>
-              <Button type="button" size="sm" loading={gestionar.isPending} disabled={!motivoForm} onClick={confirmarCierre}>
+              <Button
+                type="button"
+                size="sm"
+                loading={gestionar.isPending}
+                disabled={!motivoForm}
+                onClick={confirmarCierre}
+              >
                 Confirmar
               </Button>
             </div>
@@ -739,7 +839,9 @@ export default function LeadsKanbanView({
               {
                 leadId: pendingTransition.leadId,
                 estadoGestion: pendingTransition.destino,
-                ...(pendingTransition.tipoLead ? { tipoLead: pendingTransition.tipoLead } : {}),
+                ...(pendingTransition.tipoLead
+                  ? { tipoLead: pendingTransition.tipoLead }
+                  : {}),
                 notaTransicion: payload.notaTransicion,
                 metadata: payload.metadata,
               },
@@ -752,7 +854,11 @@ export default function LeadsKanbanView({
 
       <ClasificarTipoLeadModal
         open={Boolean(pendingClassify)}
-        nombreLead={pendingClassify ? leadPorId.get(pendingClassify.leadId)?.nombre : undefined}
+        nombreLead={
+          pendingClassify
+            ? leadPorId.get(pendingClassify.leadId)?.nombre
+            : undefined
+        }
         destinoEtiqueta={
           pendingClassify?.destino
             ? etiquetaEstadoGestion(tipoFiltro, pendingClassify.destino)
@@ -770,7 +876,7 @@ export default function LeadsKanbanView({
         rol={rol}
         usuarioId={usuarioId}
         whatsappHabilitado={whatsappHabilitado}
-        crmHabilitado={crmHabilitado}
+        inmueblesHabilitado={inmueblesHabilitado}
       />
     </div>
   );

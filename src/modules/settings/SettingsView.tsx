@@ -46,13 +46,14 @@ export default function SettingsView() {
   }
 
   const me = meQuery.data;
+  const leadsHabilitado = isModuloHabilitado(me.modulos, "LEADS");
   const metaLeadsHabilitado = me.modulos.some(
     (m: ModuloEstado) => m.codigo === "META_LEADS" && m.habilitado,
   );
   const whatsappHabilitado = me.modulos.some(
     (m: ModuloEstado) => m.codigo === "WHATSAPP" && m.habilitado,
   );
-  const crmHabilitado = isModuloHabilitado(me.modulos, "CRM");
+  const inmueblesHabilitado = isModuloHabilitado(me.modulos, "INMUEBLES");
   const automatizacionesHabilitado = isModuloHabilitado(
     me.modulos,
     "AUTOMATIZACIONES",
@@ -64,6 +65,7 @@ export default function SettingsView() {
         title="Configuración"
         description="Datos de la empresa y conexión con Meta."
       />
+      <h2 className="text-lg font-semibold">Empresa</h2>
       <CollapsibleSection
         title="Usuarios"
         icon="mdi:account-group-outline"
@@ -100,17 +102,28 @@ export default function SettingsView() {
         </p>
       )}
 
-      {crmHabilitado && <InmueblesSettingsEntryCard rol={me.rol} />}
-
-      {metaLeadsHabilitado && (
-        <>
-          <MetaSettingsEntryCard />
-          <LeadAutoAssignmentSettingsCard />
-        </>
+      {(leadsHabilitado || inmueblesHabilitado) && (
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold">CRM</h2>
+          {leadsHabilitado && (
+            <>
+              <PipelineConfigSettingsCard />
+              <LeadAutoAssignmentSettingsCard />
+            </>
+          )}
+          {inmueblesHabilitado && <InmueblesSettingsEntryCard rol={me.rol} />}
+        </section>
       )}
-      <PipelineConfigSettingsCard />
-      {whatsappHabilitado && <WhatsappSettingsEntryCard />}
-      {whatsappHabilitado && automatizacionesHabilitado && <BotSettingsCard />}
+      {(metaLeadsHabilitado || whatsappHabilitado) && (
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold">Meta</h2>
+          {metaLeadsHabilitado && <MetaSettingsEntryCard />}
+          {whatsappHabilitado && <WhatsappSettingsEntryCard />}
+          {whatsappHabilitado && automatizacionesHabilitado && (
+            <BotSettingsCard />
+          )}
+        </section>
+      )}
     </div>
   );
 }

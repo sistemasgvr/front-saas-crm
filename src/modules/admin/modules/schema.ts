@@ -8,18 +8,48 @@ export const createModuleSchema = z.object({
     .min(1, "El código es obligatorio")
     .max(50)
     .regex(/^[A-Z0-9_]+$/, "Usa MAYUSCULAS_CON_GUION_BAJO"),
+  grupoId: z.string().uuid("Selecciona un grupo"),
+  requiere: z.array(z.string()),
   nombre: z.string().trim().min(1, "El nombre es obligatorio").max(120),
   icono: optionalMax(80),
-  orden: z.number({ error: "El orden es obligatorio" }).int().min(0, "Mínimo 0").max(999, "Máximo 999"),
+  orden: z
+    .number({ error: "El orden es obligatorio" })
+    .int()
+    .min(0, "Mínimo 0")
+    .max(999, "Máximo 999"),
   descripcion: optionalMax(500),
 });
 
 export const updateModuleSchema = z.object({
+  grupoId: z.string().uuid("Selecciona un grupo"),
+  requiere: z.array(z.string()),
   nombre: z.string().trim().min(1, "El nombre es obligatorio").max(120),
   icono: optionalMax(80),
-  orden: z.number({ error: "El orden es obligatorio" }).int().min(0, "Mínimo 0").max(999, "Máximo 999"),
+  orden: z
+    .number({ error: "El orden es obligatorio" })
+    .int()
+    .min(0, "Mínimo 0")
+    .max(999, "Máximo 999"),
   descripcion: optionalMax(500),
 });
 
+export const moduleGroupSchema = z.object({
+  codigo: z
+    .string()
+    .trim()
+    .min(1, "El código es obligatorio")
+    .max(50)
+    .regex(/^[A-Z0-9_]+$/, "Usa MAYUSCULAS_CON_GUION_BAJO"),
+  nombre: z.string().trim().min(1, "El nombre es obligatorio").max(120),
+  icono: optionalMax(80),
+  orden: z
+    .number({ error: "El orden es obligatorio" })
+    .int()
+    .min(0, "Mínimo 0")
+    .max(999, "Máximo 999"),
+  descripcion: optionalMax(500),
+});
+
+export type ModuleGroupValues = z.infer<typeof moduleGroupSchema>;
 export type CreateModuleValues = z.infer<typeof createModuleSchema>;
 export type UpdateModuleValues = z.infer<typeof updateModuleSchema>;

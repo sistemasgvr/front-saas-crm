@@ -50,7 +50,7 @@ export default function LeadDetailModal({
   rol,
   usuarioId,
   whatsappHabilitado,
-  crmHabilitado = false,
+  inmueblesHabilitado = false,
 }: {
   leadId: string | null;
   open: boolean;
@@ -58,7 +58,7 @@ export default function LeadDetailModal({
   rol: Rol;
   usuarioId: string;
   whatsappHabilitado: boolean;
-  crmHabilitado?: boolean;
+  inmueblesHabilitado?: boolean;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -99,7 +99,9 @@ export default function LeadDetailModal({
                     ariaLabel="Renombrar lead"
                     onGuardar={async (nuevoNombre) => {
                       unwrapAction(
-                        await gestionarLeadAction(leadId, { nombre: nuevoNombre }),
+                        await gestionarLeadAction(leadId, {
+                          nombre: nuevoNombre,
+                        }),
                       );
                       await Promise.all([
                         queryClient.invalidateQueries({
@@ -118,17 +120,29 @@ export default function LeadDetailModal({
               </div>
               <div className="mt-1.5 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-x-4">
                 <span className="inline-flex items-center gap-1.5 text-theme-xs text-gray-600 dark:text-gray-300">
-                  <Icon name="mdi:email-outline" size={14} className="shrink-0 text-gray-400" />
+                  <Icon
+                    name="mdi:email-outline"
+                    size={14}
+                    className="shrink-0 text-gray-400"
+                  />
                   {lead.email ?? "Sin email"}
                 </span>
                 {lead.telefono ? (
                   <span className="inline-flex items-center gap-1.5 text-theme-xs text-gray-600 dark:text-gray-300">
-                    <Icon name="mdi:phone-outline" size={14} className="shrink-0 text-gray-400" />
+                    <Icon
+                      name="mdi:phone-outline"
+                      size={14}
+                      className="shrink-0 text-gray-400"
+                    />
                     {lead.telefono}
                   </span>
                 ) : null}
                 <span className="inline-flex items-center gap-1.5 text-theme-xs text-gray-500 dark:text-gray-400">
-                  <Icon name="mdi:calendar-clock-outline" size={14} className="shrink-0" />
+                  <Icon
+                    name="mdi:calendar-clock-outline"
+                    size={14}
+                    className="shrink-0"
+                  />
                   {formatearFecha(lead.fechaLead)}
                 </span>
               </div>
@@ -159,16 +173,29 @@ export default function LeadDetailModal({
               <div className="flex flex-wrap items-center gap-2">
                 {lead.asignado ? (
                   <span className="inline-flex items-center gap-1.5 text-theme-xs text-gray-700 dark:text-gray-200">
-                    <Icon name="mdi:account-check-outline" size={14} className="shrink-0 text-success-500" />
-                    Asignado a <span className="font-medium">{lead.asignado.nombre}</span>
+                    <Icon
+                      name="mdi:account-check-outline"
+                      size={14}
+                      className="shrink-0 text-success-500"
+                    />
+                    Asignado a{" "}
+                    <span className="font-medium">{lead.asignado.nombre}</span>
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 text-theme-xs text-warning-500">
-                    <Icon name="mdi:account-question-outline" size={14} className="shrink-0" />
+                    <Icon
+                      name="mdi:account-question-outline"
+                      size={14}
+                      className="shrink-0"
+                    />
                     Sin asignar
                   </span>
                 )}
-                <LeadAssignmentActions leadId={leadId as string} asignado={lead.asignado} rol={rol} />
+                <LeadAssignmentActions
+                  leadId={leadId as string}
+                  asignado={lead.asignado}
+                  rol={rol}
+                />
               </div>
 
               <span
@@ -178,12 +205,15 @@ export default function LeadDetailModal({
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={!whatsappHabilitado || !puedeIniciarChatDesdeLead(lead)}
+                  disabled={
+                    !whatsappHabilitado || !puedeIniciarChatDesdeLead(lead)
+                  }
                   loading={iniciarChat.isPending}
                   startIcon={<Icon name="mdi:whatsapp" size={16} />}
                   onClick={() =>
                     iniciarChat.mutate(undefined, {
-                      onSuccess: (resultado) => router.push(`/chats/${resultado.conversacionId}`),
+                      onSuccess: (resultado) =>
+                        router.push(`/chats/${resultado.conversacionId}`),
                     })
                   }
                 >
@@ -201,16 +231,20 @@ export default function LeadDetailModal({
                 motivoCierre={lead.motivoCierre}
                 notaCierre={lead.notaCierre}
                 esAdmin={canManageOrganization(rol)}
-                puedeGestionar={canManageOrganization(rol) || lead.asignado?.id === usuarioId}
-                crmHabilitado={crmHabilitado}
+                puedeGestionar={
+                  canManageOrganization(rol) || lead.asignado?.id === usuarioId
+                }
+                inmueblesHabilitado={inmueblesHabilitado}
               />
             </div>
 
             <LeadInmuebleInteresBlock
               leadId={leadId as string}
               inmuebleInteres={lead.inmuebleInteres ?? null}
-              puedeGestionar={canManageOrganization(rol) || lead.asignado?.id === usuarioId}
-              crmHabilitado={crmHabilitado}
+              puedeGestionar={
+                canManageOrganization(rol) || lead.asignado?.id === usuarioId
+              }
+              inmueblesHabilitado={inmueblesHabilitado}
             />
           </div>
         )}

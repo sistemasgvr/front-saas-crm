@@ -38,7 +38,25 @@ export interface UsuarioAdminDetalle extends UsuarioAdmin {
   }[];
 }
 
+export interface ModuloGrupo {
+  id: string;
+  codigo: string;
+  nombre: string;
+  descripcion: string | null;
+  icono: string | null;
+  orden: number;
+  estado: number;
+}
+export interface GrupoMatriz {
+  grupo: ModuloGrupo;
+  habilitado: "todos" | "parcial" | "ninguno";
+  modulos: ModuloMatriz[];
+}
+
 export interface ModuloAdmin {
+  grupoId: string | null;
+  grupo: ModuloGrupo | null;
+  requiere: string[];
   id: string;
   codigo: string;
   nombre: string;
@@ -49,6 +67,7 @@ export interface ModuloAdmin {
 }
 
 export interface ModuloMatriz {
+  requiere: string[];
   id: string;
   codigo: string;
   nombre: string;

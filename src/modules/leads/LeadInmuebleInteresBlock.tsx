@@ -20,12 +20,12 @@ export default function LeadInmuebleInteresBlock({
   leadId,
   inmuebleInteres,
   puedeGestionar,
-  crmHabilitado,
+  inmueblesHabilitado,
 }: {
   leadId: string;
   inmuebleInteres: InmuebleResumenCorto | null;
   puedeGestionar: boolean;
-  crmHabilitado: boolean;
+  inmueblesHabilitado: boolean;
 }) {
   const [editando, setEditando] = useState(false);
   const [inmuebleId, setInmuebleId] = useState(inmuebleInteres?.id ?? "");
@@ -35,7 +35,9 @@ export default function LeadInmuebleInteresBlock({
 
   const guardar = useAppMutation({
     mutationFn: async (nextId: string | null) =>
-      unwrapAction(await gestionarLeadAction(leadId, { inmuebleInteresId: nextId })),
+      unwrapAction(
+        await gestionarLeadAction(leadId, { inmuebleInteresId: nextId }),
+      ),
     successMessage: "Inmueble de interés actualizado",
     invalidateKeys: [queryKeys.lead(leadId), queryKeys.leadsAll],
   });
@@ -60,11 +62,20 @@ export default function LeadInmuebleInteresBlock({
     <div className="mt-5 border-t border-gray-100 pt-5 dark:border-gray-800">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 text-theme-sm font-semibold text-gray-800 dark:text-white/90">
-          <Icon name="mdi:home-city-outline" size={18} className="shrink-0 text-brand-500" />
+          <Icon
+            name="mdi:home-city-outline"
+            size={18}
+            className="shrink-0 text-brand-500"
+          />
           Inmueble de interés
         </p>
         {puedeGestionar && !editando ? (
-          <Button type="button" size="sm" variant="outline" onClick={abrirEditor}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={abrirEditor}
+          >
             {inmuebleInteres ? "Cambiar" : "Asignar"}
           </Button>
         ) : null}
@@ -115,13 +126,15 @@ export default function LeadInmuebleInteresBlock({
         </div>
       ) : inmuebleInteres ? (
         <div className="min-w-0">
-          {crmHabilitado ? (
+          {inmueblesHabilitado ? (
             <Link
               href={`/inmuebles/${inmuebleInteres.id}`}
               className="inline-flex max-w-full items-center gap-1.5 text-theme-sm font-medium text-brand-600 hover:underline dark:text-brand-400"
             >
               <Icon name="mdi:home-outline" size={16} className="shrink-0" />
-              <span className="truncate">{etiquetaInmueble(inmuebleInteres)}</span>
+              <span className="truncate">
+                {etiquetaInmueble(inmuebleInteres)}
+              </span>
             </Link>
           ) : (
             <p className="text-theme-sm text-gray-700 dark:text-gray-200">
@@ -130,7 +143,9 @@ export default function LeadInmuebleInteresBlock({
           )}
         </div>
       ) : (
-        <p className="text-theme-sm text-gray-500 dark:text-gray-400">Sin inmueble vinculado</p>
+        <p className="text-theme-sm text-gray-500 dark:text-gray-400">
+          Sin inmueble vinculado
+        </p>
       )}
     </div>
   );

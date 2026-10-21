@@ -21,17 +21,29 @@ export async function createOrganizationAction(formData: FormData) {
       body: JSON.stringify({
         nombre: String(formData.get("nombre") ?? "").trim(),
         slug: String(formData.get("slug") ?? "").trim(),
-        razonSocial: emptyToUndefined(String(formData.get("razonSocial") ?? "")),
-        documentoFiscal: emptyToUndefined(String(formData.get("documentoFiscal") ?? "")),
-        emailContacto: emptyToUndefined(String(formData.get("emailContacto") ?? "")),
-        telefonoContacto: emptyToUndefined(String(formData.get("telefonoContacto") ?? "")),
+        razonSocial: emptyToUndefined(
+          String(formData.get("razonSocial") ?? ""),
+        ),
+        documentoFiscal: emptyToUndefined(
+          String(formData.get("documentoFiscal") ?? ""),
+        ),
+        emailContacto: emptyToUndefined(
+          String(formData.get("emailContacto") ?? ""),
+        ),
+        telefonoContacto: emptyToUndefined(
+          String(formData.get("telefonoContacto") ?? ""),
+        ),
         pais: emptyToUndefined(String(formData.get("pais") ?? "")) ?? "PE",
-        zonaHoraria: emptyToUndefined(String(formData.get("zonaHoraria") ?? "")) ?? "America/Lima",
+        zonaHoraria:
+          emptyToUndefined(String(formData.get("zonaHoraria") ?? "")) ??
+          "America/Lima",
         primerUsuario:
           primerNombre && primerEmail && primerPassword
             ? {
                 nombre: primerNombre,
-                apellido: emptyToUndefined(String(formData.get("primerApellido") ?? "")),
+                apellido: emptyToUndefined(
+                  String(formData.get("primerApellido") ?? ""),
+                ),
                 email: primerEmail,
                 password: primerPassword,
               }
@@ -43,20 +55,36 @@ export async function createOrganizationAction(formData: FormData) {
   }
 }
 
-export async function updateOrganizationAdminAction(id: string, formData: FormData) {
+export async function updateOrganizationAdminAction(
+  id: string,
+  formData: FormData,
+) {
   try {
     await apiFetch(`/admin/organizations/${id}`, {
       method: "PATCH",
       body: JSON.stringify({
-        limiteUsuarios: String(formData.get('limiteUsuarios') ?? '').trim() === '' ? null : Number(formData.get('limiteUsuarios')),
+        limiteUsuarios:
+          String(formData.get("limiteUsuarios") ?? "").trim() === ""
+            ? null
+            : Number(formData.get("limiteUsuarios")),
         nombre: String(formData.get("nombre") ?? "").trim(),
         slug: String(formData.get("slug") ?? "").trim(),
-        razonSocial: emptyToUndefined(String(formData.get("razonSocial") ?? "")),
-        documentoFiscal: emptyToUndefined(String(formData.get("documentoFiscal") ?? "")),
-        emailContacto: emptyToUndefined(String(formData.get("emailContacto") ?? "")),
-        telefonoContacto: emptyToUndefined(String(formData.get("telefonoContacto") ?? "")),
+        razonSocial: emptyToUndefined(
+          String(formData.get("razonSocial") ?? ""),
+        ),
+        documentoFiscal: emptyToUndefined(
+          String(formData.get("documentoFiscal") ?? ""),
+        ),
+        emailContacto: emptyToUndefined(
+          String(formData.get("emailContacto") ?? ""),
+        ),
+        telefonoContacto: emptyToUndefined(
+          String(formData.get("telefonoContacto") ?? ""),
+        ),
         pais: emptyToUndefined(String(formData.get("pais") ?? "")),
-        zonaHoraria: emptyToUndefined(String(formData.get("zonaHoraria") ?? "")),
+        zonaHoraria: emptyToUndefined(
+          String(formData.get("zonaHoraria") ?? ""),
+        ),
         notas: emptyToUndefined(String(formData.get("notas") ?? "")),
       }),
     });
@@ -67,19 +95,44 @@ export async function updateOrganizationAdminAction(id: string, formData: FormDa
 
 export async function deactivateOrganizationAction(id: string) {
   try {
-    await apiFetch(`/admin/organizations/${id}/desactivar`, { method: "PATCH" });
+    await apiFetch(`/admin/organizations/${id}/desactivar`, {
+      method: "PATCH",
+    });
   } catch (error) {
     fail(error, "No se pudo desactivar la empresa");
   }
 }
 
-export async function toggleOrganizationModuleAction(organizacionId: string, moduloId: string, habilitado: boolean) {
+export async function toggleOrganizationModuleAction(
+  organizacionId: string,
+  moduloId: string,
+  habilitado: boolean,
+  desactivarDependientes = false,
+) {
   try {
-    await apiFetch(`/admin/organizations/${organizacionId}/modules/${moduloId}`, {
-      method: "PATCH",
-      body: JSON.stringify({ habilitado }),
-    });
+    await apiFetch(
+      `/admin/organizations/${organizacionId}/modules/${moduloId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ habilitado, desactivarDependientes }),
+      },
+    );
   } catch (error) {
     fail(error, "No se pudo actualizar el módulo");
   }
+}
+
+export async function toggleOrganizationGroupAction(
+  organizacionId: string,
+  grupoId: string,
+  habilitado: boolean,
+  desactivarDependientes = false,
+) {
+  await apiFetch(
+    `/admin/organizations/${organizacionId}/module-groups/${grupoId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ habilitado, desactivarDependientes }),
+    },
+  );
 }

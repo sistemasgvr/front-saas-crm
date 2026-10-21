@@ -8,7 +8,10 @@ import Select from "@/src/components/form/Select";
 import Input from "@/src/components/form/input/InputField";
 import TextArea from "@/src/components/form/input/TextArea";
 import { Icon } from "@/src/components/ui/Icon";
-import { datetimeLocalAISO, isoADatetimeLocalLima } from "@/src/lib/lima-datetime";
+import {
+  datetimeLocalAISO,
+  isoADatetimeLocalLima,
+} from "@/src/lib/lima-datetime";
 import type {
   ActualizarActividadAgendaInput,
   ActualizarVisitaAgendaInput,
@@ -57,14 +60,17 @@ export default function AgendaItemDetalleModal({
   onClose,
   onActualizarVisita,
   onActualizarActividad,
-  crmHabilitado = false,
+  inmueblesHabilitado = false,
 }: {
   item: AgendaItemRow | null;
   loading?: boolean;
   onClose: () => void;
   onActualizarVisita: (id: string, input: ActualizarVisitaAgendaInput) => void;
-  onActualizarActividad: (id: string, input: ActualizarActividadAgendaInput) => void;
-  crmHabilitado?: boolean;
+  onActualizarActividad: (
+    id: string,
+    input: ActualizarActividadAgendaInput,
+  ) => void;
+  inmueblesHabilitado?: boolean;
 }) {
   const router = useRouter();
   const [modoReagendar, setModoReagendar] = useState(false);
@@ -104,7 +110,9 @@ export default function AgendaItemDetalleModal({
           </p>
           <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
             {ETIQUETA_ESTADO[item.estado] ?? item.estado}
-            {item.origen === "visita" ? " · Desde pipeline" : " · Actividad de agenda"}
+            {item.origen === "visita"
+              ? " · Desde pipeline"
+              : " · Actividad de agenda"}
           </p>
         </div>
       }
@@ -247,36 +255,51 @@ export default function AgendaItemDetalleModal({
               <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
                 Duración
               </label>
-              <Select options={DURACIONES} value={duracionMinutos} onChange={setDuracionMinutos} />
+              <Select
+                options={DURACIONES}
+                value={duracionMinutos}
+                onChange={setDuracionMinutos}
+              />
             </div>
           </>
         ) : (
           <>
             <dl className="space-y-2 text-theme-sm text-gray-700 dark:text-gray-200">
               <div>
-                <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">Título</dt>
+                <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                  Título
+                </dt>
                 <dd>{item.titulo}</dd>
               </div>
               <div>
-                <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">Lead</dt>
+                <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                  Lead
+                </dt>
                 <dd>{item.leadNombre ?? "Sin nombre"}</dd>
               </div>
               {item.leadTelefono ? (
                 <div>
-                  <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">Teléfono</dt>
+                  <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                    Teléfono
+                  </dt>
                   <dd>{item.leadTelefono}</dd>
                 </div>
               ) : null}
               {item.referenciaInmueble ? (
                 <div>
-                  <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">Inmueble</dt>
+                  <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                    Inmueble
+                  </dt>
                   <dd>
-                    {(item.inmueble?.id ?? item.inmuebleId) && crmHabilitado ? (
+                    {(item.inmueble?.id ?? item.inmuebleId) &&
+                    inmueblesHabilitado ? (
                       <button
                         type="button"
                         className="text-left font-medium text-brand-600 hover:underline dark:text-brand-400"
                         onClick={() =>
-                          router.push(`/inmuebles/${item.inmueble?.id ?? item.inmuebleId}`)
+                          router.push(
+                            `/inmuebles/${item.inmueble?.id ?? item.inmuebleId}`,
+                          )
                         }
                       >
                         {item.inmueble
@@ -290,28 +313,40 @@ export default function AgendaItemDetalleModal({
                 </div>
               ) : null}
               <div>
-                <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">Cuándo</dt>
+                <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                  Cuándo
+                </dt>
                 <dd>{formatearFecha(item.programadaEn)}</dd>
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1">
                 <div>
-                  <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">Duración</dt>
+                  <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                    Duración
+                  </dt>
                   <dd>{item.duracionMinutos} min</dd>
                 </div>
                 {item.modalidad ? (
                   <div>
-                    <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">Modalidad</dt>
-                    <dd>{item.modalidad === "VIRTUAL" ? "Virtual" : "Presencial"}</dd>
+                    <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                      Modalidad
+                    </dt>
+                    <dd>
+                      {item.modalidad === "VIRTUAL" ? "Virtual" : "Presencial"}
+                    </dd>
                   </div>
                 ) : null}
                 <div>
-                  <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">Asesor</dt>
+                  <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                    Asesor
+                  </dt>
                   <dd>{item.asignado?.nombre ?? "Sin asignar"}</dd>
                 </div>
               </div>
               {item.nota ? (
                 <div>
-                  <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">Nota</dt>
+                  <dt className="text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                    Nota
+                  </dt>
                   <dd className="italic">“{item.nota}”</dd>
                 </div>
               ) : null}

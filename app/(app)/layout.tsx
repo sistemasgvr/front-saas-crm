@@ -2,7 +2,10 @@ import { redirect } from "next/navigation";
 import { getMeSafe } from "@/src/lib/auth";
 import { getDefaultClientRoute } from "@/src/lib/modules";
 import { SidebarProvider } from "@/src/components/layout/SidebarContext";
-import Sidebar, { type NavGroup, type NavItem } from "@/src/components/layout/Sidebar";
+import Sidebar, {
+  type NavGroup,
+  type NavItem,
+} from "@/src/components/layout/Sidebar";
 import Header from "@/src/components/layout/Header";
 import Backdrop from "@/src/components/layout/Backdrop";
 import AppShell from "@/src/components/layout/AppShell";
@@ -12,29 +15,49 @@ import { canManageOrganization, canViewOrgDashboard } from "@/src/lib/roles";
 
 const CLIENT_NAV_GROUPS: NavGroup[] = [
   {
-    title: "General",
-    items: [
-      { name: "Dashboard", icon: "mdi:view-dashboard-outline", path: "/dashboard", requiereModulo: "DASHBOARD" },
-    ],
-  },
-  {
     title: "CRM",
     items: [
-      { name: "Inmuebles", icon: "mdi:home-city-outline", path: "/inmuebles", requiereModulo: "CRM" },
+      {
+        name: "Dashboard",
+        icon: "mdi:view-dashboard-outline",
+        path: "/dashboard",
+        requiereModulo: "DASHBOARD",
+      },
+      {
+        name: "Leads",
+        icon: "mdi:account-multiple-outline",
+        path: "/leads",
+        requiereModulo: "LEADS",
+      },
+      {
+        name: "Agenda",
+        icon: "mdi:calendar-month-outline",
+        path: "/agenda",
+        requiereModulo: "LEADS",
+      },
+      {
+        name: "Inmuebles",
+        icon: "mdi:home-city-outline",
+        path: "/inmuebles",
+        requiereModulo: "INMUEBLES",
+      },
     ],
   },
   {
-    title: "Meta Leads",
+    title: "Meta",
     items: [
-      { name: "Leads", icon: "mdi:account-multiple-outline", path: "/leads", requiereModulo: "META_LEADS" },
-      { name: "Agenda", icon: "mdi:calendar-month-outline", path: "/agenda", requiereModulo: "META_LEADS" },
-    ],
-  },
-  {
-    title: "WhatsApp",
-    items: [
-      { name: "Chats", icon: "mdi:whatsapp", path: "/chats", requiereModulo: "WHATSAPP" },
-      { name: "Llamadas", icon: "mdi:phone", path: "/llamadas", requiereModulo: "WHATSAPP" },
+      {
+        name: "Chats",
+        icon: "mdi:whatsapp",
+        path: "/chats",
+        requiereModulo: "WHATSAPP",
+      },
+      {
+        name: "Llamadas",
+        icon: "mdi:phone",
+        path: "/llamadas",
+        requiereModulo: "WHATSAPP",
+      },
     ],
   },
   {
@@ -52,7 +75,8 @@ function filtrarGrupo(
   rol: string | null,
 ): NavGroup | null {
   const items = group.items.filter((item: NavItem) => {
-    if (item.requiereModulo && !habilitados.has(item.requiereModulo)) return false;
+    if (item.requiereModulo && !habilitados.has(item.requiereModulo))
+      return false;
     if (item.path === "/dashboard" && !canViewOrgDashboard(rol)) return false;
     if (item.path === "/settings" && !canManageOrganization(rol)) return false;
     return true;
@@ -61,7 +85,11 @@ function filtrarGrupo(
   return { title: group.title, items };
 }
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const session = await getMeSafe();
   if (session.status === "unavailable") {
     return <BackendUnavailable message={session.message} />;
@@ -70,16 +98,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect("/login");
   }
   const me = session.me;
-  if (me.usuario.debeCambiarPassword) redirect('/cambiar-password');
+  if (me.usuario.debeCambiarPassword) redirect("/cambiar-password");
 
   if (me.usuario.esAdminPlataforma) {
     redirect("/admin/organizations");
   }
 
-  const habilitados = new Set(me.modulos.filter((m) => m.habilitado).map((m) => m.codigo));
-  const groups = CLIENT_NAV_GROUPS.map((g) => filtrarGrupo(g, habilitados, me.rol)).filter(
-    (g): g is NavGroup => g !== null,
+  const habilitados = new Set(
+    me.modulos.filter((m) => m.habilitado).map((m) => m.codigo),
   );
+  const groups = CLIENT_NAV_GROUPS.map((g) =>
+    filtrarGrupo(g, habilitados, me.rol),
+  ).filter((g): g is NavGroup => g !== null);
 
   const homeHref = getDefaultClientRoute(me);
 
@@ -96,7 +126,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               organizacionId={me.organizacion?.id}
               organizacionNombre={me.organizacion?.nombre}
               profileHref="/profile"
-              settingsHref={canManageOrganization(me.rol) ? "/settings" : undefined}
+              settingsHref={
+                canManageOrganization(me.rol) ? "/settings" : undefined
+              }
               homeHref={homeHref}
             />
           }

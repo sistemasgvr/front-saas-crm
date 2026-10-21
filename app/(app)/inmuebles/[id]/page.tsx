@@ -13,7 +13,7 @@ export default async function InmuebleDetailPage({
   if (!me) {
     redirect("/login");
   }
-  if (!isModuloHabilitado(me.modulos, "CRM")) {
+  if (!isModuloHabilitado(me.modulos, "INMUEBLES")) {
     redirect(getDefaultClientRoute(me));
   }
 

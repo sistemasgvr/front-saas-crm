@@ -1,7 +1,10 @@
 import type { MeResponse, ModuloEstado } from "./auth";
 import { canViewOrgDashboard } from "./roles";
 
-export function isModuloHabilitado(modulos: ModuloEstado[], codigo: string): boolean {
+export function isModuloHabilitado(
+  modulos: ModuloEstado[],
+  codigo: string,
+): boolean {
   return modulos.some((m) => m.codigo === codigo && m.habilitado);
 }
 
@@ -12,11 +15,14 @@ export function isModuloHabilitado(modulos: ModuloEstado[], codigo: string): boo
 export function getDefaultClientRoute(
   me: Pick<MeResponse, "modulos" | "rol">,
 ): string {
-  if (canViewOrgDashboard(me.rol) && isModuloHabilitado(me.modulos, "DASHBOARD")) {
+  if (
+    canViewOrgDashboard(me.rol) &&
+    isModuloHabilitado(me.modulos, "DASHBOARD")
+  ) {
     return "/dashboard";
   }
-  if (isModuloHabilitado(me.modulos, "META_LEADS")) return "/leads";
+  if (isModuloHabilitado(me.modulos, "LEADS")) return "/leads";
   if (isModuloHabilitado(me.modulos, "WHATSAPP")) return "/chats";
-  if (isModuloHabilitado(me.modulos, "CRM")) return "/inmuebles";
+  if (isModuloHabilitado(me.modulos, "INMUEBLES")) return "/inmuebles";
   return "/profile";
 }

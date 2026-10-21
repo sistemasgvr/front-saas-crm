@@ -46,18 +46,22 @@ function VisitasSkeleton() {
 
 export default function LeadVisitasPanel({
   leadId,
-  crmHabilitado = false,
+  inmueblesHabilitado = false,
 }: {
   leadId: string;
-  crmHabilitado?: boolean;
+  inmueblesHabilitado?: boolean;
 }) {
   const { data: visitas = [], isLoading } = useQuery({
     queryKey: queryKeys.leadVisitas(leadId),
     queryFn: () => getVisitasLead(leadId),
   });
 
-  const proximas = visitas.filter((v: LeadVisitaRow) => v.estado === "PROGRAMADA");
-  const pasadas = visitas.filter((v: LeadVisitaRow) => v.estado !== "PROGRAMADA");
+  const proximas = visitas.filter(
+    (v: LeadVisitaRow) => v.estado === "PROGRAMADA",
+  );
+  const pasadas = visitas.filter(
+    (v: LeadVisitaRow) => v.estado !== "PROGRAMADA",
+  );
 
   if (isLoading) {
     return <VisitasSkeleton />;
@@ -66,7 +70,8 @@ export default function LeadVisitasPanel({
   if (visitas.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-gray-200 px-4 py-6 text-center text-theme-xs text-gray-400 dark:border-gray-800">
-        Sin visitas registradas — al agendar desde el pipeline aparecerán aquí y en la agenda.
+        Sin visitas registradas — al agendar desde el pipeline aparecerán aquí y
+        en la agenda.
       </p>
     );
   }
@@ -80,7 +85,12 @@ export default function LeadVisitasPanel({
           </p>
           <ul className="space-y-2">
             {proximas.map((v) => (
-              <VisitaCard key={v.id} visita={v} destacada crmHabilitado={crmHabilitado} />
+              <VisitaCard
+                key={v.id}
+                visita={v}
+                destacada
+                inmueblesHabilitado={inmueblesHabilitado}
+              />
             ))}
           </ul>
         </section>
@@ -92,7 +102,11 @@ export default function LeadVisitasPanel({
           </p>
           <ul className="space-y-2">
             {pasadas.map((v) => (
-              <VisitaCard key={v.id} visita={v} crmHabilitado={crmHabilitado} />
+              <VisitaCard
+                key={v.id}
+                visita={v}
+                inmueblesHabilitado={inmueblesHabilitado}
+              />
             ))}
           </ul>
         </section>
@@ -104,11 +118,11 @@ export default function LeadVisitasPanel({
 function VisitaCard({
   visita,
   destacada,
-  crmHabilitado,
+  inmueblesHabilitado,
 }: {
   visita: LeadVisitaRow;
   destacada?: boolean;
-  crmHabilitado: boolean;
+  inmueblesHabilitado: boolean;
 }) {
   const inmuebleId = visita.inmueble?.id ?? visita.inmuebleId;
   const etiqueta = visita.inmueble
@@ -126,10 +140,14 @@ function VisitaCard({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-theme-sm font-semibold text-gray-800 dark:text-white/90">
-            <Icon name="mdi:calendar-clock-outline" size={18} className="shrink-0 text-brand-500" />
+            <Icon
+              name="mdi:calendar-clock-outline"
+              size={18}
+              className="shrink-0 text-brand-500"
+            />
             {formatearFecha(visita.programadaEn)}
           </p>
-          {inmuebleId && crmHabilitado ? (
+          {inmuebleId && inmueblesHabilitado ? (
             <Link
               href={`/inmuebles/${inmuebleId}`}
               className="mt-1 inline-flex max-w-full items-center gap-1 text-theme-sm font-medium text-brand-600 hover:underline dark:text-brand-400"
@@ -138,13 +156,17 @@ function VisitaCard({
               <span className="truncate">{etiqueta}</span>
             </Link>
           ) : (
-            <p className="mt-1 text-theme-sm text-gray-700 dark:text-gray-200">{etiqueta}</p>
+            <p className="mt-1 text-theme-sm text-gray-700 dark:text-gray-200">
+              {etiqueta}
+            </p>
           )}
           <p className="mt-0.5 text-theme-xs text-gray-500 dark:text-gray-400">
             {visita.modalidad === "VIRTUAL" ? "Virtual" : "Presencial"}
             {" · "}
             {ETIQUETA_ESTADO[visita.estado] ?? visita.estado}
-            {visita.duracionMinutos != null ? ` · ${visita.duracionMinutos} min` : null}
+            {visita.duracionMinutos != null
+              ? ` · ${visita.duracionMinutos} min`
+              : null}
           </p>
           {visita.nota ? (
             <p className="mt-1 text-theme-xs italic text-gray-500 dark:text-gray-400">
@@ -154,7 +176,9 @@ function VisitaCard({
         </div>
       </div>
       {visita.feedback && (
-        <p className="mt-2 text-theme-xs italic text-gray-500 dark:text-gray-400">"{visita.feedback}"</p>
+        <p className="mt-2 text-theme-xs italic text-gray-500 dark:text-gray-400">
+          "{visita.feedback}"
+        </p>
       )}
     </li>
   );

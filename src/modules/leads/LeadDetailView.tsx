@@ -83,8 +83,12 @@ function Campo({
         <Icon name={icon} size={compact ? 16 : 18} />
       </span>
       <div className="min-w-0">
-        <p className="text-theme-xs text-gray-500 dark:text-gray-400">{label}</p>
-        <p className="break-words text-theme-sm text-gray-800 dark:text-white/90">{value}</p>
+        <p className="text-theme-xs text-gray-500 dark:text-gray-400">
+          {label}
+        </p>
+        <p className="break-words text-theme-sm text-gray-800 dark:text-white/90">
+          {value}
+        </p>
       </div>
     </div>
   );
@@ -105,12 +109,20 @@ function SeccionFija({
     <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] md:p-5">
       <div className="mb-4 flex items-start gap-3">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-500/10">
-          <Icon name={icon} size={18} className="text-brand-600 dark:text-brand-400" />
+          <Icon
+            name={icon}
+            size={18}
+            className="text-brand-600 dark:text-brand-400"
+          />
         </span>
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-gray-800 dark:text-white/90">{title}</h2>
+          <h2 className="text-base font-semibold text-gray-800 dark:text-white/90">
+            {title}
+          </h2>
           {description ? (
-            <p className="mt-0.5 text-theme-xs text-gray-500 dark:text-gray-400">{description}</p>
+            <p className="mt-0.5 text-theme-xs text-gray-500 dark:text-gray-400">
+              {description}
+            </p>
           ) : null}
         </div>
       </div>
@@ -124,7 +136,11 @@ function resumenOrigen(lead: {
   anuncio?: { nombre: string } | null;
   conjuntoAnuncio?: { nombre: string } | null;
 }) {
-  const partes = [lead.campana?.nombre, lead.conjuntoAnuncio?.nombre, lead.anuncio?.nombre].filter(Boolean);
+  const partes = [
+    lead.campana?.nombre,
+    lead.conjuntoAnuncio?.nombre,
+    lead.anuncio?.nombre,
+  ].filter(Boolean);
   if (partes.length === 0) return "Sin datos de campaña vinculados";
   return partes.join(" · ");
 }
@@ -134,28 +150,34 @@ export default function LeadDetailView({
   rol,
   usuarioId,
   whatsappHabilitado,
-  crmHabilitado,
+  inmueblesHabilitado,
 }: {
   id: string;
   rol: Rol;
   usuarioId: string;
   whatsappHabilitado: boolean;
-  crmHabilitado: boolean;
+  inmueblesHabilitado: boolean;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const leadQuery = useQuery({ queryKey: queryKeys.lead(id), queryFn: () => getLead(id) });
+  const leadQuery = useQuery({
+    queryKey: queryKeys.lead(id),
+    queryFn: () => getLead(id),
+  });
   const iniciarChat = useAppMutation({
     mutationFn: () => iniciarChatDesdeLeadAction(id),
   });
 
   if (leadQuery.isLoading) return <DetailPageSkeleton />;
   if (leadQuery.isError) {
-    const message = leadQuery.error instanceof Error ? leadQuery.error.message : "";
+    const message =
+      leadQuery.error instanceof Error ? leadQuery.error.message : "";
     if (message.toLowerCase().includes("no encontrado")) {
       return (
         <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-          <h1 className="text-lg font-semibold text-gray-800 dark:text-white/90">Lead no encontrado</h1>
+          <h1 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+            Lead no encontrado
+          </h1>
           <p className="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">
             El lead no existe o ya no está disponible en tu organización.
           </p>
@@ -175,7 +197,8 @@ export default function LeadDetailView({
 
   const lead = leadQuery.data;
   const nombre = lead.nombre ?? "Sin nombre";
-  const puedeGestionar = canManageOrganization(rol) || lead.asignado?.id === usuarioId;
+  const puedeGestionar =
+    canManageOrganization(rol) || lead.asignado?.id === usuarioId;
   const meta = parsearMetaLeadPayload(lead.datosCrudos);
   const respuestas = meta?.field_data ?? [];
   const previewRespuestas =
@@ -199,18 +222,28 @@ export default function LeadDetailView({
         <Avatar name={nombre} size="xl" />
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-1.5">
-            <h1 className="truncate text-lg font-semibold text-gray-800 dark:text-white/90">{nombre}</h1>
+            <h1 className="truncate text-lg font-semibold text-gray-800 dark:text-white/90">
+              {nombre}
+            </h1>
             {puedeGestionar ? (
               <RenombrarInline
                 nombreActual={lead.nombre?.trim() || ""}
                 titulo="Renombrar lead"
                 ariaLabel="Renombrar lead"
                 onGuardar={async (nuevoNombre) => {
-                  unwrapAction(await gestionarLeadAction(id, { nombre: nuevoNombre }));
+                  unwrapAction(
+                    await gestionarLeadAction(id, { nombre: nuevoNombre }),
+                  );
                   await Promise.all([
-                    queryClient.invalidateQueries({ queryKey: queryKeys.lead(id) }),
-                    queryClient.invalidateQueries({ queryKey: queryKeys.leadsAll }),
-                    queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChats }),
+                    queryClient.invalidateQueries({
+                      queryKey: queryKeys.lead(id),
+                    }),
+                    queryClient.invalidateQueries({
+                      queryKey: queryKeys.leadsAll,
+                    }),
+                    queryClient.invalidateQueries({
+                      queryKey: queryKeys.whatsappChats,
+                    }),
                   ]);
                 }}
               />
@@ -221,17 +254,29 @@ export default function LeadDetailView({
           </div>
           <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:gap-x-5">
             <span className="inline-flex items-center gap-1.5 text-theme-sm text-gray-600 dark:text-gray-300">
-              <Icon name="mdi:email-outline" size={16} className="shrink-0 text-gray-400" />
+              <Icon
+                name="mdi:email-outline"
+                size={16}
+                className="shrink-0 text-gray-400"
+              />
               {lead.email ?? "Sin email"}
             </span>
             {lead.telefono ? (
               <span className="inline-flex items-center gap-1.5 text-theme-sm text-gray-600 dark:text-gray-300">
-                <Icon name="mdi:phone-outline" size={16} className="shrink-0 text-gray-400" />
+                <Icon
+                  name="mdi:phone-outline"
+                  size={16}
+                  className="shrink-0 text-gray-400"
+                />
                 {lead.telefono}
               </span>
             ) : null}
             <span className="inline-flex items-center gap-1.5 text-theme-sm text-gray-500 dark:text-gray-400">
-              <Icon name="mdi:calendar-clock-outline" size={16} className="shrink-0" />
+              <Icon
+                name="mdi:calendar-clock-outline"
+                size={16}
+                className="shrink-0"
+              />
               {formatearFecha(lead.fechaLead ?? meta?.created_time)}
             </span>
           </div>
@@ -247,16 +292,29 @@ export default function LeadDetailView({
           <div className="flex flex-wrap items-center gap-3">
             {lead.asignado ? (
               <span className="inline-flex items-center gap-1.5 text-theme-sm text-gray-700 dark:text-gray-200">
-                <Icon name="mdi:account-check-outline" size={16} className="shrink-0 text-success-500" />
-                Asignado a <span className="font-medium">{lead.asignado.nombre}</span>
+                <Icon
+                  name="mdi:account-check-outline"
+                  size={16}
+                  className="shrink-0 text-success-500"
+                />
+                Asignado a{" "}
+                <span className="font-medium">{lead.asignado.nombre}</span>
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 text-theme-sm text-warning-500">
-                <Icon name="mdi:account-question-outline" size={16} className="shrink-0" />
+                <Icon
+                  name="mdi:account-question-outline"
+                  size={16}
+                  className="shrink-0"
+                />
                 Sin asignar
               </span>
             )}
-            <LeadAssignmentActions leadId={id} asignado={lead.asignado} rol={rol} />
+            <LeadAssignmentActions
+              leadId={id}
+              asignado={lead.asignado}
+              rol={rol}
+            />
           </div>
 
           <span
@@ -294,7 +352,7 @@ export default function LeadDetailView({
             notaCierre={lead.notaCierre}
             esAdmin={canManageOrganization(rol)}
             puedeGestionar={puedeGestionar}
-            crmHabilitado={crmHabilitado}
+            inmueblesHabilitado={inmueblesHabilitado}
           />
         </div>
 
@@ -302,7 +360,7 @@ export default function LeadDetailView({
           leadId={id}
           inmuebleInteres={lead.inmuebleInteres ?? null}
           puedeGestionar={puedeGestionar}
-          crmHabilitado={crmHabilitado}
+          inmueblesHabilitado={inmueblesHabilitado}
         />
       </SeccionFija>
 
@@ -316,18 +374,24 @@ export default function LeadDetailView({
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-theme-sm font-semibold text-gray-800 dark:text-white/90">
                 <Icon
-                  name={ICONO_TIPO_ACCION[lead.proximaAccion.tipo] ?? "mdi:calendar-clock-outline"}
+                  name={
+                    ICONO_TIPO_ACCION[lead.proximaAccion.tipo] ??
+                    "mdi:calendar-clock-outline"
+                  }
                   size={18}
                   className="shrink-0 text-brand-500"
                 />
-                {ETIQUETA_TIPO_ACCION[lead.proximaAccion.tipo] ?? lead.proximaAccion.tipo}
+                {ETIQUETA_TIPO_ACCION[lead.proximaAccion.tipo] ??
+                  lead.proximaAccion.tipo}
               </p>
               <p className="mt-1 text-theme-sm text-gray-700 dark:text-gray-200">
                 {lead.proximaAccion.titulo}
               </p>
               <p className="mt-0.5 text-theme-xs text-gray-500 dark:text-gray-400">
                 {formatearFecha(lead.proximaAccion.programadaEn)}
-                {lead.proximaAccion.origen === "visita" ? " · Visita de pipeline" : " · Agenda"}
+                {lead.proximaAccion.origen === "visita"
+                  ? " · Visita de pipeline"
+                  : " · Agenda"}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -358,7 +422,10 @@ export default function LeadDetailView({
         defaultOpen
       >
         <div id="visitas-agenda">
-          <LeadVisitasPanel leadId={id} crmHabilitado={crmHabilitado} />
+          <LeadVisitasPanel
+            leadId={id}
+            inmueblesHabilitado={inmueblesHabilitado}
+          />
         </div>
       </CollapsibleSection>
 
@@ -414,14 +481,24 @@ export default function LeadDetailView({
                 Publicidad
               </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Campo label="Campaña" value={lead.campana?.nombre ?? "—"} icon="mdi:bullhorn-outline" compact />
+                <Campo
+                  label="Campaña"
+                  value={lead.campana?.nombre ?? "—"}
+                  icon="mdi:bullhorn-outline"
+                  compact
+                />
                 <Campo
                   label="Conjunto de anuncios"
                   value={lead.conjuntoAnuncio?.nombre ?? "—"}
                   icon="mdi:layers-outline"
                   compact
                 />
-                <Campo label="Anuncio" value={lead.anuncio?.nombre ?? "—"} icon="mdi:image-outline" compact />
+                <Campo
+                  label="Anuncio"
+                  value={lead.anuncio?.nombre ?? "—"}
+                  icon="mdi:image-outline"
+                  compact
+                />
                 <Campo
                   label="Formulario"
                   value={lead.formularioId ?? meta?.form_id ?? "—"}
@@ -435,7 +512,12 @@ export default function LeadDetailView({
                 Trazabilidad
               </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Campo label="ID externo (Meta)" value={lead.idExterno} icon="mdi:identifier" compact />
+                <Campo
+                  label="ID externo (Meta)"
+                  value={lead.idExterno}
+                  icon="mdi:identifier"
+                  compact
+                />
                 <Campo
                   label="Creado en Meta"
                   value={formatearFecha(meta?.created_time ?? lead.fechaLead)}
