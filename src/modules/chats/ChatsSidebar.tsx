@@ -15,6 +15,7 @@ import OrigenLeadBadge from "@/src/modules/leads/OrigenLeadBadge";
 import { textoWhatsAppPlano } from "./texto-whatsapp-plano";
 import { filtrarConversaciones } from "./filtrar-conversaciones";
 import { etiquetaConversacion } from "./etiqueta-conversacion";
+import { ControlBadge } from './ChatControlPanel';
 import { useChatBorradores } from "./chat-borradores";
 import { getChats } from "./queries";
 
@@ -166,6 +167,7 @@ export default function ChatsSidebar({ rol: _rol }: { rol: Rol }) {
                         <p className="truncate text-theme-sm font-medium text-gray-800 dark:text-white/90">
                           {nombre}
                         </p>
+
                         {asesor ? (
                           <span
                             className="max-w-[7rem] shrink-0 truncate rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-white/10 dark:text-gray-300"
@@ -204,6 +206,7 @@ export default function ChatsSidebar({ rol: _rol }: { rol: Rol }) {
                         </span>
                       )}
                     </div>
+                    <div className="mt-1"><ControlBadge modo={chat.modoAtencion} asignado={!!chat.lead?.asignadoUsuarioId} /></div>
                     {!chat.lead && (
                       <span className="mt-0.5 inline-flex items-center gap-1 text-theme-xs text-warning-500">
                         <Icon name="mdi:account-question-outline" size={12} />

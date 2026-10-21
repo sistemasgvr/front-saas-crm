@@ -12,6 +12,7 @@ import { queryKeys } from "@/src/lib/query/keys";
 import { CreateModuleForm, EditModuleForm } from "./ModuleForms";
 import { toggleModuleStatusAction } from "./actions";
 import { getAdminModules } from "./queries";
+import AutomationIntegrationCard from './AutomationIntegrationCard';
 
 export default function ModulesView() {
   const { data: modulos, isLoading, isError, error } = useQuery({
@@ -80,6 +81,7 @@ export default function ModulesView() {
               </div>
             </div>
             <EditModuleForm modulo={modulo} />
+            {modulo.codigo === 'AUTOMATIZACIONES' && <AutomationIntegrationCard />}
           </div>
         ))}
       </div>

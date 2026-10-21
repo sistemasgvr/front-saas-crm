@@ -9,6 +9,7 @@ import type { ModuloEstado } from "@/src/lib/auth";
 import OrganizationSettingsForm from "./OrganizationSettingsForm";
 import MetaSettingsEntryCard from "./meta/MetaSettingsEntryCard";
 import WhatsappSettingsEntryCard from "./whatsapp/WhatsappSettingsEntryCard";
+import BotSettingsCard from './automations/BotSettingsCard';
 import LeadAutoAssignmentSettingsCard from "./leads/LeadAutoAssignmentSettingsCard";
 import PipelineConfigSettingsCard from "./pipeline/PipelineConfigSettingsCard";
 import InmueblesSettingsEntryCard from "./inmuebles/InmueblesSettingsEntryCard";
@@ -41,6 +42,7 @@ export default function SettingsView() {
   const metaLeadsHabilitado = me.modulos.some((m: ModuloEstado) => m.codigo === "META_LEADS" && m.habilitado);
   const whatsappHabilitado = me.modulos.some((m: ModuloEstado) => m.codigo === "WHATSAPP" && m.habilitado);
   const crmHabilitado = isModuloHabilitado(me.modulos, "CRM");
+  const automatizacionesHabilitado = isModuloHabilitado(me.modulos, "AUTOMATIZACIONES");
 
   return (
     <div className="space-y-6">
@@ -75,6 +77,7 @@ export default function SettingsView() {
       )}
       <PipelineConfigSettingsCard />
       {whatsappHabilitado && <WhatsappSettingsEntryCard />}
+      {whatsappHabilitado && automatizacionesHabilitado && <BotSettingsCard />}
     </div>
   );
 }

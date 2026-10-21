@@ -72,7 +72,13 @@ export const queryKeys = {
     ["whatsapp", "chats", "list", asignado] as const,
   whatsappChatsUnreadCount: ["whatsapp", "chats", "unread-count"] as const,
   whatsappChat: (id: string) => ["whatsapp", "chats", id] as const,
+  whatsappControl: (id: string) => ["whatsapp", "chats", id, "control"] as const,
+  whatsappControlHistorial: (id: string) => ["whatsapp", "chats", id, "control", "historial"] as const,
+  whatsappControlAsesores: (id: string) => ["whatsapp", "chats", id, "control", "asesores"] as const,
+  adminWhatsappBot: (id: string) => ["admin", "organizations", id, "whatsapp-bot"] as const,
+  adminWhatsappBotHistorial: (id: string) => ["admin", "organizations", id, "whatsapp-bot", "historial"] as const,
   whatsappTemplates: ["whatsapp", "templates"] as const,
+  whatsappBotPreferencias: ["whatsapp", "bot", "preferencias"] as const,
   whatsappTemplatesAll: ["whatsapp", "templates", "all"] as const,
   /** Prefijo para invalidar listados/detalle de llamadas. */
   whatsappCalls: ["whatsapp", "calls"] as const,

@@ -67,7 +67,7 @@ export default function Modal({
       />
       <div
         ref={panelRef}
-        className={`relative z-10 flex max-h-[min(90vh,720px)] w-full flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-white shadow-theme-lg sm:rounded-2xl dark:border-gray-800 dark:bg-gray-900 ${
+        className={`relative z-10 flex max-h-[min(90vh,720px)] w-full flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-white text-gray-900 shadow-theme-lg sm:rounded-2xl dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100 ${
           className.includes("max-w-") ? className : `max-w-lg ${className}`
         }`}
         onClick={(e) => e.stopPropagation()}

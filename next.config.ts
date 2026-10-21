@@ -9,6 +9,7 @@ const projectRoot = path.resolve(__dirname);
 const esBuildDocker = process.env.DOCKER_BUILD === "1";
 
 const nextConfig: NextConfig = {
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   ...(esBuildDocker ? { output: "standalone" as const } : {}),
   outputFileTracingRoot: projectRoot,
   turbopack: {

@@ -278,6 +278,14 @@ export function useNotificationsSocket(enabled: boolean) {
       },
     });
 
+    socket.on('connect', () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChats });
+    });
+    socket.on('whatsapp:control', (data: { conversacionId?: string; controlVersion?: number }) => {
+      if (typeof data?.conversacionId !== 'string') return;
+      void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChat(data.conversacionId) });
+      void queryClient.invalidateQueries({ queryKey: ['whatsapp', 'chats', 'list'] });
+    });
     socket.on("notificacion:nueva", (data: NotificacionEventoSocket) => {
       pintarNotificacionEnVivo(data, router, queryClient);
     });

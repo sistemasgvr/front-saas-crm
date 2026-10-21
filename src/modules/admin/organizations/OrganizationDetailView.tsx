@@ -64,7 +64,7 @@ export default function OrganizationDetailView({ id }: { id: string }) {
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
         <h2 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90">Módulos</h2>
-        <ModulesMatrix organizacionId={org.id} modulos={modulesQuery.data ?? []} />
+        <ModulesMatrix organizacionId={org.id} activa={org.estado === 1} modulos={modulesQuery.data ?? []} />
       </div>
     </div>
   );

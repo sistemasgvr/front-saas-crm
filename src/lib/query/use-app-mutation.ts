@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 interface UseAppMutationOptions<TData, TVariables> {
+  beforeMutation?: () => Promise<void>;
   mutationFn: (variables: TVariables) => Promise<TData>;
   successMessage?: string;
   invalidateKeys?: QueryKey[];
@@ -23,7 +24,10 @@ export function useAppMutation<TData, TVariables = void>(options: UseAppMutation
   const router = useRouter();
 
   return useMutation({
-    mutationFn: options.mutationFn,
+    mutationFn: async (variables: TVariables) => {
+      await options.beforeMutation?.();
+      return options.mutationFn(variables);
+    },
     meta: { silent: options.silent ?? false },
     onSuccess: async () => {
       if (options.successMessage) toast.success(options.successMessage);

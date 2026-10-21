@@ -1,0 +1,57 @@
+const fs = require('fs');
+function edit(path,fn){fs.writeFileSync(path,fn(fs.readFileSync(path,'utf8')));}
+const headingImport = 'import ModalHeading from "@/src/components/ui/modal/ModalHeading";\n';
+edit('src/modules/admin/modules/AutomationIntegrationCard.tsx',s=>{
+ s = s.replace('const key =',headingImport+'const key =');
+ s=s.replace('dark:bg-white/5"','dark:bg-white/5 text-gray-800 dark:text-gray-100"');
+ s=s.replaceAll('text-xs text-gray-500"','text-xs text-gray-500 dark:text-gray-400"');
+ s=s.replace('size="sm"\n        variant="outline"','size="sm"\n        startIcon={<Icon name={q.isError ? "mdi:refresh" : "mdi:cog-outline"} size={16} />}\n        variant="outline"');
+ s=s.replace('header={<h2 className="p-5 text-lg font-semibold">Conexión n8n</h2>}', 'header={<ModalHeading title="Conexión n8n" icon="mdi:lan-connect" />}');
+ s=s.replace('const [remove, setRemove] = useState(false);','const [remove, setRemove] = useState(false);\n  const [visible, setVisible] = useState(false);');
+ s=s.replace('"mt-1 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700"','"mt-1 h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500"');
+ s=s.replaceAll('className="block text-sm"','className="block text-sm font-medium text-gray-700 dark:text-gray-300"');
+ s=s.replace('        URL del webhook','        <span className="flex items-center gap-2"><Icon name="mdi:link-variant" size={16} />URL del webhook</span>');
+ s=s.replace('        Cabecera de autenticación','        <span className="flex items-center gap-2"><Icon name="mdi:shield-key-outline" size={16} />Cabecera de autenticación</span>');
+ s=s.replace('        Secreto\n        <input','        <span className="flex items-center gap-2"><Icon name="mdi:key-outline" size={16} />Secreto</span>\n        <span className="relative block">\n        <input');
+ s=s.replace('type="password"','type={visible ? "text" : "password"}');
+ s=s.replace('className={inputClass}\n          type={visible','className={`${inputClass} pr-11`}\n          type={visible');
+ s=s.replace('      </label>\n      {data.credencialConfigurada', '        <button type="button" aria-label={visible ? "Ocultar secreto" : "Mostrar secreto"} aria-pressed={visible} disabled={remove || mutation.isPending} onClick={() => setVisible(!visible)} className="absolute right-1 top-2 flex h-9 w-9 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-brand-500 dark:text-gray-400 dark:hover:bg-white/10"><Icon name={visible ? "mdi:eye-off-outline" : "mdi:eye-outline"} size={18} /></button>\n        </span>\n      </label>\n      {data.credencialConfigurada');
+ s=s.replace('className="flex items-center gap-2 text-xs"','className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300"');
+ s=s.replace('type="checkbox"','type="checkbox"\n            className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-950"');
+ s=s.replace('<p className="text-xs text-gray-500 dark:text-gray-400">\n        Configura','<p className="flex items-start gap-2 rounded-lg bg-gray-50 p-3 text-xs leading-5 text-gray-600 dark:bg-white/5 dark:text-gray-400">\n        <Icon name="mdi:information-outline" size={16} />Configura');
+ s=s.replace('<Button type="submit" size="sm" loading={mutation.isPending}>\n        Guardar\n      </Button>','<div className="flex justify-end gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">\n        <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={close}>Cancelar</Button>\n        <Button type="submit" size="sm" loading={mutation.isPending} startIcon={<Icon name="mdi:content-save-outline" size={16} />}>Guardar</Button>\n      </div>');
+ return s;
+});
+edit('src/modules/admin/organizations/WhatsappBotPanel.tsx',s=>{
+ s=s.replace('import type { BotOrganizacion }', headingImport+'import type { BotOrganizacion }');
+ s=s.replace('dark:bg-white/[0.02]"','dark:bg-white/[0.02] text-gray-800 dark:text-gray-100"');
+ s=s.replace('className="text-xs text-gray-500"','className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${c.habilitado && automatizacionesHabilitado && whatsappHabilitado ? "bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-300" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}');
+ s=s.replace('            {c.habilitado\n','            <Icon name={c.habilitado ? "mdi:check-circle-outline" : "mdi:minus-circle-outline"} size={13} />\n            {c.habilitado\n');
+ s=s.replace('              size="sm"\n              variant="outline"','              size="sm"\n              startIcon={<Icon name={c.habilitado ? "mdi:shield-off-outline" : "mdi:shield-check-outline"} size={16} />}\n              variant="outline"');
+ s=s.replace('rounded-full hover:bg-gray-100 dark:hover:bg-white/10','rounded-full text-gray-500 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-brand-500 dark:text-gray-400 dark:hover:bg-white/10');
+ s=s.replaceAll('text-amber-700"','text-amber-700 dark:text-amber-300"');
+ s=s.replace('<h3 className="p-5 text-lg font-semibold">Historial de permisos</h3>','<ModalHeading title="Historial de permisos" icon="mdi:history" />');
+ s=s.replace('<h3 className="p-5 text-lg font-semibold">\n            {objetivo ? "Habilitar" : "Deshabilitar"} bot para esta empresa\n          </h3>', '<ModalHeading title={objetivo ? "Permitir bot" : "Retirar permiso del bot"} icon={objetivo ? "mdi:shield-check-outline" : "mdi:shield-off-outline"} danger={!objetivo} />');
+ s=s.replace('className="py-2 text-xs"','className="flex items-start gap-3 py-3 text-xs"');
+ s=s.replace('<p className="font-medium">\n                    {e.habilitadoNuevo','<span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${e.habilitadoNuevo ? "bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-300" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}><Icon name={e.habilitadoNuevo ? "mdi:shield-check-outline" : "mdi:shield-off-outline"} size={16} /></span>\n                  <div className="min-w-0"><p className="font-medium">\n                    {e.habilitadoNuevo');
+ s=s.replace('className="break-words text-gray-500"','className="mt-1 break-words text-gray-600 dark:text-gray-300"');
+ s=s.replace('className="text-gray-400"','className="mt-1 text-gray-500 dark:text-gray-400"');
+ s=s.replace('                  </p>\n                </li>','                  </p></div>\n                </li>');
+ s=s.replace('className="block text-sm"','className="block text-sm font-medium text-gray-700 dark:text-gray-300"');
+ s=s.replace('bg-transparent p-3 dark:border-gray-700','bg-white p-3 text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500');
+ s=s.replace('          <Button\n            type="submit"','          <div className="flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">\n          <Button size="sm" variant="outline" disabled={actualizar.isPending} onClick={() => setObjetivo(null)}>Cancelar</Button>\n          <Button\n            size="sm"\n            startIcon={<Icon name={objetivo ? "mdi:shield-check-outline" : "mdi:shield-off-outline"} size={16} />}\n            type="submit"');
+ s=s.replace('          </Button>\n        </form>','          </Button>\n          </div>\n        </form>');
+ s=s.replace('            Confirmar {objetivo ? "habilitación" : "desactivación"}','            {objetivo ? "Permitir bot" : "Retirar permiso"}');
+ return s;
+});
+edit('src/modules/chats/ChatControlPanel.tsx',s=>{
+ s=s.replace('import { queryKeys }',headingImport+'import { queryKeys }');
+ s=s.replace('<h2 className="p-5 text-lg font-semibold">\n            {modal', '<ModalHeading icon={modal === "historial" ? "mdi:history" : modal === "bot" ? "mdi:robot-outline" : modal === "transferir" ? "mdi:account-switch-outline" : "mdi:hand-back-right-outline"} title={modal');
+ s=s.replace('                      : "Historial de atención"}\n          </h2>','                      : "Historial de atención"} />');
+ s=s.replace('        className="max-w-xl"','        footer={modal !== "detalle" && modal !== "historial" ? <div className="flex justify-end px-5 py-3"><Button size="sm" variant="outline" disabled={cambio.isPending} onClick={() => setModal(null)}>Cancelar</Button></div> : undefined}\n        className="max-w-xl"');
+ s=s.replaceAll('className="text-xs text-gray-500"','className="text-xs text-gray-500 dark:text-gray-400"');
+ s=s.replaceAll('className="mt-1 text-xs text-gray-500"','className="mt-1 text-xs text-gray-500 dark:text-gray-400"');
+ s=s.replaceAll('              <Button\n                loading={cambio.isPending}','              <Button\n                size="sm"\n                startIcon={<Icon name={modal === "bot" ? "mdi:robot-outline" : modal === "transferir" ? "mdi:account-switch-outline" : "mdi:hand-back-right-outline"} size={16} />}\n                loading={cambio.isPending}');
+ s=s.replace('bg-transparent p-3 dark:border-gray-700','bg-white p-3 text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100');
+ return s;
+});

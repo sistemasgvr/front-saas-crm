@@ -32,6 +32,8 @@ interface ChatCallControlsProps {
   /** Render desktop icon button */
   variant?: "icon" | "menu";
   onMenuClose?: () => void;
+  puedeSolicitar?: boolean;
+  beforeSolicitar?: () => Promise<void>;
 }
 
 export function ChatCallControls({
@@ -41,6 +43,8 @@ export function ChatCallControls({
   leadId,
   variant = "icon",
   onMenuClose,
+  puedeSolicitar = true,
+  beforeSolicitar,
 }: ChatCallControlsProps) {
   const [llamando, setLlamando] = useState(false);
 
@@ -58,6 +62,7 @@ export function ChatCallControls({
   });
 
   const solicitar = useAppMutation({
+    beforeMutation: beforeSolicitar,
     mutationFn: () => solicitarPermisoLlamadaAction({ conversacionId }),
     successMessage: "Solicitud de permiso enviada",
     invalidateKeys: [queryKeys.whatsappCallPermiso(conversacionId)],
@@ -107,6 +112,7 @@ export function ChatCallControls({
         ) : (
           <DropdownItem
             onClick={() => {
+              if (!puedeSolicitar) return;
               onMenuClose?.();
               solicitar.mutate();
             }}
@@ -139,7 +145,7 @@ export function ChatCallControls({
       ) : (
         <button
           type="button"
-          disabled={solicitar.isPending || permisoQuery.isLoading}
+          disabled={!puedeSolicitar || solicitar.isPending || permisoQuery.isLoading}
           onClick={() => solicitar.mutate()}
           className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-white/5"
           aria-label="Pedir permiso de llamada"

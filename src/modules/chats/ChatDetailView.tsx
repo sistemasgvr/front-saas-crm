@@ -77,6 +77,10 @@ import {
   subtituloConversacion,
 } from "./etiqueta-conversacion";
 import ChatLeadInmuebleChip from "./ChatLeadInmuebleChip";
+import ChatControlPanel from './ChatControlPanel';
+import { useChatControl } from './useChatControl';
+import { getControlAction } from './control-actions';
+import { puedeOperarControl, resolverControl } from './control-types';
 import { markWhatsappNotificationsReadAction } from "@/src/modules/notifications/actions";
 import { ChatCallControls } from "@/src/modules/calls/ChatCallControls";
 import ChatLlamadasStrip from "@/src/modules/calls/ChatLlamadasStrip";
@@ -917,7 +921,11 @@ function Burbuja({
   modoSeleccion,
   seleccionado,
   onToggleSeleccion,
+  puedeEnviar = true,
+  beforeEnviar,
 }: {
+  puedeEnviar?: boolean;
+  beforeEnviar?: () => Promise<void>;
   mensaje: Mensaje;
   conversacionId: string;
   nombreContacto: string;
@@ -956,7 +964,8 @@ function Burbuja({
   }, [puedeFavorito, mensaje.id]);
 
   const reaccionar = useAppMutation({
-    mutationFn: (emoji: string) => enviarReaccionAction(conversacionId, mensaje.id, emoji),
+    beforeMutation: beforeEnviar,
+    mutationFn: (emoji: string) => { if (!puedeEnviar) throw new Error('No tienes el control para responder'); return enviarReaccionAction(conversacionId, mensaje.id, emoji); },
     invalidateKeys: [queryKeys.whatsappChat(conversacionId)],
     silent: true,
   });
@@ -983,6 +992,7 @@ function Burbuja({
         setSelectorAbierto((v) => !v);
       }}
       className="flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full text-gray-400 transition hover:bg-gray-100 md:h-7 md:w-7 md:opacity-0 md:group-hover:opacity-100 dark:text-gray-500 dark:hover:bg-white/10"
+      disabled={!puedeEnviar}
       aria-label="Reaccionar"
       title="Reaccionar"
     >
@@ -1168,6 +1178,7 @@ function Burbuja({
                 : "opacity-70"
           }`}
         >
+          {esSaliente && <span title="Autor del mensaje">{mensaje.autorTipo === 'BOT' ? 'Bot IA' : mensaje.autorTipo === 'SYSTEM' ? 'Sistema · agenda' : mensaje.autorTipo === 'HUMAN' ? 'Asesor' : mensaje.autorTipo === 'EXTERNAL' ? 'WhatsApp externo' : 'Autor sin verificar'} · </span>}
           {!eliminado && mensaje.fechaEdicion && (
             <span title={`Editado ${formatearHora(mensaje.fechaEdicion)}`}>editado</span>
           )}
@@ -1417,6 +1428,15 @@ export default function ChatDetailView({
     refetchInterval: () => intervaloSiVisible(INTERVALO_REFRESCO_MS),
   });
 
+  const controlQuery = useChatControl(id);
+  const envioBloqueadoPorControl = controlQuery.isError || !puedeOperarControl(controlQuery.data, usuarioId, canManageOrganization(rol), chatQuery.data?.lead?.asignadoUsuarioId) || controlQuery.data?.modoAtencion === 'TOMANDO_CONTROL';
+  async function asegurarEnvioControl() {
+    const estado = resolverControl(await getControlAction(id));
+    if (!puedeOperarControl(estado, usuarioId, canManageOrganization(rol), chatQuery.data?.lead?.asignadoUsuarioId) || estado.modoAtencion === 'TOMANDO_CONTROL') {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.whatsappControl(id) });
+      throw new Error('El control de atención cambió. Revisa el responsable antes de enviar.');
+    }
+  }
   const sincronizandoMensajes = chatQuery.isFetching && !chatQuery.isLoading;
 
   // Al abrir el chat el backend pone noLeidos=0 — reflejamos ya en la lista
@@ -1483,6 +1503,7 @@ export default function ChatDetailView({
   const parametrosCompletos = variables.every((nombre) => (valoresVariables[nombre] ?? "").trim().length > 0);
 
   const enviar = useAppMutation({
+    beforeMutation: asegurarEnvioControl,
     mutationFn: async (vars: {
       texto?: string;
       respondeAMensajeId?: string;
@@ -1511,6 +1532,7 @@ export default function ChatDetailView({
   });
 
   const enviarArchivo = useAppMutation({
+    beforeMutation: asegurarEnvioControl,
     mutationFn: async (vars: {
       archivo: File;
       caption?: string;
@@ -1530,6 +1552,7 @@ export default function ChatDetailView({
 
   /** Envío inmediato de GIF/sticker/nota de voz (sin pasar por el draft del composer). */
   const enviarMediaDirecto = useAppMutation({
+    beforeMutation: asegurarEnvioControl,
     mutationFn: async (input: File | { file: File; esVoz?: boolean }) => {
       const file = input instanceof File ? input : input.file;
       const esVoz = input instanceof File ? false : Boolean(input.esVoz);
@@ -1751,6 +1774,13 @@ export default function ChatDetailView({
   }
 
   const reenviar = useAppMutation({
+    beforeMutation: async () => {
+      for (const destino of destinoReenvioIds) {
+        const estado = resolverControl(await getControlAction(destino));
+        const chatDestino = chatsQuery.data?.find(c => c.id === destino);
+        if (estado.modoAtencion === "TOMANDO_CONTROL" || !puedeOperarControl(estado, usuarioId, canManageOrganization(rol), chatDestino?.lead?.asignadoUsuarioId)) throw new Error("El control de un chat de destino cambió. Revisa los destinatarios antes de reenviar.");
+      }
+    },
     mutationFn: () => {
       if (destinoReenvioIds.length === 0 || idsReenvio.length === 0) {
         return Promise.resolve({
@@ -1844,6 +1874,7 @@ export default function ChatDetailView({
   }
 
   const enviarUbicacion = useAppMutation({
+    beforeMutation: asegurarEnvioControl,
     mutationFn: () =>
       enviarUbicacionAction(id, {
         latitud: Number(ubicLat),
@@ -1863,6 +1894,7 @@ export default function ChatDetailView({
   }
 
   const enviarContacto = useAppMutation({
+    beforeMutation: asegurarEnvioControl,
     mutationFn: () =>
       enviarContactoAction(id, {
         contactos: [
@@ -1900,6 +1932,7 @@ export default function ChatDetailView({
           : true);
 
   const enviarInteractivo = useAppMutation({
+    beforeMutation: asegurarEnvioControl,
     mutationFn: () => {
       const base = {
         subtipo: interSubtipo,
@@ -2144,6 +2177,7 @@ export default function ChatDetailView({
       texto: draft,
       plantillaNombre: null,
       estadoEntrega: "pending",
+      autorTipo: "HUMAN",
       fechaMensaje: new Date().toISOString(),
       tieneMedia: false,
       mediaMimeType: null,
@@ -2276,109 +2310,8 @@ export default function ChatDetailView({
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
-          {crmHabilitado && chat.lead && !chat.lead.asignadoUsuarioId ? (
-            <button
-              type="button"
-              disabled={tomarLead.isPending}
-              onClick={() => setConfirmacionChat("tomar")}
-              className="hidden h-10 w-10 items-center justify-center rounded-full text-brand-600 transition-colors hover:bg-brand-500/10 disabled:opacity-50 md:flex dark:text-brand-400 dark:hover:bg-brand-500/15"
-              aria-label="Tomar lead"
-              title="Tomar lead"
-            >
-              {tomarLead.isPending ? (
-                <Spinner size={18} />
-              ) : (
-                <Icon name="mdi:hand-front-left-outline" size={22} />
-              )}
-            </button>
-          ) : null}
-
-          {crmHabilitado && !chat.lead ? (
-            <button
-              type="button"
-              onClick={() => setModalCrearLeadAbierto(true)}
-              className="hidden h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 md:flex dark:text-gray-400 dark:hover:bg-white/5"
-              aria-label="Crear lead"
-              title="Crear lead"
-            >
-              <Icon name="mdi:account-plus-outline" size={22} />
-            </button>
-          ) : null}
-
-          {crmHabilitado && chat.lead ? (
-            <ChatLeadInmuebleChip
-              leadId={chat.lead.id}
-              conversacionId={id}
-              inmuebleInteres={chat.lead.inmuebleInteres}
-              open={modalInmuebleAbierto}
-              onOpenChange={setModalInmuebleAbierto}
-              triggerClassName={`hidden h-10 w-10 items-center justify-center rounded-full transition-colors md:flex ${
-                chat.lead.inmuebleInteres
-                  ? "bg-brand-500/10 text-brand-600 dark:text-brand-400"
-                  : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
-              }`}
-            />
-          ) : null}
-
-          {crmHabilitado && chat.lead && usuarioId ? (
-            <button
-              type="button"
-              onClick={() => setModalActividadAbierto(true)}
-              className="hidden h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 md:flex dark:text-gray-400 dark:hover:bg-white/5"
-              aria-label="Registrar actividad"
-              title="Registrar actividad"
-            >
-              <Icon name="mdi:calendar-plus" size={22} />
-            </button>
-          ) : null}
-
-          <ChatCallControls
-            conversacionId={id}
-            nombreContacto={nombre}
-            waId={chat.waId}
-            leadId={chat.lead?.id}
-          />
-
-          <button
-            type="button"
-            onClick={() => setBusquedaAbierta(true)}
-            className={`hidden h-10 w-10 items-center justify-center rounded-full transition-colors md:flex ${
-              busquedaAbierta
-                ? "bg-brand-500/10 text-brand-600 dark:text-brand-400"
-                : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
-            }`}
-            aria-label="Buscar mensajes"
-            title="Buscar mensajes"
-          >
-            <Icon name="mdi:magnify" size={22} />
-          </button>
-
-          <button
-            type="button"
-            disabled={bloquear.isPending}
-            onClick={() =>
-              setConfirmacionChat(chat.bloqueado ? "desbloquear" : "bloquear")
-            }
-            className={`hidden h-10 w-10 items-center justify-center rounded-full transition-colors disabled:opacity-50 md:flex ${
-              chat.bloqueado
-                ? "text-success-600 hover:bg-success-500/10 dark:text-success-400"
-                : "text-error-500 hover:bg-error-500/10 dark:text-error-400"
-            }`}
-            aria-label={chat.bloqueado ? "Desbloquear contacto" : "Bloquear contacto"}
-            title={chat.bloqueado ? "Desbloquear" : "Bloquear"}
-          >
-            {bloquear.isPending ? (
-              <Spinner size={18} />
-            ) : (
-              <Icon
-                name={chat.bloqueado ? "mdi:lock-open-outline" : "mdi:block-helper"}
-                size={22}
-              />
-            )}
-          </button>
-
-          {/* Móvil: menú ⋮ */}
-          <div className="relative md:hidden">
+          <ChatControlPanel key={id} id={id} chat={chat} usuarioId={usuarioId} rol={rol} query={controlQuery} cerrarOpciones={() => setMenuAccionesAbierto(false)} renderOpciones={(accionesAtencion) => (
+          <div className="relative order-last">
             <button
               type="button"
               onClick={(e) => {
@@ -2394,8 +2327,9 @@ export default function ChatDetailView({
             <Dropdown
               isOpen={menuAccionesAbierto}
               onClose={() => setMenuAccionesAbierto(false)}
-              className="w-56 overflow-hidden py-1"
+              className="w-60 max-h-[70vh] overflow-y-auto py-1"
             >
+              {accionesAtencion}
               {crmHabilitado && chat.lead && !chat.lead.asignadoUsuarioId ? (
                 <DropdownItem
                   onClick={() => {
@@ -2453,6 +2387,8 @@ export default function ChatDetailView({
                 </DropdownItem>
               ) : null}
               <ChatCallControls
+            puedeSolicitar={!envioBloqueadoPorControl}
+            beforeSolicitar={asegurarEnvioControl}
                 conversacionId={id}
                 nombreContacto={nombre}
                 waId={chat.waId}
@@ -2485,8 +2421,114 @@ export default function ChatDetailView({
               </DropdownItem>
             </Dropdown>
           </div>
+)} />
+          {crmHabilitado && chat.lead && !chat.lead.asignadoUsuarioId ? (
+            <button
+              type="button"
+              disabled={tomarLead.isPending}
+              onClick={() => setConfirmacionChat("tomar")}
+              className="hidden h-10 w-10 items-center justify-center rounded-full text-brand-600 transition-colors hover:bg-brand-500/10 disabled:opacity-50 xl:flex dark:text-brand-400 dark:hover:bg-brand-500/15"
+              aria-label="Tomar lead"
+              title="Tomar lead"
+            >
+              {tomarLead.isPending ? (
+                <Spinner size={18} />
+              ) : (
+                <Icon name="mdi:hand-front-left-outline" size={22} />
+              )}
+            </button>
+          ) : null}
+
+          {crmHabilitado && !chat.lead ? (
+            <button
+              type="button"
+              onClick={() => setModalCrearLeadAbierto(true)}
+              className="hidden h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 xl:flex dark:text-gray-400 dark:hover:bg-white/5"
+              aria-label="Crear lead"
+              title="Crear lead"
+            >
+              <Icon name="mdi:account-plus-outline" size={22} />
+            </button>
+          ) : null}
+
+          {crmHabilitado && chat.lead ? (
+            <ChatLeadInmuebleChip
+              leadId={chat.lead.id}
+              conversacionId={id}
+              inmuebleInteres={chat.lead.inmuebleInteres}
+              open={modalInmuebleAbierto}
+              onOpenChange={setModalInmuebleAbierto}
+              triggerClassName={`hidden h-10 w-10 items-center justify-center rounded-full transition-colors xl:flex ${
+                chat.lead.inmuebleInteres
+                  ? "bg-brand-500/10 text-brand-600 dark:text-brand-400"
+                  : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+              }`}
+            />
+          ) : null}
+
+          {crmHabilitado && chat.lead && usuarioId ? (
+            <button
+              type="button"
+              onClick={() => setModalActividadAbierto(true)}
+              className="hidden h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 xl:flex dark:text-gray-400 dark:hover:bg-white/5"
+              aria-label="Registrar actividad"
+              title="Registrar actividad"
+            >
+              <Icon name="mdi:calendar-plus" size={22} />
+            </button>
+          ) : null}
+
+          <ChatCallControls
+            puedeSolicitar={!envioBloqueadoPorControl}
+            beforeSolicitar={asegurarEnvioControl}
+            conversacionId={id}
+            nombreContacto={nombre}
+            waId={chat.waId}
+            leadId={chat.lead?.id}
+          />
+
+          <button
+            type="button"
+            onClick={() => setBusquedaAbierta(true)}
+            className={`hidden h-10 w-10 items-center justify-center rounded-full transition-colors xl:flex ${
+              busquedaAbierta
+                ? "bg-brand-500/10 text-brand-600 dark:text-brand-400"
+                : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+            }`}
+            aria-label="Buscar mensajes"
+            title="Buscar mensajes"
+          >
+            <Icon name="mdi:magnify" size={22} />
+          </button>
+
+          <button
+            type="button"
+            disabled={bloquear.isPending}
+            onClick={() =>
+              setConfirmacionChat(chat.bloqueado ? "desbloquear" : "bloquear")
+            }
+            className={`hidden h-10 w-10 items-center justify-center rounded-full transition-colors disabled:opacity-50 xl:flex ${
+              chat.bloqueado
+                ? "text-success-600 hover:bg-success-500/10 dark:text-success-400"
+                : "text-error-500 hover:bg-error-500/10 dark:text-error-400"
+            }`}
+            aria-label={chat.bloqueado ? "Desbloquear contacto" : "Bloquear contacto"}
+            title={chat.bloqueado ? "Desbloquear" : "Bloquear"}
+          >
+            {bloquear.isPending ? (
+              <Spinner size={18} />
+            ) : (
+              <Icon
+                name={chat.bloqueado ? "mdi:lock-open-outline" : "mdi:block-helper"}
+                size={22}
+              />
+            )}
+          </button>
+
+
         </div>
       </div>
+
 
       <div className="relative min-h-0 flex-1">
       {sincronizandoMensajes ? (
@@ -2520,6 +2562,8 @@ export default function ChatDetailView({
                 key={mensaje.id}
                 mensaje={mensaje}
                 conversacionId={id}
+                puedeEnviar={!envioBloqueadoPorControl}
+                beforeEnviar={asegurarEnvioControl}
                 nombreContacto={nombre}
                 animarEntrada={idsAnimarEntrada.has(mensaje.id)}
                 resaltado={mensajeResaltadoId === mensaje.id}
@@ -2562,7 +2606,7 @@ export default function ChatDetailView({
       ) : null}
       </div>
 
-      <div className="shrink-0 border-t border-gray-100 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-gray-800 dark:bg-gray-900 sm:p-4">
+      <fieldset disabled={envioBloqueadoPorControl} aria-label="Enviar mensajes" className="min-w-0 shrink-0 border-t border-gray-100 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-gray-800 dark:bg-gray-900 sm:p-4">
         {modoSeleccionReenvio && (
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-white/[0.03]">
             <p className="text-theme-sm text-gray-700 dark:text-gray-200">
@@ -2593,6 +2637,7 @@ export default function ChatDetailView({
           <form
             ref={formRef}
             onSubmit={(event) => {
+              if (envioBloqueadoPorControl) { event.preventDefault(); return; }
               event.preventDefault();
               if (archivo) {
                 const file = archivo;
@@ -2992,7 +3037,7 @@ export default function ChatDetailView({
             )}
           </div>
         )}
-      </div>
+      </fieldset>
 
       <Modal
         open={modalUbicacionAbierto}
@@ -3380,7 +3425,8 @@ export default function ChatDetailView({
             ) : (
               destiniosReenvioLista.map(({ chat, enVentana, etiqueta }) => {
                 const checked = destinoReenvioIds.includes(chat.id);
-                const disabled = !enVentana || chat.bloqueado;
+                const sinControl = chat.modoAtencion === "TOMANDO_CONTROL" || (!canManageOrganization(rol) && ((!!chat.controlUsuarioId && chat.controlUsuarioId !== usuarioId) || (!!chat.lead?.asignadoUsuarioId && chat.lead.asignadoUsuarioId !== usuarioId)));
+                const disabled = !enVentana || chat.bloqueado || sinControl;
                 return (
                   <div
                     key={chat.id}
@@ -3396,7 +3442,7 @@ export default function ChatDetailView({
                         if (!disabled) toggleDestinoReenvio(chat.id);
                       }}
                       label={
-                        enVentana
+                        sinControl ? `${etiqueta} · sin control de atención` : enVentana
                           ? etiqueta
                           : `${etiqueta} · fuera de ventana 24h`
                       }
