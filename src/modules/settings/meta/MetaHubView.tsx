@@ -27,7 +27,9 @@ export default function MetaHubView({ metaCallback }: { metaCallback?: string })
   useEffect(() => {
     if (!metaCallback) return;
     if (metaCallback === "connected") {
-      toast.success("Meta conectado correctamente");
+      toast.success("Meta conectado correctamente. Revisa el estado en Permisos Meta.");
+    } else if (metaCallback === "denied") {
+      toast.warning("Cancelaste el diálogo de Meta: no se otorgaron permisos nuevos.");
     } else if (metaCallback === "error") {
       toast.error("No se pudo conectar con Meta. Intenta de nuevo.");
     }
@@ -115,7 +117,9 @@ export default function MetaHubView({ metaCallback }: { metaCallback?: string })
                 <span className="font-medium text-gray-800 dark:text-white/90">{connection.appId}</span>
               </p>
               <p className="mt-2 text-theme-sm text-gray-500 dark:text-gray-400">
-                Conecta tu cuenta de Meta para recibir leads de Facebook/Instagram Lead Ads.
+                Conecta tu cuenta de Meta para recibir leads de Facebook/Instagram Lead Ads. Se solicitan de una vez
+                todos los permisos que usa el CRM; acepta todos y selecciona tus páginas, cuentas publicitarias,
+                portafolio y, si usas WhatsApp, tus cuentas de WhatsApp.
               </p>
             </div>
             <form action={connectMetaAction}>

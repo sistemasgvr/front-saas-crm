@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Checkbox from "@/src/components/form/input/Checkbox";
@@ -134,12 +135,12 @@ export default function LoginForm() {
                   Términos
                 </a>
                 {" · "}
-                <a
+                <Link
                   href="/eliminacion-datos"
                   className="hover:text-brand-600 dark:hover:text-brand-400"
                 >
                   Eliminación de datos
-                </a>
+                </Link>
               </p>
             </fieldset>
           </form>

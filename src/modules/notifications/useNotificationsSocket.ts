@@ -17,7 +17,6 @@ import {
   marcarNotificacionVistaReciente,
   mostrarNotificacionSistema,
   notificacionYaVistaReciente,
-  permisoNotificacionesSistema,
   tagNotificacionWhatsapp,
   useNotificacionesSistemaPermiso,
 } from "./system-notifications";
@@ -93,6 +92,14 @@ function invalidarCachesNotificacion(
       ? payload.whatsappConversacionId
       : null;
   const esWhatsapp = Boolean(conversacionId) || tipo === "WHATSAPP_MENSAJE";
+
+  // Avisos de cuenta del webhook (coexistencia, plantillas, nombre…): la
+  // tarjeta de la línea y las plantillas muestran el estado nuevo al instante.
+  if (tipo === "WHATSAPP_CUENTA") {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappConexiones });
+    void queryClient.invalidateQueries({ queryKey: ["whatsapp", "connection-health"] });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappTemplates });
+  }
 
   if (!esWhatsapp) return;
 

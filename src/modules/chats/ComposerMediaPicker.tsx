@@ -103,11 +103,11 @@ export function ComposerMediaPicker({
     };
   }, [abierto, tab]);
 
+  // Cerrado: sin posición (ajuste durante el render); abierto: se mide el ancla.
+  if (!abierto && pos !== null) setPos(null);
+
   useLayoutEffect(() => {
-    if (!abierto) {
-      setPos(null);
-      return;
-    }
+    if (!abierto) return;
     const anchor = anchorRef.current;
     if (!anchor) return;
     const rect = anchor.getBoundingClientRect();

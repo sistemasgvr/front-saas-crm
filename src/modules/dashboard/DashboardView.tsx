@@ -183,14 +183,19 @@ export default function DashboardView({
     queryFn: () => getDashboardEmbudoKpis(filtro),
   });
 
-  const campanasData: CampanaFiltroOpcion[] = campanasQuery.data ?? [];
-  const conjuntosData: ConjuntoAnuncioFiltroOpcion[] =
-    conjuntosQuery.data ?? [];
-  const anunciosData: AnuncioFiltroOpcion[] = anunciosQuery.data ?? [];
-  const cuentasData: ReferenciaNombrada[] = cuentasQuery.data ?? [];
-  const asignablesData: ReferenciaNombrada[] = asignablesQuery.data ?? [];
-  const inmueblesFiltroData: InmuebleFiltroOption[] =
-    inmueblesFiltroQuery.data ?? [];
+  // useMemo: el `?? []` crearía un array nuevo por render y rompería los memos que dependen de estos datos.
+  const campanasData = useMemo<CampanaFiltroOpcion[]>(() => campanasQuery.data ?? [], [campanasQuery.data]);
+  const conjuntosData = useMemo<ConjuntoAnuncioFiltroOpcion[]>(
+    () => conjuntosQuery.data ?? [],
+    [conjuntosQuery.data],
+  );
+  const anunciosData = useMemo<AnuncioFiltroOpcion[]>(() => anunciosQuery.data ?? [], [anunciosQuery.data]);
+  const cuentasData = useMemo<ReferenciaNombrada[]>(() => cuentasQuery.data ?? [], [cuentasQuery.data]);
+  const asignablesData = useMemo<ReferenciaNombrada[]>(() => asignablesQuery.data ?? [], [asignablesQuery.data]);
+  const inmueblesFiltroData = useMemo<InmuebleFiltroOption[]>(
+    () => inmueblesFiltroQuery.data ?? [],
+    [inmueblesFiltroQuery.data],
+  );
   const seriesData: DashboardSeries | undefined = seriesQuery.data;
   const adsSeriesData: SeriesPublicitarias | undefined = adsSeriesQuery.data;
   const embudoData: EmbudoKpis | undefined = embudoQuery.data;

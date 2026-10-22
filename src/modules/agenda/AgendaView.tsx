@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
@@ -77,6 +77,17 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 };
 
 /** Rango del mes calendario en America/Lima → ISO UTC reales. */
+const MQ_MOVIL = "(max-width: 639px)";
+
+function suscribirMovil(onChange: () => void) {
+  const mq = window.matchMedia(MQ_MOVIL);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+
+const leerMovil = () => window.matchMedia(MQ_MOVIL).matches;
+const leerMovilServidor = () => null;
+
 function rangoInicial(cuandoIso?: string | null): {
   desde: string;
   hasta: string;
@@ -209,28 +220,24 @@ export default function AgendaView({
   const [asignadoFiltro, setAsignadoFiltro] = useState(
     esAdmin ? "todos" : "mios",
   );
-  const [vistaInicial, setVistaInicial] = useState("timeGridWeek");
-  const [vistaActual, setVistaActual] = useState("timeGridWeek");
-  const [esMovil, setEsMovil] = useState(false);
-  const [calendarioListo, setCalendarioListo] = useState(false);
+  // null en el servidor: el calendario espera a conocer el ancho real.
+  const movilCliente = useSyncExternalStore<boolean | null>(
+    suscribirMovil,
+    leerMovil,
+    leerMovilServidor,
+  );
+  const esMovil = movilCliente === true;
+  const calendarioListo = movilCliente !== null;
+  // Vista que eligió el usuario (o FullCalendar al montar); antes de eso,
+  // la predeterminada según el ancho.
+  const [vistaElegida, setVistaActual] = useState<string | null>(null);
+  const vistaActual = vistaElegida ?? (esMovil ? "listWeek" : "timeGridWeek");
   const [itemSeleccionado, setItemSeleccionado] =
     useState<AgendaItemRow | null>(null);
   const [crearAbierto, setCrearAbierto] = useState(false);
   const [slotInicial, setSlotInicial] = useState<string | null>(null);
   const [deepLinkAplicado, setDeepLinkAplicado] = useState(false);
   const [deepLinkRangoAjustado, setDeepLinkRangoAjustado] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 639px)");
-    const sync = () => setEsMovil(mq.matches);
-    setEsMovil(mq.matches);
-    const vista = mq.matches ? "listWeek" : "timeGridWeek";
-    setVistaInicial(vista);
-    setVistaActual(vista);
-    setCalendarioListo(true);
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
 
   const asignablesQuery = useQuery({
     queryKey: queryKeys.leadsAsignables,
@@ -291,11 +298,15 @@ export default function AgendaView({
   );
 
   // Abrir detalle si venimos de una notificación (?visitaId= / ?actividadId=).
-  useEffect(() => {
-    if (deepLinkAplicado || !tieneDeepLink) return;
-    if (agendaQuery.isLoading || agendaQuery.isFetching) return;
-    const items = agendaQuery.data ?? [];
-    const item = items.find((row) =>
+  // Ajuste durante el render (no efecto): cada rama marca deepLink*, así que
+  // converge en una sola pasada por estado de la consulta.
+  if (
+    tieneDeepLink &&
+    !deepLinkAplicado &&
+    !agendaQuery.isLoading &&
+    !agendaQuery.isFetching
+  ) {
+    const item = (agendaQuery.data ?? []).find((row) =>
       deepLinkVisitaId
         ? row.origen === "visita" && row.id === deepLinkVisitaId
         : row.origen === "actividad" && row.id === deepLinkActividadId,
@@ -303,28 +314,15 @@ export default function AgendaView({
     if (item) {
       setItemSeleccionado(item);
       setDeepLinkAplicado(true);
-      return;
-    }
-    if (!deepLinkRangoAjustado && deepLinkCuando) {
+    } else if (!deepLinkRangoAjustado && deepLinkCuando) {
       setRango(rangoInicial(deepLinkCuando));
       if (esAdmin) setAsignadoFiltro("todos");
       setDeepLinkRangoAjustado(true);
-      return;
+    } else {
+      // Ya ajustamos rango y no está: no insistir (fuera de permisos / cancelado).
+      setDeepLinkAplicado(true);
     }
-    // Ya ajustamos rango y no está: no insistir (fuera de permisos / cancelado).
-    setDeepLinkAplicado(true);
-  }, [
-    agendaQuery.data,
-    agendaQuery.isFetching,
-    agendaQuery.isLoading,
-    deepLinkActividadId,
-    deepLinkAplicado,
-    deepLinkCuando,
-    deepLinkRangoAjustado,
-    deepLinkVisitaId,
-    esAdmin,
-    tieneDeepLink,
-  ]);
+  }
 
   const opcionesAsignado = useMemo(() => {
     const base = [
@@ -435,7 +433,7 @@ export default function AgendaView({
               ]}
               locale={esLocale}
               timeZone={ZONA_AGENDA}
-              initialView={vistaActual || vistaInicial}
+              initialView={vistaActual}
               initialDate={
                 deepLinkCuando && !Number.isNaN(Date.parse(deepLinkCuando))
                   ? deepLinkCuando

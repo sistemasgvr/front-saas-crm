@@ -76,7 +76,6 @@ export async function saveModuleGroupAction(
     descripcion: string;
   },
 ) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { codigo, ...fields } = values;
   try {
     await apiFetch(id ? `/admin/module-groups/${id}` : "/admin/module-groups", {

@@ -156,7 +156,6 @@ export function ModuleFormModal({
   const mutation = useAppMutation({
     mutationFn: async (values: CreateModuleValues) => {
       if (modulo) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { codigo, ...rest } = values;
         await updateModuleAction(modulo.id, toFormData(rest));
       } else {

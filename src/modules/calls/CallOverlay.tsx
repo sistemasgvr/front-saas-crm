@@ -97,17 +97,22 @@ export default function CallOverlay() {
     detenerRingLlamada();
   }, [fase]);
 
+  // Sin llamada activa el contador vuelve a 0 (ajuste durante el render).
+  const llamadaEnCurso = fase === "active" && Boolean(active?.startedAt);
+  if (!llamadaEnCurso && elapsed !== 0) setElapsed(0);
+
   useEffect(() => {
-    if (fase !== "active" || !active?.startedAt) {
-      setElapsed(0);
-      return;
-    }
+    if (fase !== "active" || !active?.startedAt) return;
     const tick = () => {
       setElapsed(Math.floor((Date.now() - (active.startedAt ?? Date.now())) / 1000));
     };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
+    // Primer tick en la siguiente vuelta del event loop y luego cada segundo.
+    const primero = window.setTimeout(tick, 0);
+    const id = window.setInterval(tick, 1000);
+    return () => {
+      window.clearTimeout(primero);
+      window.clearInterval(id);
+    };
   }, [fase, active?.startedAt]);
 
   useEffect(() => {

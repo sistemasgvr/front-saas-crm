@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEsCliente } from "@/src/components/ui/use-es-cliente";
 import { createPortal } from "react-dom";
 import { Icon } from "@/src/components/ui/Icon";
 import {
@@ -33,7 +34,7 @@ export default function SelectSearch({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [portalReady, setPortalReady] = useState(false);
+  const portalReady = useEsCliente();
   const { visible, entered } = useOpenTransition(open);
   const [q, setQ] = useState("");
   const [menuStyle, setMenuStyle] = useState({ top: 0, left: 0, width: 0 });
@@ -46,10 +47,6 @@ export default function SelectSearch({
       option.label.toLowerCase().includes(term),
     );
   }, [options, q]);
-
-  useEffect(() => {
-    setPortalReady(true);
-  }, []);
 
   const updateMenuPosition = () => {
     const trigger = triggerRef.current;

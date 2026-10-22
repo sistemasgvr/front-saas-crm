@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
 import Modal from "@/src/components/ui/modal/Modal";
@@ -61,11 +61,23 @@ export default function ChatLeadInmuebleChip({
     ],
   });
 
-  useEffect(() => {
-    if (!modalAbierto) return;
-    setInmuebleId(inmuebleInteres?.id ?? "");
-    setReferencia(inmuebleInteres ? etiquetaInmueble(inmuebleInteres) : "");
-  }, [modalAbierto, inmuebleInteres]);
+  // Al abrir (o si cambia el inmueble mientras está abierto) el formulario
+  // parte del inmueble vigente — ajuste durante el render, no en efecto.
+  const [aperturaPrevia, setAperturaPrevia] = useState<{
+    abierto: boolean;
+    inmueble: typeof inmuebleInteres;
+  } | null>(null);
+  if (
+    aperturaPrevia === null ||
+    aperturaPrevia.abierto !== modalAbierto ||
+    aperturaPrevia.inmueble !== inmuebleInteres
+  ) {
+    setAperturaPrevia({ abierto: modalAbierto, inmueble: inmuebleInteres });
+    if (modalAbierto) {
+      setInmuebleId(inmuebleInteres?.id ?? "");
+      setReferencia(inmuebleInteres ? etiquetaInmueble(inmuebleInteres) : "");
+    }
+  }
 
   function cerrar() {
     if (guardar.isPending) return;

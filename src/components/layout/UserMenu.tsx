@@ -24,7 +24,8 @@ export default function UserMenu({ nombre, email, profileHref, settingsHref }: U
     mutationFn: async () => {
       await desactivarSuscripcionPushLocal({ removeOnServer: unsubscribePushAction });
       await logoutAction();
-      window.location.assign("/login");
+      // Recarga completa a propósito: limpia cachés y sockets de la sesión.
+      window.location.assign(new URL("/login", window.location.origin));
       await new Promise<never>(() => {});
     },
   });

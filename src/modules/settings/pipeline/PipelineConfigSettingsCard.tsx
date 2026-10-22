@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import Button from "@/src/components/ui/button/Button";
@@ -309,12 +309,15 @@ export default function PipelineConfigSettingsCard() {
   const [tipoActivo, setTipoActivo] = useState<TipoEmbudo>("COMPRA");
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!configQuery.data) return;
+  // Cada respuesta nueva del servidor reinicia el borrador (ajuste durante el
+  // render, no en efecto). Arranca en undefined para tomar también la caché.
+  const [datosAplicados, setDatosAplicados] = useState<typeof configQuery.data>(undefined);
+  if (configQuery.data && configQuery.data !== datosAplicados) {
+    setDatosAplicados(configQuery.data);
     const fuente = configQuery.data.config ?? configQuery.data.defaults;
     setDraft(clonarConfig(fuente));
     setErrorLocal(null);
-  }, [configQuery.data]);
+  }
 
   const preview = useMemo(() => {
     if (!configQuery.data) return undefined;

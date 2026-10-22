@@ -185,7 +185,7 @@ function VisitaCard({
       </div>
       {visita.feedback && (
         <p className="mt-2 text-theme-xs italic text-gray-500 dark:text-gray-400">
-          "{visita.feedback}"
+          &ldquo;{visita.feedback}&rdquo;
         </p>
       )}
     </li>

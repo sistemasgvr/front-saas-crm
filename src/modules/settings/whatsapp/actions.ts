@@ -60,6 +60,8 @@ export interface ResultadoSaludWebhookWhatsapp {
   ultimoMensajeEntranteEn: string | null;
   camposSuscritos: string[];
   camposFaltantes: string[];
+  /** Opcionales que el CRM ya procesa (alertas, plantillas, preferencias…). */
+  camposRecomendadosFaltantes: string[];
   webhookUltimoError: string | null;
 }
 

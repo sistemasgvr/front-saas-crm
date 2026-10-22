@@ -120,13 +120,19 @@ export function ChatBusquedaPanel({
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLElement>(null);
 
-  useEffect(() => {
+  // Al cerrar se limpia la búsqueda (ajuste durante el render, no en efecto).
+  const [abiertoPrevio, setAbiertoPrevio] = useState(open);
+  if (open !== abiertoPrevio) {
+    setAbiertoPrevio(open);
     if (!open) {
       setConsulta("");
       setFecha(null);
       setCalendarioAbierto(false);
-      return;
     }
+  }
+
+  useEffect(() => {
+    if (!open) return;
     const t = window.setTimeout(() => inputRef.current?.focus(), 60);
     return () => window.clearTimeout(t);
   }, [open]);

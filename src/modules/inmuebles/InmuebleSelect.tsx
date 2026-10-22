@@ -31,15 +31,13 @@ export default function InmuebleSelect({
     queryFn: getInmueblesFiltro,
   });
 
-  const filtroData: InmuebleFiltroOption[] = filtroQuery.data ?? [];
-
   const options = useMemo(
     () =>
-      filtroData.map((o) => ({
+      (filtroQuery.data ?? []).map((o) => ({
         value: o.id,
         label: etiquetaInmuebleFiltro(o),
       })),
-    [filtroData],
+    [filtroQuery.data],
   );
 
   return (

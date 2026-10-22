@@ -1032,7 +1032,7 @@ function Burbuja({
 }) {
   const [selectorAbierto, setSelectorAbierto] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
-  const [esFavoritoSticker, setEsFavoritoSticker] = useState(false);
+  const [favoritoCargado, setEsFavoritoSticker] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const chevronRef = useRef<HTMLButtonElement>(null);
   const esSaliente = mensaje.direccion === "saliente";
@@ -1042,12 +1042,11 @@ function Burbuja({
   );
   const puedeFavorito =
     !eliminado && mensaje.tipo === "sticker" && mensaje.tieneMedia;
+  // Derivado: si deja de ser sticker con media, nunca se muestra como favorito.
+  const esFavoritoSticker = puedeFavorito && favoritoCargado;
 
   useEffect(() => {
-    if (!puedeFavorito) {
-      setEsFavoritoSticker(false);
-      return;
-    }
+    if (!puedeFavorito) return;
     let cancelado = false;
     void esFavorito(mensaje.id).then((v) => {
       if (!cancelado) setEsFavoritoSticker(v);
@@ -1451,7 +1450,10 @@ export default function ChatDetailView({
   /** Borrador = store Zustand (única fuente de verdad). Sin estado local paralelo. */
   const texto = useBorradorChat(id);
   const textoRef = useRef(texto);
-  textoRef.current = texto;
+  // Copia para handlers/rAF; se actualiza tras el render (no durante).
+  useLayoutEffect(() => {
+    textoRef.current = texto;
+  }, [texto]);
   const [plantillaSeleccionada, setPlantillaSeleccionada] = useState("");
   const [valoresVariables, setValoresVariables] = useState<
     Record<string, string>
@@ -1536,14 +1538,9 @@ export default function ChatDetailView({
     }
   }
 
-  // Al cambiar de chat solo reseteamos UI auxiliar — el texto vive en el store.
-  useEffect(() => {
-    setRespondiendoA(null);
-    setArchivo(null);
-    setErrorArchivo(null);
-    setMenuAdjuntarAbierto(false);
-    setPickerEmojiAbierto(false);
-  }, [id]);
+  // Al cambiar de chat la página remonta este componente (key={id} en
+  // app/(app)/chats/[id]/page.tsx): la UI auxiliar ya arranca limpia y el
+  // texto vive en el store.
 
   /**
    * Red de seguridad al salir del chat: si el composer está vacío en el DOM,
@@ -1551,8 +1548,9 @@ export default function ChatDetailView({
    */
   useEffect(() => {
     const conversacionId = id;
+    const textarea = textareaRef.current;
     return () => {
-      const valorDom = textareaRef.current?.value;
+      const valorDom = textarea?.value;
       if (valorDom !== undefined && !valorDom.trim()) {
         clearBorrador(conversacionId);
       }

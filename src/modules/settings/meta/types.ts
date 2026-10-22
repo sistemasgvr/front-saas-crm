@@ -84,9 +84,15 @@ export interface MetaCuentaPublicitariaPerfil extends MetaCuentaPublicitaria {
   cpl: number | null;
 }
 
+/** Grupos de la matriz de permisos (back: meta-permisos-matriz.ts). */
+export type GrupoPermisoMeta = "paginas_leads" | "publicidad" | "negocio" | "whatsapp" | "opcional";
+
 export interface FeaturePermisoEstado {
   id: string;
   label: string;
+  descripcion: string;
+  grupo: GrupoPermisoMeta;
+  /** nucleo = lo usa una funcionalidad actual del CRM (siempre se solicita). */
   tipo: "nucleo" | "optin";
   deseada: boolean;
   estado: "ok" | "falta";
@@ -98,6 +104,10 @@ export interface FeaturePermisoEstado {
 export interface SaludPermisosMeta {
   isValid: boolean;
   scopesOtorgados: string[];
+  /** Todo lo que pide «Solicitar permisos». */
+  scopesSolicitados: string[];
+  /** Scopes de funcionalidades actuales que el token aún no tiene. */
+  scopesRequeridosFaltantes: string[];
   features: FeaturePermisoEstado[];
   tieneFaltantesDeseados: boolean;
   notaAdvancedAccess: string;

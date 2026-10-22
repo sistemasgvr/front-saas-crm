@@ -7,16 +7,20 @@ export function useOpenTransition(open: boolean, durationMs = 160) {
   const [visible, setVisible] = useState(open);
   const [entered, setEntered] = useState(false);
 
+  // Ajuste durante el render (patrón de React para estado derivado de props):
+  // abrir monta el contenido de inmediato; cerrar quita "entered" para que
+  // arranque la animación de salida.
+  if (open && !visible) setVisible(true);
+  if (!open && entered) setEntered(false);
+
   useEffect(() => {
     if (open) {
-      setVisible(true);
       const id = requestAnimationFrame(() => {
         requestAnimationFrame(() => setEntered(true));
       });
       return () => cancelAnimationFrame(id);
     }
 
-    setEntered(false);
     const timer = window.setTimeout(() => setVisible(false), durationMs);
     return () => window.clearTimeout(timer);
   }, [open, durationMs]);

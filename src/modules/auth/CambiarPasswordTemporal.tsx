@@ -21,7 +21,8 @@ export default function CambiarPasswordTemporal() {
     startTransition(async () => {
       try {
         await changePasswordAction(f);
-        window.location.assign("/dashboard");
+        // Recarga completa: la sesión nueva debe leerse desde cero.
+        window.location.assign(new URL("/dashboard", window.location.origin));
       } catch (e) {
         setError(
           e instanceof Error ? e.message : "No se pudo cambiar la contraseña",
@@ -95,7 +96,7 @@ export default function CambiarPasswordTemporal() {
           onClick={() =>
             startTransition(async () => {
               await logoutAction();
-              window.location.assign("/login");
+              window.location.assign(new URL("/login", window.location.origin));
             })
           }
         >

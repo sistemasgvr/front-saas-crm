@@ -1,4 +1,4 @@
-/* global self, clients, registration */
+/* global self */
 /**
  * Service Worker del CRM — Web Push + click en notificación.
  * Asset version: 20260910gvr3 (bump: agrupar WhatsApp por chat + dismiss).

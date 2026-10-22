@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Button from "@/src/components/ui/button/Button";
 import Input from "@/src/components/form/input/InputField";
 import Label from "@/src/components/form/Label";
@@ -40,13 +40,27 @@ export default function CrearLeadDesdeChatModal({
   const [email, setEmail] = useState("");
   const [tipoLead, setTipoLead] = useState<TipoLeadInmobiliaria | "">("");
 
-  useEffect(() => {
-    if (!open) return;
-    setNombre(defaults.nombre);
-    setTelefono(defaults.telefono);
-    setEmail("");
-    setTipoLead("");
-  }, [open, defaults.nombre, defaults.telefono]);
+  // Cada apertura (o cambio de datos sugeridos con el modal abierto) parte de
+  // los valores por defecto — ajuste durante el render, no en efecto.
+  const [aperturaPrevia, setAperturaPrevia] = useState<{
+    open: boolean;
+    nombre: string;
+    telefono: string;
+  } | null>(null);
+  if (
+    aperturaPrevia === null ||
+    aperturaPrevia.open !== open ||
+    aperturaPrevia.nombre !== defaults.nombre ||
+    aperturaPrevia.telefono !== defaults.telefono
+  ) {
+    setAperturaPrevia({ open, nombre: defaults.nombre, telefono: defaults.telefono });
+    if (open) {
+      setNombre(defaults.nombre);
+      setTelefono(defaults.telefono);
+      setEmail("");
+      setTipoLead("");
+    }
+  }
 
   const puedeGuardar = nombre.trim().length > 0;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Button from "@/src/components/ui/button/Button";
 import Input from "@/src/components/form/input/InputField";
 import { Icon } from "@/src/components/ui/Icon";
@@ -24,12 +24,6 @@ export default function RenombrarInline({
   const [valor, setValor] = useState(nombreActual);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    setValor(nombreActual);
-    setError(null);
-  }, [open, nombreActual]);
 
   async function guardar() {
     const nombre = valor.trim();
@@ -58,7 +52,12 @@ export default function RenombrarInline({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          // Cada apertura parte del nombre vigente y sin errores previos.
+          setValor(nombreActual);
+          setError(null);
+          setOpen(true);
+        }}
         className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-white/10 dark:hover:text-gray-200"
         aria-label={ariaLabel}
         title={ariaLabel}

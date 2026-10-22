@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEsCliente } from "@/src/components/ui/use-es-cliente";
 import { createPortal } from "react-dom";
 import Checkbox from "@/src/components/form/input/Checkbox";
 import Input from "@/src/components/form/input/InputField";
@@ -50,7 +51,7 @@ export default function DynamicFilters({ fields, values, onChange }: DynamicFilt
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [portalReady, setPortalReady] = useState(false);
+  const portalReady = useEsCliente();
   const { visible, entered } = useOpenTransition(open);
   const [panelStyle, setPanelStyle] = useState({
     top: 0,
@@ -59,10 +60,6 @@ export default function DynamicFilters({ fields, values, onChange }: DynamicFilt
   });
   const activeCount = countActiveFilters(values);
   const rows = useMemo(() => agruparCampos(fields), [fields]);
-
-  useEffect(() => {
-    setPortalReady(true);
-  }, []);
 
   const updatePanelPosition = useCallback(() => {
     const trigger = rootRef.current;
