@@ -7,6 +7,7 @@ import Badge, { StatusBadge } from "@/src/components/ui/badge/Badge";
 import { Icon } from "@/src/components/ui/Icon";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import { unwrapAction } from "@/src/lib/action-result";
 import { queryKeys } from "@/src/lib/query/keys";
 import AssignOrgForm from "./AssignOrgForm";
 import { toggleUserStatusAction } from "./actions";
@@ -36,7 +37,7 @@ export default function UserDetailView({ id }: { id: string }) {
     <div className="space-y-6">
       <PageHeader title={fullName} description={user.email} backHref="/admin/users" backLabel="Volver a usuarios">
         <ActionButton
-          action={() => toggleUserStatusAction(user.id, nextEstado)}
+          action={async () => unwrapAction(await toggleUserStatusAction(user.id, nextEstado))}
           successMessage={isActive ? "Usuario desactivado" : "Usuario activado"}
           loadingText={isActive ? "Desactivando…" : "Activando…"}
           startIcon={<Icon name={isActive ? "mdi:account-off-outline" : "mdi:account-check-outline"} size={18} />}

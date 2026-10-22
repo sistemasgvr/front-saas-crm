@@ -1,16 +1,13 @@
 "use server";
 
-import { apiFetch, ApiError } from "@/src/lib/api";
+import { apiFetch } from "@/src/lib/api";
+import { actionErr, actionOk, type ActionResult } from "@/src/lib/action-result";
 
 function emptyToUndefined(value: string) {
   return value.trim() === "" ? undefined : value.trim();
 }
 
-function fail(error: unknown, fallback: string): never {
-  throw new Error(error instanceof ApiError ? error.message : fallback);
-}
-
-export async function createUserAction(formData: FormData) {
+export async function createUserAction(formData: FormData): Promise<ActionResult> {
   const organizacionId = String(formData.get("organizacionId") ?? "").trim();
   const rol = String(formData.get("rol") ?? "").trim();
   try {
@@ -26,23 +23,25 @@ export async function createUserAction(formData: FormData) {
         asignacion: organizacionId && rol ? { organizacionId, rol } : undefined,
       }),
     });
+    return actionOk();
   } catch (error) {
-    fail(error, "No se pudo crear el usuario");
+    return actionErr(error, "No se pudo crear el usuario");
   }
 }
 
-export async function toggleUserStatusAction(id: string, estado: 0 | 1) {
+export async function toggleUserStatusAction(id: string, estado: 0 | 1): Promise<ActionResult> {
   try {
     await apiFetch(`/admin/users/${id}/estado`, {
       method: "PATCH",
       body: JSON.stringify({ estado }),
     });
+    return actionOk();
   } catch (error) {
-    fail(error, "No se pudo actualizar el estado");
+    return actionErr(error, "No se pudo actualizar el estado");
   }
 }
 
-export async function assignUserOrgAction(userId: string, formData: FormData) {
+export async function assignUserOrgAction(userId: string, formData: FormData): Promise<ActionResult> {
   try {
     await apiFetch(`/admin/users/${userId}/organizaciones`, {
       method: "POST",
@@ -51,7 +50,8 @@ export async function assignUserOrgAction(userId: string, formData: FormData) {
         rol: String(formData.get("rol") ?? ""),
       }),
     });
+    return actionOk();
   } catch (error) {
-    fail(error, "No se pudo asignar");
+    return actionErr(error, "No se pudo asignar");
   }
 }

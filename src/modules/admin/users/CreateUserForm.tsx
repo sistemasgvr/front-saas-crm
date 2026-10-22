@@ -10,6 +10,7 @@ import Checkbox from "@/src/components/form/input/Checkbox";
 import Select from "@/src/components/form/Select";
 import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
+import { unwrapAction } from "@/src/lib/action-result";
 import { toFormData } from "@/src/lib/form-data";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
@@ -40,7 +41,7 @@ export default function CreateUserForm({ organizaciones }: { organizaciones: Org
   });
 
   const mutation = useAppMutation({
-    mutationFn: (values: CreateUserValues) => createUserAction(toFormData(values)),
+    mutationFn: async (values: CreateUserValues) => unwrapAction(await createUserAction(toFormData(values))),
     successMessage: "Usuario creado",
     invalidateKeys: [queryKeys.adminUsersAll],
     redirectTo: "/admin/users",

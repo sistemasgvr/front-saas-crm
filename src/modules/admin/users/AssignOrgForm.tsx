@@ -6,6 +6,7 @@ import Label from "@/src/components/form/Label";
 import Select from "@/src/components/form/Select";
 import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
+import { unwrapAction } from "@/src/lib/action-result";
 import { toFormData } from "@/src/lib/form-data";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
@@ -37,7 +38,8 @@ export default function AssignOrgForm({
   });
 
   const mutation = useAppMutation({
-    mutationFn: (values: AssignOrgValues) => assignUserOrgAction(userId, toFormData(values)),
+    mutationFn: async (values: AssignOrgValues) =>
+      unwrapAction(await assignUserOrgAction(userId, toFormData(values))),
     successMessage: "Usuario asignado a la empresa",
     invalidateKeys: [queryKeys.adminUser(userId), queryKeys.adminUsersAll],
   });
