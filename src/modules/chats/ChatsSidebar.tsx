@@ -1,5 +1,6 @@
 "use client";
 
+import AsignadoInactivoAviso from "@/src/components/ui/AsignadoInactivoAviso";
 import Pagination from "@/src/components/ui/Pagination";
 import Link from "next/link";
 import { useDeferredValue, useState } from "react";
@@ -176,6 +177,7 @@ export default function ChatsSidebar({ rol: _rol }: { rol: Rol }) {
                             Libre
                           </span>
                         ) : null}
+                        <AsignadoInactivoAviso asignado={chat.lead?.asignado} />
                         {chat.lead?.origen ? (
                           <OrigenLeadBadge origen={chat.lead.origen} soloIcono className="shrink-0" />
                         ) : null}

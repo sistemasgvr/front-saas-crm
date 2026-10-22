@@ -1,5 +1,6 @@
 "use client";
 
+import AsignadoInactivoAviso from "@/src/components/ui/AsignadoInactivoAviso";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -82,7 +83,10 @@ function LeadMobileCard({
         </div>
         <div>
           {lead.asignado ? (
-            <CeldaConIcono icon="mdi:account-check-outline" value={lead.asignado.nombre} />
+            <span className="inline-flex items-center gap-1">
+              <CeldaConIcono icon="mdi:account-check-outline" value={lead.asignado.nombre} />
+              <AsignadoInactivoAviso asignado={lead.asignado} />
+            </span>
           ) : (
             <span className="inline-flex items-center gap-1.5 text-warning-500">
               <Icon name="mdi:account-question-outline" size={16} className="shrink-0" />
@@ -441,7 +445,10 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
                     </TableCell>
                     <TableCell className={`${tdClass} min-w-0`}>
                       {lead.asignado ? (
-                        <CeldaConIcono icon="mdi:account-check-outline" value={lead.asignado.nombre} />
+                        <span className="inline-flex items-center gap-1">
+              <CeldaConIcono icon="mdi:account-check-outline" value={lead.asignado.nombre} />
+              <AsignadoInactivoAviso asignado={lead.asignado} />
+            </span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 text-theme-sm text-warning-500">
                           <Icon name="mdi:account-question-outline" size={16} className="shrink-0" />

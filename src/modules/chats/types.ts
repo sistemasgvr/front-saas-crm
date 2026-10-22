@@ -1,4 +1,5 @@
 export interface ReferenciaNombrada {
+  activo?: boolean;
   id: string;
   nombre: string;
 }

@@ -11,6 +11,9 @@ interface HelpTooltipProps {
   placement?: "top" | "bottom";
   /** Alinea el globo al icono. `end` evita que se corte en el borde derecho. */
   align?: "center" | "end";
+  iconName?: string;
+  iconClassName?: string;
+  triggerAsSpan?: boolean;
 }
 
 /**
@@ -23,7 +26,11 @@ export default function HelpTooltip({
   iconSize = 16,
   placement = "top",
   align = "center",
+  iconName = "mdi:help-circle-outline",
+  iconClassName,
+  triggerAsSpan = false,
 }: HelpTooltipProps) {
+  const Trigger = triggerAsSpan ? "span" : "button";
   const verticalClasses =
     placement === "bottom" ? "top-full mt-2" : "bottom-full mb-2";
   const horizontalClasses =
@@ -37,15 +44,18 @@ export default function HelpTooltip({
 
   return (
     <span className={`group/help relative inline-flex align-middle ${className}`}>
-      <button
-        type="button"
+      <Trigger
+        type={triggerAsSpan ? undefined : "button"}
         tabIndex={0}
         aria-label={label}
         className="inline-flex h-5 w-5 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 dark:text-gray-500 dark:hover:bg-white/10 dark:hover:text-gray-300"
-        onClick={(e) => e.preventDefault()}
+        onClick={(e) => {
+          e.preventDefault();
+          if (triggerAsSpan) e.stopPropagation();
+        }}
       >
-        <Icon name="mdi:help-circle-outline" size={iconSize} />
-      </button>
+        <Icon name={iconName} size={iconSize} className={iconClassName} />
+      </Trigger>
 
       <span
         role="tooltip"

@@ -1,5 +1,6 @@
 "use client";
 
+import AsignadoInactivoAviso from "@/src/components/ui/AsignadoInactivoAviso";
 import Pagination from "@/src/components/ui/Pagination";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -207,6 +208,7 @@ function LeadCardBody({
           <span className="truncate">
             {lead.asignado?.nombre ?? "Sin asignar"}
           </span>
+          <AsignadoInactivoAviso asignado={lead.asignado} />
         </p>
         {interactive && onVerDetalle ? (
           <div className="flex shrink-0 items-center gap-0.5">

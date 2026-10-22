@@ -1,5 +1,6 @@
 "use client";
 
+import AsignadoInactivoAviso from "@/src/components/ui/AsignadoInactivoAviso";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -299,6 +300,7 @@ export default function LeadDetailView({
                 />
                 Asignado a{" "}
                 <span className="font-medium">{lead.asignado.nombre}</span>
+                    <AsignadoInactivoAviso asignado={lead.asignado} />
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 text-theme-sm text-warning-500">

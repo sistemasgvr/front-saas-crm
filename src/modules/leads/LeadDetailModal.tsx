@@ -1,5 +1,6 @@
 "use client";
 
+import AsignadoInactivoAviso from "@/src/components/ui/AsignadoInactivoAviso";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -180,6 +181,7 @@ export default function LeadDetailModal({
                     />
                     Asignado a{" "}
                     <span className="font-medium">{lead.asignado.nombre}</span>
+                    <AsignadoInactivoAviso asignado={lead.asignado} />
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 text-theme-xs text-warning-500">

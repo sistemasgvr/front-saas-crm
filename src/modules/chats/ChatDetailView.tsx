@@ -1,5 +1,6 @@
 "use client";
 
+import AsignadoInactivoAviso from "@/src/components/ui/AsignadoInactivoAviso";
 import { mergeMessageHistory } from "./merge-message-history";
 import { getMensajesAnteriores } from "./queries";
 import Pagination from "@/src/components/ui/Pagination";
@@ -2592,11 +2593,14 @@ export default function ChatDetailView({
                   {subtitulo ? `${subtitulo} · ` : ""}Bloqueado
                 </p>
               ) : chat.lead ? (
-                <p className="truncate text-theme-xs text-gray-500 dark:text-gray-400">
-                  {subtitulo ?? "WhatsApp"}
-                  {chat.lead.asignado
-                    ? ` · ${chat.lead.asignado.nombre}`
-                    : " · Sin asignar"}
+                <p className="flex items-center gap-1 text-theme-xs text-gray-500 dark:text-gray-400">
+                  <span className="truncate">
+                    {subtitulo ?? "WhatsApp"}
+                    {chat.lead.asignado
+                      ? ` · ${chat.lead.asignado.nombre}`
+                      : " · Sin asignar"}
+                  </span>
+                  <AsignadoInactivoAviso asignado={chat.lead.asignado} />
                 </p>
               ) : (
                 <p className="truncate text-theme-xs text-warning-500">

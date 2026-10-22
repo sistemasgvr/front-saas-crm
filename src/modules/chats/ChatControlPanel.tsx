@@ -566,8 +566,8 @@ export default function ChatControlPanel({
           {modal === "transferir" && (
             <>
               <p>
-                El asesor elegido continuará la atención humana. La asignación
-                del lead se conserva.
+                El asesor elegido continuará la atención humana. El lead
+                también se reasignará a ese asesor.
               </p>
               {asesores.isLoading ? (
                 <p role="status">Consultando asesores…</p>
