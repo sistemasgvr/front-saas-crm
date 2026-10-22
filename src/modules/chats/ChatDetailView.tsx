@@ -2736,7 +2736,7 @@ export default function ChatDetailView({
                             chat.bloqueado ? "desbloquear" : "bloquear",
                           );
                         }}
-                        className="flex items-center gap-2.5 px-3 py-2.5 text-theme-sm text-error-600 hover:bg-gray-100 dark:text-error-400 dark:hover:bg-white/5"
+                        className="flex items-center gap-2.5 px-3 py-2.5 text-theme-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/5"
                       >
                         <Icon
                           name={
@@ -2745,6 +2745,7 @@ export default function ChatDetailView({
                               : "mdi:block-helper"
                           }
                           size={18}
+                          className="text-gray-500 dark:text-gray-400"
                         />
                         {chat.bloqueado ? "Desbloquear" : "Bloquear"}
                       </DropdownItem>
@@ -2841,11 +2842,7 @@ export default function ChatDetailView({
                     chat.bloqueado ? "desbloquear" : "bloquear",
                   )
                 }
-                className={`hidden h-10 w-10 items-center justify-center rounded-full transition-colors disabled:opacity-50 xl:flex ${
-                  chat.bloqueado
-                    ? "text-success-600 hover:bg-success-500/10 dark:text-success-400"
-                    : "text-error-500 hover:bg-error-500/10 dark:text-error-400"
-                }`}
+                className="hidden h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 disabled:opacity-50 xl:flex dark:text-gray-400 dark:hover:bg-white/5"
                 aria-label={
                   chat.bloqueado ? "Desbloquear contacto" : "Bloquear contacto"
                 }
