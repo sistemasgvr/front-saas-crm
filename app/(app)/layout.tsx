@@ -121,7 +121,12 @@ export default async function AppLayout({
     <SidebarProvider>
       <GuideProvider me={me}>
         <div className="min-h-screen xl:flex">
-          <Sidebar groups={groups} homeHref={homeHref} />
+          <Sidebar
+            groups={groups}
+            homeHref={homeHref}
+            logoUrl={me.organizacion?.logoUrl}
+            organizationName={me.organizacion?.nombre}
+          />
           <Backdrop />
           <AppShell
             header={
@@ -130,6 +135,7 @@ export default async function AppLayout({
                 email={me.usuario.email}
                 organizacionId={me.organizacion?.id}
                 organizacionNombre={me.organizacion?.nombre}
+                organizacionLogoUrl={me.organizacion?.logoUrl}
                 profileHref="/profile"
                 settingsHref={
                   canManageOrganization(me.rol) ? "/settings" : undefined

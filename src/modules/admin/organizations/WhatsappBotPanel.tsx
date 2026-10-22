@@ -121,7 +121,7 @@ export default function WhatsappBotPanel({
     >
       <div className="flex flex-wrap items-center gap-2">
         <Icon name="mdi:robot-outline" size={18} />
-        <h2 className="text-sm font-medium">Bot de WhatsApp</h2>
+        <h2 className="text-sm font-medium text-gray-800 dark:text-gray-100">Bot de WhatsApp</h2>
         {c && (
           <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${c.habilitado && automatizacionesHabilitado && whatsappHabilitado ? "bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-300" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}>
             <Icon name={c.habilitado ? "mdi:check-circle-outline" : "mdi:minus-circle-outline"} size={13} />

@@ -15,6 +15,7 @@ interface HeaderProps {
   email: string;
   organizacionId?: string;
   organizacionNombre?: string;
+  organizacionLogoUrl?: string | null;
   profileHref: string;
   settingsHref?: string;
   homeHref?: string;
@@ -25,6 +26,7 @@ export default function Header({
   email,
   organizacionId,
   organizacionNombre,
+  organizacionLogoUrl,
   profileHref,
   settingsHref,
   homeHref = "/dashboard",
@@ -54,6 +56,8 @@ export default function Header({
           </button>
 
           <AppLogo
+            logoUrl={organizacionLogoUrl}
+            organizationName={organizacionNombre}
             href={homeHref}
             variant="full"
             width={140}

@@ -16,7 +16,7 @@ export interface MeResponse {
     esAdminPlataforma: boolean;
     debeCambiarPassword: boolean;
   };
-  organizacion: { id: string; nombre: string; slug: string } | null;
+  organizacion: { id: string; nombre: string; slug: string; logoUrl?: string | null } | null;
   rol: "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
   modulos: ModuloEstado[];
 }

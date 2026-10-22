@@ -755,7 +755,7 @@ export const guides: Guide[] = [
       ),
       section(
         "Datos de la empresa",
-        "Revisa nombre y datos de contacto de la organización. Mantén la zona horaria y la información de la empresa coherentes con su operación.",
+        "Revisa nombre, contacto y zona horaria. Puedes subir el logo de tu empresa y verlo en el menú lateral y la cabecera móvil. El logo tiene su propio botón de guardado; usar el logo del sistema restaura la imagen original.",
       ),
       {
         ...section(

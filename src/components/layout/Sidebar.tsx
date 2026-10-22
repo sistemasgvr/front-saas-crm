@@ -24,6 +24,8 @@ export type NavGroup = {
 };
 
 interface SidebarProps {
+  logoUrl?: string | null;
+  organizationName?: string;
   /** Lista plana (admin / compat). Si hay `groups`, se ignora. */
   items?: NavItem[];
   /** Secciones por producto (app cliente). */
@@ -77,6 +79,8 @@ export default function Sidebar({
   items,
   groups,
   homeHref,
+  logoUrl,
+  organizationName,
   sectionTitle = "Menú",
 }: SidebarProps) {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered, toggleMobileSidebar } = useSidebar();
@@ -128,9 +132,9 @@ export default function Sidebar({
     >
       <div className={`flex shrink-0 py-6 lg:py-8 ${!expanded ? "lg:justify-center" : "justify-start"}`}>
         {expanded ? (
-          <AppLogo href={homeHref} variant="full" width={150} height={40} priority />
+          <AppLogo logoUrl={logoUrl} organizationName={organizationName} href={homeHref} variant="full" width={150} height={40} priority />
         ) : (
-          <AppLogo href={homeHref} variant="icon" priority />
+          <AppLogo logoUrl={logoUrl} organizationName={organizationName} href={homeHref} variant="icon" priority />
         )}
       </div>
 

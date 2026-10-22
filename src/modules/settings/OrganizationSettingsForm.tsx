@@ -1,5 +1,6 @@
 "use client";
 
+import OrganizationLogoUpload from "./OrganizationLogoUpload";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Label from "@/src/components/form/Label";
@@ -26,7 +27,6 @@ export default function OrganizationSettingsForm({ org }: { org: OrganizacionAct
       documentoFiscal: org.documentoFiscal ?? "",
       emailContacto: org.emailContacto ?? "",
       telefonoContacto: org.telefonoContacto ?? "",
-      logoUrl: org.logoUrl ?? "",
       pais: org.pais ?? "PE",
       zonaHoraria: org.zonaHoraria,
     },
@@ -101,13 +101,7 @@ export default function OrganizationSettingsForm({ org }: { org: OrganizacionAct
             />
           </div>
           <div className="sm:col-span-2">
-            <Label htmlFor="logoUrl">Logo URL</Label>
-            <Input
-              id="logoUrl"
-              error={Boolean(errors.logoUrl)}
-              hint={errors.logoUrl?.message}
-              {...register("logoUrl")}
-            />
+            <OrganizationLogoUpload org={org} />
           </div>
         </div>
         <Button type="submit" size="sm" loading={mutation.isPending} startIcon={<Icon name="mdi:content-save-outline" size={18} />}>
