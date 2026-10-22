@@ -12,6 +12,7 @@ import { Icon } from "@/src/components/ui/Icon";
 import { QueryError } from "@/src/components/ui/PageLoader";
 import { Skeleton } from "@/src/components/ui/Skeleton";
 import { queryKeys } from "@/src/lib/query/keys";
+import { intervaloDeRespaldo } from "@/src/stores/tiempo-real.store";
 import OrigenLeadBadge from "@/src/modules/leads/OrigenLeadBadge";
 import { textoWhatsAppPlano } from "./texto-whatsapp-plano";
 import { etiquetaConversacion } from "./etiqueta-conversacion";
@@ -22,12 +23,6 @@ import { getChatsPage } from "./queries";
 const INTERVALO_REFRESCO_MS = 45_000;
 
 type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
-
-/** Poll solo con la pestaña visible — evita saturar Prisma con pestañas en background. */
-function intervaloSiVisible(ms: number): number | false {
-  if (typeof document === "undefined") return ms;
-  return document.visibilityState === "visible" ? ms : false;
-}
 
 function formatearFecha(iso: string | null) {
   if (!iso) return "";
@@ -76,7 +71,7 @@ export default function ChatsSidebar({ rol: _rol }: { rol: Rol }) {
   const chatsQuery = useQuery({
     queryKey: [...queryKeys.whatsappChatsList(asignadoFiltro), { page, q: busquedaDeferred, draftIds }],
     queryFn: () => getChatsPage(asignadoFiltro, page, busquedaDeferred, draftIds),
-    refetchInterval: () => intervaloSiVisible(INTERVALO_REFRESCO_MS),
+    refetchInterval: () => intervaloDeRespaldo(INTERVALO_REFRESCO_MS),
   });
 
   const chatsFiltrados = chatsQuery.data?.data ?? [];

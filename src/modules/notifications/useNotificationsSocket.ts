@@ -28,10 +28,28 @@ import {
 import { resolverRutaNotificacion, type NotificacionEventoSocket } from "./types";
 import { iniciarRingLlamada, detenerRingLlamada } from "@/src/modules/calls/call-sounds";
 import { useCallStore } from "@/src/modules/calls/call-store";
+import { useTiempoRealStore } from "@/src/stores/tiempo-real.store";
 import type {
   LlamadaEndedSocket,
   LlamadaIncomingSocket,
 } from "@/src/modules/calls/types";
+
+/** Evento del backend (TiempoRealChatsService): un chat cambió. Sin
+ * contenido — se vuelve a pedir por los endpoints que filtran permisos. */
+interface CambioChatSocket {
+  conversacionId?: unknown;
+  cambios?: unknown;
+}
+
+/** Cambios que mueven el chat en la lista (orden, preview, no leídos). */
+const CAMBIOS_QUE_AFECTAN_LISTA = new Set(["mensaje", "eco", "saliente", "edicion"]);
+
+/** Agrupa avisos que llegan casi juntos (mensaje + estado + archivo) en un
+ * solo refetch por chat. */
+const ESPERA_AGRUPAR_CAMBIOS_MS = 100;
+
+/** Pestaña oculta al menos este tiempo → al volver se pone al día. */
+const OCULTA_PARA_REFRESCAR_MS = 15_000;
 
 /** Sube el chat al tope, suma no leídos y refresca preview sin esperar el GET.
  * @returns true si el chat ya estaba en la lista y se pudo parchear. */
@@ -110,17 +128,13 @@ function invalidarCachesNotificacion(
     parchearListaChatsWhatsapp(queryClient, conversacionId, preview);
   }
 
-  if (conversacionId) {
+  // Con socket vivo, el evento "whatsapp:chat" ya trae el refetch del hilo y
+  // la lista (evita pedir lo mismo dos o tres veces). Sin socket (aviso que
+  // llegó por Web Push) se fuerza aquí.
+  if (conversacionId && !useTiempoRealStore.getState().conectado) {
     void queryClient.refetchQueries({
       queryKey: queryKeys.whatsappChats,
       type: "active",
-    });
-  }
-
-  // Forzar descarga del hilo YA (invalidate + staleTime 30s a veces no alcanza).
-  if (conversacionId) {
-    void queryClient.refetchQueries({
-      queryKey: queryKeys.whatsappChat(conversacionId),
     });
   }
 }
@@ -277,17 +291,90 @@ export function useNotificationsSocket(enabled: boolean) {
       };
     }
 
+    const setConectado = useTiempoRealStore.getState().setConectado;
+
     let socket: Socket | null = io(`${url}/notifications`, {
       auth: (cb) => {
         getSocketTicket()
           .then(({ ticket }) => cb({ ticket }))
           .catch(() => cb({}));
       },
+      // WebSocket directo (sin el paso previo por long-polling): conecta más
+      // rápido y no deja requests HTTP colgando en el backend. Si un proxy no
+      // admite WebSocket, cae a polling.
+      transports: ["websocket", "polling"],
+      tryAllTransports: true,
     });
 
-    socket.on('connect', () => {
+    /** Ponerse al día con lo que pudo pasar sin socket (reconexión, pestaña
+     * dormida): chats activos y notificaciones. */
+    const ponerseAlDia = () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChats });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsAll });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
+    };
+
+    socket.on("connect", () => {
+      setConectado(true);
+      ponerseAlDia();
     });
+    socket.on("disconnect", () => setConectado(false));
+
+    // Cambios de chats en vivo, agrupados por chat en una ventana corta.
+    const cambiosPendientes = new Map<string, Set<string>>();
+    let timerCambios: ReturnType<typeof setTimeout> | null = null;
+    const aplicarCambiosChats = () => {
+      timerCambios = null;
+      let refrescarLista = false;
+      for (const [conversacionId, cambios] of cambiosPendientes) {
+        // cancelRefetch:false → si ya hay un GET en curso no se duplica.
+        void queryClient.invalidateQueries(
+          { queryKey: queryKeys.whatsappChat(conversacionId), exact: true },
+          { cancelRefetch: false },
+        );
+        if ([...cambios].some((c) => CAMBIOS_QUE_AFECTAN_LISTA.has(c))) {
+          refrescarLista = true;
+        }
+      }
+      cambiosPendientes.clear();
+      if (refrescarLista) {
+        void queryClient.invalidateQueries(
+          { queryKey: ["whatsapp", "chats", "list"] },
+          { cancelRefetch: false },
+        );
+        void queryClient.invalidateQueries(
+          { queryKey: queryKeys.whatsappChatsUnreadCount },
+          { cancelRefetch: false },
+        );
+      }
+    };
+    socket.on("whatsapp:chat", (data: CambioChatSocket) => {
+      if (typeof data?.conversacionId !== "string" || !Array.isArray(data.cambios)) return;
+      const cambios = cambiosPendientes.get(data.conversacionId) ?? new Set<string>();
+      for (const cambio of data.cambios) {
+        if (typeof cambio === "string") cambios.add(cambio);
+      }
+      cambiosPendientes.set(data.conversacionId, cambios);
+      timerCambios ??= setTimeout(aplicarCambiosChats, ESPERA_AGRUPAR_CAMBIOS_MS);
+    });
+
+    // Navegadores congelan pestañas en segundo plano: al volver, reconectar
+    // si hace falta y traer lo pendiente.
+    let ocultaDesde: number | null = null;
+    const alCambiarVisibilidad = () => {
+      if (document.visibilityState === "hidden") {
+        ocultaDesde = Date.now();
+        return;
+      }
+      const estuvoOculta = ocultaDesde !== null && Date.now() - ocultaDesde >= OCULTA_PARA_REFRESCAR_MS;
+      ocultaDesde = null;
+      if (socket && !socket.connected) {
+        socket.connect();
+        return; // "connect" ya se pone al día.
+      }
+      if (estuvoOculta) ponerseAlDia();
+    };
+    document.addEventListener("visibilitychange", alCambiarVisibilidad);
     socket.on('whatsapp:control', (data: { conversacionId?: string; controlVersion?: number }) => {
       if (typeof data?.conversacionId !== 'string') return;
       void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChat(data.conversacionId) });
@@ -323,8 +410,11 @@ export function useNotificationsSocket(enabled: boolean) {
 
     return () => {
       detenerRingLlamada();
+      if (timerCambios) clearTimeout(timerCambios);
+      document.removeEventListener("visibilitychange", alCambiarVisibilidad);
       socket?.disconnect();
       socket = null;
+      setConectado(false);
       navigator.serviceWorker?.removeEventListener("message", onSwMessage);
     };
   }, [enabled, queryClient, router]);

@@ -29,6 +29,7 @@ import { DropdownItem } from "@/src/components/ui/dropdown/DropdownItem";
 import { QueryError } from "@/src/components/ui/PageLoader";
 import { Skeleton } from "@/src/components/ui/Skeleton";
 import { queryKeys } from "@/src/lib/query/keys";
+import { intervaloDeRespaldo } from "@/src/stores/tiempo-real.store";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { useTheme } from "@/src/context/ThemeContext";
 import {
@@ -212,11 +213,6 @@ function estaDentroDeVentana(
 }
 
 /** Poll solo con pestaña visible — el socket cubre mensajes en vivo. */
-function intervaloSiVisible(ms: number): number | false {
-  if (typeof document === "undefined") return ms;
-  return document.visibilityState === "visible" ? ms : false;
-}
-
 /** Nombres de variable {{nombre_cliente}} (o {{1}}, {{2}} en plantillas
  * legacy creadas fuera del CRM) en orden de primera aparición, sin
  * duplicados — se muestran tal cual, así el usuario ve exactamente qué
@@ -496,6 +492,14 @@ function ContenidoInteractivo({ interactivo }: { interactivo: Interactivo }) {
 
 const TIPOS_MEDIA = new Set(["image", "video", "audio", "document", "sticker"]);
 
+/** El backend baja el archivo de Meta DESPUÉS de avisar del mensaje (para no
+ * demorar la notificación): uno reciente sin bytes casi siempre está en
+ * camino y llega con el aviso "media" del socket, no perdido. */
+const VENTANA_ARCHIVO_EN_CAMINO_MS = 10 * 60_000;
+function archivoEnCamino(fechaMensaje: string): boolean {
+  return Date.now() - new Date(fechaMensaje).getTime() < VENTANA_ARCHIVO_EN_CAMINO_MS;
+}
+
 function ContenidoMedia({
   mensaje,
   conversacionId,
@@ -510,11 +514,16 @@ function ContenidoMedia({
     // Media que no se pudo descargar (caducó el media_id de Meta, etc.) —
     // no dejar "(sin texto)": mostrar etiqueta del tipo.
     if (TIPOS_MEDIA.has(mensaje.tipo)) {
+      const enCamino = archivoEnCamino(mensaje.fechaMensaje);
       return (
         <p className="flex items-center gap-1.5 text-theme-sm opacity-80">
-          <Icon name="mdi:image-off-outline" size={18} />
+          <Icon
+            name={enCamino ? "mdi:loading" : "mdi:image-off-outline"}
+            size={18}
+            className={enCamino ? "animate-spin" : undefined}
+          />
           {ETIQUETA_TIPO_MEDIA[mensaje.tipo] ?? "Archivo adjunto"}
-          <span className="text-theme-xs opacity-70">(no disponible)</span>
+          <span className="text-theme-xs opacity-70">{enCamino ? "(cargando…)" : "(no disponible)"}</span>
         </p>
       );
     }
@@ -1575,10 +1584,10 @@ export default function ChatDetailView({
   const chatQuery = useQuery<ConversacionDetalle>({
     queryKey: queryKeys.whatsappChat(id),
     queryFn: async () => mergeMessageHistory(await getChat(id), queryClient.getQueryData<ConversacionDetalle>(queryKeys.whatsappChat(id))),
-    // Mensajes en vivo vía socket + refetch forzado; stale corto para no
-    // bloquear actualizaciones tras notificaciones.
+    // Mensajes en vivo vía socket ("whatsapp:chat"); el polling es respaldo
+    // y se espacia mientras el socket está conectado.
     staleTime: 5_000,
-    refetchInterval: () => intervaloSiVisible(INTERVALO_REFRESCO_MS),
+    refetchInterval: () => intervaloDeRespaldo(INTERVALO_REFRESCO_MS),
   });
 
   const anteriores = useMutation({

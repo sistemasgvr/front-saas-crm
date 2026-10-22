@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import AppLogo from "@/src/components/ui/AppLogo";
 import { Icon } from "@/src/components/ui/Icon";
 import { queryKeys } from "@/src/lib/query/keys";
+import { intervaloDeRespaldo } from "@/src/stores/tiempo-real.store";
 import { getChatsUnreadCount } from "@/src/modules/chats/queries";
 import { getLeadsNuevosCount } from "@/src/modules/leads/queries";
 import { useSidebar } from "./SidebarContext";
@@ -99,10 +100,7 @@ export default function Sidebar({
     queryKey: queryKeys.whatsappChatsUnreadCount,
     queryFn: () => getChatsUnreadCount(),
     enabled: tieneChats,
-    refetchInterval: () =>
-      typeof document !== "undefined" && document.visibilityState === "hidden"
-        ? false
-        : 90_000,
+    refetchInterval: () => intervaloDeRespaldo(90_000),
   });
   const chatsNoLeidos = chatsUnreadQuery.data?.count ?? 0;
 
