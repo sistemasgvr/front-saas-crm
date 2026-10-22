@@ -17,7 +17,8 @@ import { queryKeys } from "@/src/lib/query/keys";
 import { unwrapAction } from "@/src/lib/action-result";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { gestionarLeadAction } from "./actions";
-import { getHistorialLead, getMetaPipeline } from "./queries";
+import { getHistorialLead } from "./queries";
+import { usePipelineMeta } from "./use-pipeline-meta";
 import PipelineStepper from "./PipelineStepper";
 import PipelineTimeline from "./PipelineTimeline";
 import TransicionPipelineModal from "./TransicionPipelineModal";
@@ -36,7 +37,6 @@ import {
 import {
   TIPOS_LEAD_INMOBILIARIA,
   type EstadoPipelineMeta,
-  type MetaPipeline,
   type MotivoMeta,
 } from "./types";
 
@@ -116,10 +116,9 @@ export default function LeadPipelinePanel({
   >(null);
 
 
-  const metaQuery = useQuery<MetaPipeline>({
-    queryKey: queryKeys.leadPipelineMeta(tipoLead),
-    queryFn: () => getMetaPipeline(tipoLead),
-  });
+  const metaQuery = usePipelineMeta(tipoLead);
+  const etiquetaEstado = (estado: string) =>
+    etiquetaEstadoGestion(tipoLead, estado, metaQuery.data);
   const historialQuery = useQuery({
     queryKey: [...queryKeys.leadHistorial(leadId), historyPage],
     queryFn: () => getHistorialLead(leadId, historyPage),
@@ -315,7 +314,7 @@ export default function LeadPipelinePanel({
             <div className="flex items-center gap-2">
               <Icon name={resultado?.icon ?? "mdi:flag-outline"} size={20} />
               <p className="text-theme-sm font-semibold">
-                {etiquetaEstadoGestion(tipoLead, estadoGestion)}
+                {etiquetaEstado(estadoGestion)}
               </p>
               {estadoGestionEn && (
                 <span
@@ -348,7 +347,7 @@ export default function LeadPipelinePanel({
                     <span className="text-theme-xs opacity-80">
                       Reabrir hacia:
                     </span>
-                    {ESTADOS_REAPERTURA.map((codigo) => (
+                    {ESTADOS_REAPERTURA.filter((codigo) => metaQuery.data?.estados.some((e) => e.codigo === codigo)).map((codigo) => (
                       <Button
                         key={codigo}
                         type="button"
@@ -359,7 +358,7 @@ export default function LeadPipelinePanel({
                           iniciarCambio(codigo, { reapertura: true })
                         }
                       >
-                        {etiquetaEstadoGestion(tipoLead, codigo)}
+                        {etiquetaEstado(codigo)}
                       </Button>
                     ))}
                     <button
@@ -389,7 +388,7 @@ export default function LeadPipelinePanel({
                       Estado del lead
                     </p>
                     <p className="text-base font-semibold text-gray-800 dark:text-white/90">
-                      {etiquetaEstadoGestion(tipoLead, estadoGestion)}
+                      {etiquetaEstado(estadoGestion)}
                     </p>
                     {estadoGestionEn ? (
                       <p
@@ -435,7 +434,7 @@ export default function LeadPipelinePanel({
                         }`}
                       >
                         <Icon name={iconoEstadoGestion(codigo)} size={17} />
-                        {etiquetaEstadoGestion(tipoLead, codigo)}
+                        {etiquetaEstado(codigo)}
                       </button>
                     );
                   })}
@@ -449,7 +448,7 @@ export default function LeadPipelinePanel({
         {destinoCierre && (
           <div className="mt-4 space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-white/[0.03]">
             <p className="text-theme-xs font-medium text-gray-700 dark:text-gray-200">
-              Pasar a {etiquetaEstadoGestion(tipoLead, destinoCierre)} — hace
+              Pasar a {etiquetaEstado(destinoCierre)} — hace
               falta un motivo
             </p>
             <Select
@@ -495,7 +494,7 @@ export default function LeadPipelinePanel({
       {destinoTransicion && metaQuery.data && (
         <TransicionPipelineModal
           open
-          titulo={`Pasar a ${etiquetaEstadoGestion(tipoLead, destinoTransicion)}`}
+          titulo={`Pasar a ${etiquetaEstado(destinoTransicion)}`}
           descripcion="Completa los datos de esta etapa antes de confirmar el cambio."
           campos={camposParaDestino(
             metaQuery.data,
@@ -529,7 +528,7 @@ export default function LeadPipelinePanel({
               <p className="mt-2 text-theme-sm text-gray-600 dark:text-gray-300">
                 El lead está en{" "}
                 <span className="font-medium">
-                  {etiquetaEstadoGestion(tipoLead, estadoGestion)}
+                  {etiquetaEstado(estadoGestion)}
                 </span>
                 . Al cambiar el tipo se hará lo siguiente:
               </p>

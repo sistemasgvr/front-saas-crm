@@ -61,6 +61,7 @@ type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 interface PendingClose {
   leadId: string;
   destino: string;
+  tipoLead?: string;
 }
 
 interface PendingTransition {
@@ -419,17 +420,14 @@ export default function LeadsKanbanView({
   const metaCompra = useQuery<MetaPipeline>({
     queryKey: queryKeys.leadPipelineMeta("COMPRA"),
     queryFn: () => getMetaPipeline("COMPRA"),
-    enabled: tipoFiltro === null || tipoFiltro === "COMPRA",
   });
   const metaVenta = useQuery<MetaPipeline>({
     queryKey: queryKeys.leadPipelineMeta("VENTA"),
     queryFn: () => getMetaPipeline("VENTA"),
-    enabled: tipoFiltro === null || tipoFiltro === "VENTA",
   });
   const metaOtro = useQuery<MetaPipeline>({
     queryKey: queryKeys.leadPipelineMeta("OTRO"),
     queryFn: () => getMetaPipeline("OTRO"),
-    enabled: tipoFiltro === null || tipoFiltro === "OTRO",
   });
 
   const metaParaLead = (
@@ -524,7 +522,7 @@ export default function LeadsKanbanView({
     };
 
     if (esEstadoTerminal(destino)) {
-      setPendingClose({ leadId: lead.id, destino });
+      setPendingClose({ leadId: lead.id, destino, tipoLead });
       setMotivoForm("");
       setNotaForm("");
       return;
@@ -592,6 +590,7 @@ export default function LeadsKanbanView({
       {
         leadId: pendingClose.leadId,
         estadoGestion: pendingClose.destino,
+        ...(pendingClose.tipoLead ? { tipoLead: pendingClose.tipoLead } : {}),
         motivoCierre: motivoForm,
         notaCierre: notaForm || undefined,
       },
@@ -749,8 +748,9 @@ export default function LeadsKanbanView({
             <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">
               Mover a{" "}
               {etiquetaEstadoGestion(
-                tipoDeLead(leadEnCierre),
+                tipoDeLead(leadEnCierre, pendingClose.tipoLead),
                 pendingClose.destino,
+                metaParaLead(leadEnCierre, pendingClose.tipoLead),
               )}
               {leadEnCierre?.nombre ? ` — ${leadEnCierre.nombre}` : ""}
             </p>
@@ -761,7 +761,7 @@ export default function LeadsKanbanView({
               <Select
                 options={motivosParaDestino(
                   pendingClose.destino,
-                  metaParaLead(leadEnCierre),
+                  metaParaLead(leadEnCierre, pendingClose.tipoLead),
                 ).map((m: MotivoMeta) => ({
                   value: m.codigo,
                   label: m.etiqueta,
@@ -803,7 +803,7 @@ export default function LeadsKanbanView({
       {pendingTransition && metaTransicion && (
         <TransicionPipelineModal
           open
-          titulo={`Mover a ${etiquetaEstadoGestion(tipoDeLead(leadEnTransicion, pendingTransition.tipoLead), pendingTransition.destino)}${
+          titulo={`Mover a ${etiquetaEstadoGestion(tipoDeLead(leadEnTransicion, pendingTransition.tipoLead), pendingTransition.destino, metaTransicion)}${
             leadEnTransicion?.nombre ? ` — ${leadEnTransicion.nombre}` : ""
           }`}
           descripcion="Completa los datos de esta etapa antes de confirmar."
@@ -836,7 +836,7 @@ export default function LeadsKanbanView({
         }
         destinoEtiqueta={
           pendingClassify?.destino
-            ? etiquetaEstadoGestion(tipoFiltro, pendingClassify.destino)
+            ? tableroQuery.data?.columnas.find((c) => c.codigo === pendingClassify.destino)?.etiqueta ?? etiquetaEstadoGestion(tipoFiltro, pendingClassify.destino)
             : undefined
         }
         loading={gestionar.isPending}

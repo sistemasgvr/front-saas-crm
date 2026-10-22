@@ -192,7 +192,7 @@ function EmbudoEditor({
                     ) : null}
                   </div>
                   <div className="max-w-xs">
-                    <Label htmlFor={`eti-${tipo}-${codigo}`}>Etiqueta en UI</Label>
+                    <Label htmlFor={`eti-${tipo}-${codigo}`}>Nombre visible</Label>
                     <Input
                       id={`eti-${tipo}-${codigo}`}
                       value={etiquetaDe(embudo, codigo)}
@@ -321,7 +321,7 @@ export default function PipelineConfigSettingsCard() {
 
   const preview = useMemo(() => {
     if (!configQuery.data) return undefined;
-    return configQuery.data.usandoOverride ? "Personalizado" : "Defaults de código";
+    return configQuery.data.usandoOverride ? "Personalizado" : "Configuración por defecto";
   }, [configQuery.data]);
 
   const errorValidacion = useMemo(() => (draft ? validarConfig(draft) : null), [draft]);
@@ -344,7 +344,7 @@ export default function PipelineConfigSettingsCard() {
 
   const restaurar = useAppMutation({
     mutationFn: () => updatePipelineConfigAction(null),
-    successMessage: "Defaults restaurados",
+    successMessage: "Configuración por defecto restaurada",
     invalidateKeys: [
       queryKeys.organizationPipelineConfig,
       queryKeys.leadsAll,
@@ -357,7 +357,7 @@ export default function PipelineConfigSettingsCard() {
     if (!configQuery.data) return;
     setDraft(clonarConfig(configQuery.data.defaults));
     setErrorLocal(null);
-    toast.message("Defaults cargados en el editor (aún no guardados)");
+    toast.message("Valores por defecto cargados en el editor (aún no guardados)");
   };
 
   const actualizarEmbudo = (tipo: TipoEmbudo, embudo: EmbudoPipelineConfig) => {
@@ -381,9 +381,9 @@ export default function PipelineConfigSettingsCard() {
     <CollapsibleSection
       title="Pipeline de leads"
       icon={ICONO_PIPELINE}
-      help="Configura visualmente estados y transiciones por tipo (Compra / Venta / Otro). Si no hay override guardado, rigen las matrices de código."
+      help="Configura visualmente estados y transiciones por tipo (Compra / Venta / Otro). Si no hay una configuración personalizada guardada, se usa la configuración por defecto."
       preview={preview}
-      badge={configQuery.data?.usandoOverride ? "Personalizado" : "Default"}
+      badge={configQuery.data?.usandoOverride ? "Personalizado" : "Por defecto"}
       badgeColor={configQuery.data?.usandoOverride ? "warning" : "light"}
       defaultOpen={false}
     >
@@ -393,7 +393,7 @@ export default function PipelineConfigSettingsCard() {
             Elige el tipo de lead y edita sus etapas. Pulsa una etapa destino para activar o desactivar la transición.
           </p>
           <HelpTooltip
-            content="NUEVO y los tres cierres son obligatorios. «Restaurar defaults» borra el override de la organización."
+            content="NUEVO y los tres cierres son obligatorios. «Restaurar valores por defecto» elimina la configuración personalizada de la organización."
             placement="bottom"
           />
         </div>
@@ -444,7 +444,7 @@ export default function PipelineConfigSettingsCard() {
             startIcon={<Icon name="mdi:file-restore-outline" size={18} />}
             onClick={cargarDefaults}
           >
-            Ver defaults
+            Ver valores por defecto
           </Button>
           <Button
             type="button"
@@ -455,7 +455,7 @@ export default function PipelineConfigSettingsCard() {
             startIcon={<Icon name="mdi:backup-restore" size={18} />}
             onClick={() => restaurar.mutate()}
           >
-            Restaurar defaults
+            Restaurar valores por defecto
           </Button>
           <Button
             type="button"

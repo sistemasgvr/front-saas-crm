@@ -1,10 +1,6 @@
 /**
- * Copy y colores del pipeline — espejo liviano de
- * back-saas-crm/src/shared/domain/pipeline-inmobiliaria.ts, solo para no
- * pedir /leads/pipeline/meta en la lista de leads (sería una llamada extra
- * por cada tipoLead distinto en pantalla). El detalle de un lead sí pide el
- * catálogo real al backend, porque ahí necesita las transiciones válidas,
- * no solo la etiqueta.
+ * Etiquetas de respaldo y colores del pipeline. Las etiquetas del catálogo
+ * de la organización tienen prioridad sobre estos valores por defecto.
  */
 
 export const ESTADOS_TERMINALES = ['CERRADO_GANADO', 'CERRADO_PERDIDO', 'DESCARTADO'] as const;
@@ -50,7 +46,13 @@ export const ETIQUETA_TIPO_LEAD: Record<string, string> = {
   OTRO: 'Otro',
 };
 
-export function etiquetaEstadoGestion(tipoLead: string | null | undefined, estado: string): string {
+export function etiquetaEstadoGestion(
+  tipoLead: string | null | undefined,
+  estado: string,
+  meta?: { estados: { codigo: string; etiqueta: string }[] },
+): string {
+  const etiqueta = meta?.estados.find((e) => e.codigo === estado)?.etiqueta;
+  if (etiqueta) return etiqueta;
   const mapa = tipoLead === 'COMPRA' ? ETIQUETAS_COMPRA : tipoLead === 'VENTA' ? ETIQUETAS_VENTA : ETIQUETAS_OTRO;
   return mapa[estado] ?? estado;
 }
