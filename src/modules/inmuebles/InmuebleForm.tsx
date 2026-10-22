@@ -77,7 +77,7 @@ export default function InmuebleForm({
   });
 
   return (
-    <form
+    <form data-tour="property-form"
       onSubmit={handleSubmit((values) => mutation.mutate(values))}
       className="space-y-6"
       noValidate

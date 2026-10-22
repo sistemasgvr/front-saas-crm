@@ -82,7 +82,7 @@ export default function MetaHubView({ metaCallback }: { metaCallback?: string })
       title="Meta"
       description="Conexión, páginas y cuentas publicitarias de Facebook/Instagram Lead Ads."
     >
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div data-tour="meta-settings" className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
         <div className="mb-5 flex items-start gap-4">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-light-50 text-blue-light-500 dark:bg-blue-light-500/15">
             <Icon name="mdi:facebook" size={24} />

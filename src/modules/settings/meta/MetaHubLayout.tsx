@@ -24,7 +24,7 @@ export default function MetaHubLayout({
   children,
 }: MetaHubLayoutProps) {
   return (
-    <div className="space-y-6">
+    <div data-tour="meta-hub" className="space-y-6">
       <PageHeader title={title} description={description} backHref={backHref} backLabel={backLabel}>
         {headerActions}
       </PageHeader>

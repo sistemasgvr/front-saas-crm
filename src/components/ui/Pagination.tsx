@@ -46,7 +46,7 @@ export default function Pagination({
     const navBtn =
       "flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-400 dark:hover:bg-white/[0.05]";
     return (
-      <div className={`flex items-center justify-between gap-2 ${className}`}>
+      <div data-tour="pagination" className={`flex items-center justify-between gap-2 ${className}`}>
         <p className="min-w-0 truncate text-theme-xs text-gray-500 dark:text-gray-400">
           <span className="font-medium text-gray-700 dark:text-gray-300">
             {desde}–{hasta}
@@ -81,7 +81,7 @@ export default function Pagination({
   }
 
   return (
-    <div
+    <div data-tour="pagination"
       className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${className}`}
     >
       <p className="text-center text-theme-xs text-gray-500 dark:text-gray-400 sm:text-start sm:text-theme-sm">

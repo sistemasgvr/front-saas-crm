@@ -270,7 +270,7 @@ export default function UsuariosEmpresaView({
     );
 
   return (
-    <div className="space-y-5">
+    <div data-tour="users-page" className="space-y-5">
       <PageHeader
         title="Usuarios"
         description="Gestiona el acceso de tu equipo a esta empresa."

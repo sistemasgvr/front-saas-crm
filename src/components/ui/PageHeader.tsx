@@ -31,7 +31,7 @@ export default function PageHeader({
   children,
 }: PageHeaderProps) {
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div data-tour="page-header" data-tour-title={title} className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         {backHref && (
           <Link

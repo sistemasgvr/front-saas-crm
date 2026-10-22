@@ -172,7 +172,7 @@ export default function InmuebleDetailView({
   }
 
   return (
-    <div className="space-y-6">
+    <div data-tour="property-detail" className="space-y-6">
       <PageHeader
         title={row.codigo}
         description={row.titulo}

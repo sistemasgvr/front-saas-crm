@@ -359,7 +359,7 @@ export default function AgendaView({
   }
 
   return (
-    <div className="space-y-4">
+    <div data-tour="agenda-page" className="space-y-4">
       <PageHeader
         title="Agenda"
         description="Actividades del equipo (llamadas, reuniones, seguimientos y visitas). Crea desde aquí sin pasar por el pipeline."
@@ -381,7 +381,7 @@ export default function AgendaView({
             variant="primary"
             className="w-full sm:w-auto"
             startIcon={<Icon name="mdi:calendar-plus" size={18} />}
-            onClick={() => {
+            data-tour="agenda-create" onClick={() => {
               setSlotInicial(null);
               setCrearAbierto(true);
             }}

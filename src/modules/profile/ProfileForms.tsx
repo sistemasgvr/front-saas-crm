@@ -68,7 +68,7 @@ export default function ProfileForms({ email, nombre, apellido, telefono }: Prof
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
       <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03]">
         <h2 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90">Datos personales</h2>
-        <form onSubmit={profileForm.handleSubmit((values) => profile.mutate(values))} className="space-y-5" noValidate>
+        <form data-tour="profile-data" onSubmit={profileForm.handleSubmit((values) => profile.mutate(values))} className="space-y-5" noValidate>
           <fieldset disabled={profile.isPending} className="space-y-5">
             <div>
               <Label>Email</Label>
@@ -110,7 +110,7 @@ export default function ProfileForms({ email, nombre, apellido, telefono }: Prof
 
       <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03]">
         <h2 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90">Cambiar contraseña</h2>
-        <form onSubmit={passwordForm.handleSubmit((values) => password.mutate(values))} className="space-y-5" noValidate>
+        <form data-tour="profile-password" onSubmit={passwordForm.handleSubmit((values) => password.mutate(values))} className="space-y-5" noValidate>
           <fieldset disabled={password.isPending} className="space-y-5">
             <div>
               <Label htmlFor="passwordActual">Contraseña actual</Label>

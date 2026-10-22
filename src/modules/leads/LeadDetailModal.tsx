@@ -169,7 +169,7 @@ export default function LeadDetailModal({
         ) : leadQuery.isError ? (
           <QueryError error={leadQuery.error} />
         ) : !lead ? null : (
-          <div className="space-y-5">
+          <div data-tour-record-path={`/leads/${lead.id}`} className="space-y-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-2">
                 {lead.asignado ? (

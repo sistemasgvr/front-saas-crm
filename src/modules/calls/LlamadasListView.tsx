@@ -90,7 +90,7 @@ export default function LlamadasListView() {
   const metricas = metricasQuery.data;
 
   return (
-    <div className="space-y-6">
+    <div data-tour="calls-page" className="space-y-6">
       <PageHeader
         title="Llamadas"
         description="Historial de llamadas de WhatsApp Business de la organización."
@@ -124,7 +124,7 @@ export default function LlamadasListView() {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] sm:grid-cols-2 lg:grid-cols-4">
+      <div data-tour="calls-filters" className="grid grid-cols-1 gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <label className="mb-1 block text-theme-xs font-medium text-gray-500">Desde</label>
           <Input

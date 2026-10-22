@@ -24,7 +24,7 @@ export default function WhatsappSettingsView() {
 
   const connectionsPage = useClientPagination(conexionesQuery.data ?? []);
   return (
-    <div className="space-y-6">
+    <div data-tour="whatsapp-settings" className="space-y-6">
       <PageHeader
         title="WhatsApp"
         description="Vincula el número de WhatsApp Business de la organización para chatear con tus leads."

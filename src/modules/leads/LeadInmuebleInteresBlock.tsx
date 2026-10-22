@@ -59,7 +59,7 @@ export default function LeadInmuebleInteresBlock({
   }
 
   return (
-    <div className="mt-5 border-t border-gray-100 pt-5 dark:border-gray-800">
+    <div data-tour="lead-property" className="mt-5 border-t border-gray-100 pt-5 dark:border-gray-800">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 text-theme-sm font-semibold text-gray-800 dark:text-white/90">
           <Icon

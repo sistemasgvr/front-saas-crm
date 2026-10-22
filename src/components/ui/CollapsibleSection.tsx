@@ -35,7 +35,7 @@ export default function CollapsibleSection({
   const toggle = () => setOpen((prev) => !prev);
 
   return (
-    <div className="overflow-visible rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+    <div data-tour-section={title} className="overflow-visible rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
       <div className="flex items-start gap-2 p-4 md:p-5">
         <button
           type="button"

@@ -611,14 +611,14 @@ export default function LeadsKanbanView({
     : undefined;
 
   return (
-    <div>
+    <div data-tour="kanban-page">
       <PageHeader
         title="Tablero"
         help="Arrastra un lead a otra columna para avanzarlo en el pipeline — misma validación que la vista de detalle."
         backHref="/leads"
         backLabel="Volver a la lista"
       >
-        <div className="flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1 dark:bg-white/5">
+        <div data-tour="kanban-types" className="flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1 dark:bg-white/5">
           <button
             type="button"
             onClick={() => { setPage(1); setTipoFiltro(null); }}

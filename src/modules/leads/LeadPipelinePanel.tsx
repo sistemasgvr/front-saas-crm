@@ -249,7 +249,7 @@ export default function LeadPipelinePanel({
   const reiniciaPorTipo = cambioTipoReiniciaEmbudo(estadoGestion);
 
   return (
-    <div className="space-y-6 pb-2">
+    <div data-tour="lead-pipeline" className="space-y-6 pb-2">
       {/* Tipo de lead — editable; con confirmación si reinicia el embudo */}
       {puedeGestionar && !terminal ? (
         <div className="flex flex-wrap items-center gap-2">

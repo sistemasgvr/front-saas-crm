@@ -60,7 +60,7 @@ export default function SettingsView() {
   );
 
   return (
-    <div className="space-y-6">
+    <div data-tour="settings-page" className="space-y-6">
       <PageHeader
         title="Configuración"
         description="Datos de la empresa y conexión con Meta."

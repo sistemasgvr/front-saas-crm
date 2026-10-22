@@ -1,3 +1,6 @@
+import GuideProvider from "@/src/modules/guides/GuideProvider";
+import "driver.js/dist/driver.css";
+import "@/src/modules/guides/guides.css";
 import { redirect } from "next/navigation";
 import { getMeSafe } from "@/src/lib/auth";
 import { getDefaultClientRoute } from "@/src/lib/modules";
@@ -63,6 +66,7 @@ const CLIENT_NAV_GROUPS: NavGroup[] = [
   {
     title: "Cuenta",
     items: [
+      { name: "Guía del sistema", icon: "mdi:compass-outline", path: "/ayuda" },
       { name: "Perfil", icon: "mdi:account-outline", path: "/profile" },
       { name: "Configuración", icon: "mdi:cog-outline", path: "/settings" },
     ],
@@ -115,27 +119,29 @@ export default async function AppLayout({
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen xl:flex">
-        <Sidebar groups={groups} homeHref={homeHref} />
-        <Backdrop />
-        <AppShell
-          header={
-            <Header
-              nombre={me.usuario.nombre}
-              email={me.usuario.email}
-              organizacionId={me.organizacion?.id}
-              organizacionNombre={me.organizacion?.nombre}
-              profileHref="/profile"
-              settingsHref={
-                canManageOrganization(me.rol) ? "/settings" : undefined
-              }
-              homeHref={homeHref}
-            />
-          }
-        >
-          {children}
-        </AppShell>
-      </div>
+      <GuideProvider me={me}>
+        <div className="min-h-screen xl:flex">
+          <Sidebar groups={groups} homeHref={homeHref} />
+          <Backdrop />
+          <AppShell
+            header={
+              <Header
+                nombre={me.usuario.nombre}
+                email={me.usuario.email}
+                organizacionId={me.organizacion?.id}
+                organizacionNombre={me.organizacion?.nombre}
+                profileHref="/profile"
+                settingsHref={
+                  canManageOrganization(me.rol) ? "/settings" : undefined
+                }
+                homeHref={homeHref}
+              />
+            }
+          >
+            {children}
+          </AppShell>
+        </div>
+      </GuideProvider>
     </SidebarProvider>
   );
 }

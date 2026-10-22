@@ -135,7 +135,7 @@ export default function InmueblesView({ rol }: { rol: string | null }) {
   const rows = data?.data ?? [];
 
   return (
-    <div>
+    <div data-tour="properties-page">
       <PageHeader
         title="Inmuebles"
         description="Catálogo de propiedades para visitas y el embudo comercial."

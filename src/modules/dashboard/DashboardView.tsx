@@ -354,7 +354,7 @@ export default function DashboardView({
     embudoData?.porEstado.some((p) => p.total > 0) ?? false;
 
   return (
-    <div>
+    <div data-tour="dashboard-page">
       <PageHeader
         title="Dashboard"
         description="Resumen de leads por periodo y campaña."

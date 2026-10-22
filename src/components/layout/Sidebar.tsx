@@ -48,6 +48,7 @@ function NavLink({
 }) {
   return (
     <Link
+      data-tour-nav={item.path}
       href={item.path}
       onClick={() => onNavigate?.()}
       className={`menu-item group ${active ? "menu-item-active" : "menu-item-inactive"} ${
@@ -117,7 +118,7 @@ export default function Sidebar({
     path === "/chats" ? chatsNoLeidos : path === "/leads" ? leadsNuevos : 0;
 
   return (
-    <aside
+    <aside data-tour="sidebar"
       className={`fixed left-0 top-16 bottom-0 z-50 flex flex-col overflow-hidden border-r border-gray-200 bg-white px-5 text-gray-900 transition-transform duration-300 ease-in-out dark:border-gray-800 dark:bg-gray-900 lg:top-0 lg:h-screen lg:bottom-auto
         ${isExpanded || isMobileOpen ? "w-[290px]" : isHovered ? "w-[290px]" : "w-[90px]"}
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}

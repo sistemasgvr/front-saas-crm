@@ -54,7 +54,7 @@ export default function NotificationsListView() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div data-tour="notifications-page" className="mb-6 flex items-center justify-between">
         <h1 className="text-title-sm font-semibold text-gray-800 dark:text-white/90">Notificaciones</h1>
         <ActionButton
           action={async () => {

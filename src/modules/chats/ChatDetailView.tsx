@@ -2492,7 +2492,7 @@ export default function ChatDetailView({
         role="status"
         aria-label="Cargando conversación"
       >
-        <div className="flex shrink-0 items-center gap-2 border-b border-gray-100 px-2 py-2.5 dark:border-gray-800 sm:gap-3 sm:px-4 sm:py-3">
+        <div data-tour="chat-contact" className="flex shrink-0 items-center gap-2 border-b border-gray-100 px-2 py-2.5 dark:border-gray-800 sm:gap-3 sm:px-4 sm:py-3">
           <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
           <div className="min-w-0 flex-1 space-y-2">
             <Skeleton className="h-4 w-40" />
@@ -2534,7 +2534,7 @@ export default function ChatDetailView({
 
   return (
     <ChatMediaLightboxProvider conversacionId={id} mensajes={chat.mensajes}>
-      <div className="relative flex h-full min-h-0 max-w-full overflow-x-hidden">
+      <div data-tour="chat-detail" className="relative flex h-full min-h-0 max-w-full overflow-x-hidden">
         <div className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-hidden">
           <div className="flex shrink-0 items-center gap-2 border-b border-gray-100 bg-white px-2 py-2.5 dark:border-gray-800 dark:bg-gray-900 sm:gap-3 sm:px-4 sm:py-3">
             <Link

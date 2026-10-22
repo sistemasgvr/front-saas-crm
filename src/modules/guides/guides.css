@@ -1,0 +1,104 @@
+/* Por encima de la cabecera y los diálogos del CRM. */
+.driver-overlay {
+  z-index: 100010 !important;
+}
+.driver-popover.crm-guide-popover {
+  z-index: 100012 !important;
+  max-width: min(390px, calc(100vw - 24px));
+  border: 1px solid #e4e7ec;
+  border-radius: 16px;
+  padding: 22px;
+  color: #344054;
+  background: #fff;
+  box-shadow: 0 16px 48px rgb(16 24 40 / 18%);
+  font-family: inherit;
+}
+.crm-guide-popover .driver-popover-title {
+  font-size: 17px;
+  line-height: 1.4;
+  color: #101828;
+}
+.crm-guide-popover .driver-popover-description {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.crm-guide-popover .driver-popover-footer {
+  margin-top: 20px;
+}
+.crm-guide-popover .driver-popover-progress-text {
+  font-size: 12px;
+  color: #667085;
+}
+.crm-guide-popover .driver-popover-navigation-btns button {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 13px;
+  background: #f2f4f7;
+  color: #344054;
+  text-shadow: none;
+  font-size: 13px;
+}
+.crm-guide-popover .driver-popover-navigation-btns .driver-popover-next-btn {
+  background: #465fff;
+  color: #fff;
+}
+.crm-guide-popover button:focus-visible {
+  outline: 3px solid #8098ff;
+  outline-offset: 3px;
+}
+.crm-guide-popover .driver-popover-close-btn {
+  font-size: 24px;
+  color: #667085;
+}
+.dark .driver-popover.crm-guide-popover {
+  background: #1d2939;
+  border-color: #344054;
+  color: #d0d5dd;
+}
+.dark .crm-guide-popover .driver-popover-title {
+  color: #fff;
+}
+.dark .crm-guide-popover .driver-popover-progress-text {
+  color: #98a2b3;
+}
+.dark .crm-guide-popover .driver-popover-navigation-btns button {
+  background: #344054;
+  color: #f2f4f7;
+}
+.dark
+  .crm-guide-popover
+  .driver-popover-navigation-btns
+  .driver-popover-next-btn {
+  background: #465fff;
+}
+.dark .crm-guide-popover .driver-popover-arrow {
+  border-color: #1d2939;
+}
+.dark .crm-guide-popover .driver-popover-arrow-side-left {
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  border-right-color: transparent;
+}
+.dark .crm-guide-popover .driver-popover-arrow-side-right {
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+}
+.dark .crm-guide-popover .driver-popover-arrow-side-top {
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+  border-right-color: transparent;
+}
+.dark .crm-guide-popover .driver-popover-arrow-side-bottom {
+  border-top-color: transparent;
+  border-left-color: transparent;
+  border-right-color: transparent;
+}
+@media (prefers-reduced-motion: reduce) {
+  .driver-popover,
+  .driver-overlay {
+    animation: none !important;
+    transition: none !important;
+  }
+}

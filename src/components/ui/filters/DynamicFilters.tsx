@@ -246,7 +246,7 @@ export default function DynamicFilters({ fields, values, onChange }: DynamicFilt
   );
 
   return (
-    <div ref={rootRef} className="relative">
+    <div data-tour="filters" ref={rootRef} className="relative">
       <button
         type="button"
         aria-expanded={open}

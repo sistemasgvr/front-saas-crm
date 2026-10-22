@@ -13,9 +13,9 @@ export default function ChatsShell({ sidebar, children }: { sidebar: ReactNode; 
   const hayConversacionAbierta = pathname !== "/chats";
 
   return (
-    <div className="flex h-full min-h-0 max-w-full overflow-hidden border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] md:h-[calc(100vh-180px)] md:min-h-[520px] md:rounded-2xl md:border">
+    <div data-tour="chats-shell" className="flex h-full min-h-0 max-w-full overflow-hidden border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] md:h-[calc(100vh-180px)] md:min-h-[520px] md:rounded-2xl md:border">
       <div
-        className={`h-full w-full shrink-0 overflow-hidden border-r border-gray-100 dark:border-gray-800 md:block md:w-[340px] ${
+        data-tour="chats-sidebar" className={`h-full w-full shrink-0 overflow-hidden border-r border-gray-100 dark:border-gray-800 md:block md:w-[340px] ${
           hayConversacionAbierta ? "hidden" : "block"
         }`}
       >

@@ -210,7 +210,7 @@ export default function LeadDetailView({
         : `${respuestas.length} campos · ${valorCampoMeta(respuestas[0].values)}`;
 
   return (
-    <div className="space-y-4">
+    <div data-tour="lead-detail" className="space-y-4">
       <Link
         href="/leads"
         className="inline-flex items-center gap-1 text-theme-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -289,7 +289,7 @@ export default function LeadDetailView({
         icon="mdi:account-cog-outline"
         description="Asignación, tipo de lead y avance en el embudo."
       >
-        <div className="flex flex-col gap-4 border-t border-gray-100 pt-5 sm:flex-row sm:items-center sm:justify-between dark:border-gray-800">
+        <div data-tour="lead-assignment" className="flex flex-col gap-4 border-t border-gray-100 pt-5 sm:flex-row sm:items-center sm:justify-between dark:border-gray-800">
           <div className="flex flex-wrap items-center gap-3">
             {lead.asignado ? (
               <span className="inline-flex items-center gap-1.5 text-theme-sm text-gray-700 dark:text-gray-200">
@@ -338,7 +338,7 @@ export default function LeadDetailView({
                   },
                 })
               }
-            >
+            data-tour="lead-chat">
               Iniciar chat
             </Button>
           </span>

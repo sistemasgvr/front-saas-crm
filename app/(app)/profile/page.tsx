@@ -6,7 +6,7 @@ export default async function ProfilePage() {
   const me = await getMe();
 
   return (
-    <div>
+    <div data-tour="profile-page">
       <PageHeader title="Perfil" description="Tus datos personales y contraseña." />
       <ProfileForms
         email={me?.usuario.email ?? ""}

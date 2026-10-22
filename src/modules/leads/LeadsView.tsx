@@ -311,7 +311,7 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
   );
 
   return (
-    <div>
+    <div data-tour="leads-page">
       <PageHeader
         title="Leads"
         description="Contactos captados desde Meta, WhatsApp o registrados manualmente."
