@@ -34,18 +34,18 @@ import { intervaloDeRespaldo } from "@/src/stores/tiempo-real.store";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { useTheme } from "@/src/context/ThemeContext";
 import {
-  enviarMensajeAction,
-  enviarMediaAction,
-  enviarReaccionAction,
-  enviarUbicacionAction,
-  enviarContactoAction,
-  enviarInteractivoAction,
-  notificarEscribiendoAction,
-  bloquearContactoAction,
-  reenviarMensajesLoteAction,
-  eliminarMensajeAction,
-  crearLeadDesdeChatAction,
-  renombrarChatAction,
+  enviarMensajeAction as enviarMensajeActionResult,
+  enviarMediaAction as enviarMediaActionResult,
+  enviarReaccionAction as enviarReaccionActionResult,
+  enviarUbicacionAction as enviarUbicacionActionResult,
+  enviarContactoAction as enviarContactoActionResult,
+  enviarInteractivoAction as enviarInteractivoActionResult,
+  notificarEscribiendoAction as notificarEscribiendoActionResult,
+  bloquearContactoAction as bloquearContactoActionResult,
+  reenviarMensajesLoteAction as reenviarMensajesLoteActionResult,
+  eliminarMensajeAction as eliminarMensajeActionResult,
+  crearLeadDesdeChatAction as crearLeadDesdeChatActionResult,
+  renombrarChatAction as renombrarChatActionResult,
 } from "./actions";
 import { toast } from "sonner";
 import RenombrarInline from "@/src/components/ui/RenombrarInline";
@@ -94,7 +94,7 @@ import ChatControlPanel from "./ChatControlPanel";
 import { useChatControl } from "./useChatControl";
 import { getControlAction } from "./control-actions";
 import { puedeOperarControl, resolverControl } from "./control-types";
-import { markWhatsappNotificationsReadAction } from "@/src/modules/notifications/actions";
+import { markWhatsappNotificationsReadAction as markWhatsappNotificationsReadActionResult } from "@/src/modules/notifications/actions";
 import { ChatCallControls } from "@/src/modules/calls/ChatCallControls";
 import ChatLlamadasStrip from "@/src/modules/calls/ChatLlamadasStrip";
 import { dismissWhatsappOsNotification } from "@/src/modules/notifications/system-notifications";
@@ -107,6 +107,21 @@ import type {
   PlantillaWhatsApp,
   UbicacionMensaje,
 } from "./types";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const enviarMensajeAction = unwrapServerAction(enviarMensajeActionResult);
+const enviarMediaAction = unwrapServerAction(enviarMediaActionResult);
+const enviarReaccionAction = unwrapServerAction(enviarReaccionActionResult);
+const enviarUbicacionAction = unwrapServerAction(enviarUbicacionActionResult);
+const enviarContactoAction = unwrapServerAction(enviarContactoActionResult);
+const enviarInteractivoAction = unwrapServerAction(enviarInteractivoActionResult);
+const notificarEscribiendoAction = unwrapServerAction(notificarEscribiendoActionResult);
+const bloquearContactoAction = unwrapServerAction(bloquearContactoActionResult);
+const reenviarMensajesLoteAction = unwrapServerAction(reenviarMensajesLoteActionResult);
+const eliminarMensajeAction = unwrapServerAction(eliminarMensajeActionResult);
+const crearLeadDesdeChatAction = unwrapServerAction(crearLeadDesdeChatActionResult);
+const renombrarChatAction = unwrapServerAction(renombrarChatActionResult);
+const markWhatsappNotificationsReadAction = unwrapServerAction(markWhatsappNotificationsReadActionResult);
+
 
 /** Alineado con multi-forward de WhatsApp y con la validación del action. */
 const MAX_MENSAJES_REENVIAR = 30;

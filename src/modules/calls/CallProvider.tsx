@@ -2,12 +2,16 @@
 
 import { useEffect } from "react";
 import { toast } from "sonner";
-import { setPresenciaAction, iniciarLlamadaSalienteAction } from "./actions";
+import { setPresenciaAction as setPresenciaActionResult, iniciarLlamadaSalienteAction as iniciarLlamadaSalienteActionResult } from "./actions";
 import CallOverlay from "./CallOverlay";
 import { useCallStore } from "./call-store";
 import { getIceServers } from "./queries";
 import { clearSharedCallSession, setSharedCallSession } from "./shared-session";
 import { WebrtcSession } from "./webrtc-session";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const setPresenciaAction = unwrapServerAction(setPresenciaActionResult);
+const iniciarLlamadaSalienteAction = unwrapServerAction(iniciarLlamadaSalienteActionResult);
+
 
 export async function iniciarLlamadaSalienteDesdeUi(input: {
   conversacionId: string;

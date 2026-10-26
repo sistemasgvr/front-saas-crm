@@ -5,9 +5,14 @@ import { toast } from "sonner";
 import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
 import { getVapidPublicKey } from "./queries";
-import { subscribePushAction, testPushAction, unsubscribePushAction } from "./actions";
+import { subscribePushAction as subscribePushActionResult, testPushAction as testPushActionResult, unsubscribePushAction as unsubscribePushActionResult } from "./actions";
 import { pedirPermisoNotificacionesSistema, useNotificacionesSistemaPermiso } from "./system-notifications";
 import { asegurarSuscripcionPush, debeRegistrarPushEnEsteOrigen, soportaWebPush } from "./web-push";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const subscribePushAction = unwrapServerAction(subscribePushActionResult);
+const testPushAction = unwrapServerAction(testPushActionResult);
+const unsubscribePushAction = unwrapServerAction(unsubscribePushActionResult);
+
 
 /**
  * Preferencia por dispositivo — en Perfil. Activa permiso + suscripción Web Push.

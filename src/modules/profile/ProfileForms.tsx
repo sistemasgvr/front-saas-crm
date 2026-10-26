@@ -12,13 +12,17 @@ import NotificationPermissionCard from "@/src/modules/notifications/Notification
 import { toFormData } from "@/src/lib/form-data";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { changePasswordAction, updateProfileAction } from "./actions";
+import { changePasswordAction as changePasswordActionResult, updateProfileAction as updateProfileActionResult } from "./actions";
 import {
   changePasswordSchema,
   updateProfileSchema,
   type ChangePasswordValues,
   type UpdateProfileValues,
 } from "./schema";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const changePasswordAction = unwrapServerAction(changePasswordActionResult);
+const updateProfileAction = unwrapServerAction(updateProfileActionResult);
+
 
 interface ProfileFormsProps {
   email: string;

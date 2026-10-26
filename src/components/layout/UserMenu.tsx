@@ -5,11 +5,14 @@ import { Icon } from "@/src/components/ui/Icon";
 import { Dropdown } from "@/src/components/ui/dropdown/Dropdown";
 import { DropdownItem } from "@/src/components/ui/dropdown/DropdownItem";
 import { logoutAction } from "@/src/modules/auth/actions";
-import { unsubscribePushAction } from "@/src/modules/notifications/actions";
+import { unsubscribePushAction as unsubscribePushActionResult } from "@/src/modules/notifications/actions";
 import { desactivarSuscripcionPushLocal } from "@/src/modules/notifications/web-push";
 import { Spinner } from "@/src/components/ui/Spinner";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { useState } from "react";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const unsubscribePushAction = unwrapServerAction(unsubscribePushActionResult);
+
 
 interface UserMenuProps {
   nombre: string;

@@ -10,6 +10,9 @@ export const updateProfileSchema = z.object({
 export const changePasswordSchema = z.object({
   passwordActual: passwordRequiredSchema,
   passwordNueva: passwordStrongSchema,
+}).refine((values) => values.passwordActual !== values.passwordNueva, {
+  message: "La nueva contraseña debe ser diferente a la contraseña actual",
+  path: ["passwordNueva"],
 });
 
 export type UpdateProfileValues = z.infer<typeof updateProfileSchema>;

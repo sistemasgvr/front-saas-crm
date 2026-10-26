@@ -3,6 +3,7 @@
 import { Spinner } from "@/src/components/ui/Spinner";
 import { ModuleForbidden } from "@/src/components/ui/ModuleForbidden";
 import { Icon } from "@/src/components/ui/Icon";
+import { errorMessage } from "@/src/lib/error-message";
 
 function isForbiddenError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
@@ -32,7 +33,7 @@ export function mensajeErrorConsulta(error: unknown): string {
   if (generico) {
     return "Algo falló al cargar. Espera un momento e intenta de nuevo.";
   }
-  return raw;
+  return errorMessage(error, "No se pudo cargar la información. Intenta de nuevo.");
 }
 
 export function PageLoader({ label = "Cargando…" }: { label?: string }) {

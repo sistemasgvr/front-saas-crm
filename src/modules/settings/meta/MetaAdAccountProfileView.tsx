@@ -15,10 +15,14 @@ import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import TableCard, { tdClass, thClass } from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getMetaAdAccountProfile } from "./queries";
-import { syncMetaAdAccountAction, unlinkMetaAdAccountAction } from "./actions";
+import { syncMetaAdAccountAction as syncMetaAdAccountActionResult, unlinkMetaAdAccountAction as unlinkMetaAdAccountActionResult } from "./actions";
 import MetaStatCard from "./MetaStatCard";
 import MetaInsightsSyncPanel from "./MetaInsightsSyncPanel";
 import { formatearFechaMeta, formatearMonto } from "./format";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const syncMetaAdAccountAction = unwrapServerAction(syncMetaAdAccountActionResult);
+const unlinkMetaAdAccountAction = unwrapServerAction(unlinkMetaAdAccountActionResult);
+
 
 export default function MetaAdAccountProfileView({ id }: { id: string }) {
   const router = useRouter();

@@ -7,7 +7,10 @@ import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { saveCapiDatasetAction } from "./actions";
+import { saveCapiDatasetAction as saveCapiDatasetActionResult } from "./actions";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const saveCapiDatasetAction = unwrapServerAction(saveCapiDatasetActionResult);
+
 
 /** Configuración de Conversions API (Conversion Leads): manda a Meta el
  * resultado final de un lead (ganado/perdido/descartado) para que optimice

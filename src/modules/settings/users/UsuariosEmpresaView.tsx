@@ -40,14 +40,22 @@ import ModalHeading from "@/src/components/ui/modal/ModalHeading";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import {
-  getUsuariosEmpresa,
-  getUsuariosEmpresaDestinos,
-  guardarUsuarioEmpresa,
-  estadoUsuarioEmpresa,
-  passwordTemporalEmpresa,
-  reasignarLeadsUsuario,
+  getUsuariosEmpresa as getUsuariosEmpresaResult,
+  getUsuariosEmpresaDestinos as getUsuariosEmpresaDestinosResult,
+  guardarUsuarioEmpresa as guardarUsuarioEmpresaResult,
+  estadoUsuarioEmpresa as estadoUsuarioEmpresaResult,
+  passwordTemporalEmpresa as passwordTemporalEmpresaResult,
+  reasignarLeadsUsuario as reasignarLeadsUsuarioResult,
 } from "./actions";
 import type { UsuarioEmpresa } from "./types";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const getUsuariosEmpresa = unwrapServerAction(getUsuariosEmpresaResult);
+const getUsuariosEmpresaDestinos = unwrapServerAction(getUsuariosEmpresaDestinosResult);
+const guardarUsuarioEmpresa = unwrapServerAction(guardarUsuarioEmpresaResult);
+const estadoUsuarioEmpresa = unwrapServerAction(estadoUsuarioEmpresaResult);
+const passwordTemporalEmpresa = unwrapServerAction(passwordTemporalEmpresaResult);
+const reasignarLeadsUsuario = unwrapServerAction(reasignarLeadsUsuarioResult);
+
 
 const key = ["organization-users"];
 const roles = {

@@ -5,8 +5,8 @@ import { useState } from "react";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { queryKeys } from "@/src/lib/query/keys";
 import {
-  toggleOrganizationModuleAction,
-  toggleOrganizationGroupAction,
+  toggleOrganizationModuleAction as toggleOrganizationModuleActionResult,
+  toggleOrganizationGroupAction as toggleOrganizationGroupActionResult,
 } from "./actions";
 import type { GrupoMatriz } from "../types";
 import Switch from "@/src/components/form/switch/Switch";
@@ -16,6 +16,10 @@ import Badge from "@/src/components/ui/badge/Badge";
 import { Icon } from "@/src/components/ui/Icon";
 import { Spinner } from "@/src/components/ui/Spinner";
 import WhatsappBotPanel from "./WhatsappBotPanel";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const toggleOrganizationModuleAction = unwrapServerAction(toggleOrganizationModuleActionResult);
+const toggleOrganizationGroupAction = unwrapServerAction(toggleOrganizationGroupActionResult);
+
 
 type Cambio = {
   id: string;

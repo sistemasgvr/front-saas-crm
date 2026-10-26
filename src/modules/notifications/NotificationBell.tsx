@@ -14,9 +14,12 @@ import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { useNotificationsSocket } from "./useNotificationsSocket";
 import { getNotifications, getUnreadCount } from "./queries";
-import { markNotificationReadAction } from "./actions";
+import { markNotificationReadAction as markNotificationReadActionResult } from "./actions";
 import { resolverRutaNotificacion, type NotificacionItem } from "./types";
 import { dismissOsNotificationByTag, dismissWhatsappOsNotification } from "./system-notifications";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const markNotificationReadAction = unwrapServerAction(markNotificationReadActionResult);
+
 
 function formatearFecha(iso: string) {
   return new Date(iso).toLocaleString("es-PE", { timeZone: "America/Lima", dateStyle: "short", timeStyle: "short" });

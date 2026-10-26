@@ -10,7 +10,10 @@ import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { saveMetaAppCredentialsAction } from "./actions";
+import { saveMetaAppCredentialsAction as saveMetaAppCredentialsActionResult } from "./actions";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const saveMetaAppCredentialsAction = unwrapServerAction(saveMetaAppCredentialsActionResult);
+
 
 const schema = z.object({
   appId: z.string().min(5, "Ingresa el App ID de tu Meta App"),

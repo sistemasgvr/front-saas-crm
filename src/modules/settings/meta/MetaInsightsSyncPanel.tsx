@@ -6,8 +6,11 @@ import Input from "@/src/components/form/input/InputField";
 import Button from "@/src/components/ui/button/Button";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { syncMetaAdAccountInsightsAction } from "./actions";
+import { syncMetaAdAccountInsightsAction as syncMetaAdAccountInsightsActionResult } from "./actions";
 import type { ResultadoSyncInsights } from "./types";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const syncMetaAdAccountInsightsAction = unwrapServerAction(syncMetaAdAccountInsightsActionResult);
+
 
 function hace30Dias() {
   const fecha = new Date();

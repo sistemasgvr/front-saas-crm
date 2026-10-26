@@ -12,7 +12,7 @@ import { Icon } from "@/src/components/ui/Icon";
 import { toFormData } from "@/src/lib/form-data";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { createInmuebleAction, updateInmuebleAction } from "./actions";
+import { createInmuebleAction as createInmuebleActionResult, updateInmuebleAction as updateInmuebleActionResult } from "./actions";
 import { inmuebleFormSchema, type InmuebleFormValues } from "./schema";
 import {
   ESTADOS_INMUEBLE_OPTIONS,
@@ -20,6 +20,10 @@ import {
   TIPOS_INMUEBLE_OPTIONS,
   type InmuebleRow,
 } from "./types";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const createInmuebleAction = unwrapServerAction(createInmuebleActionResult);
+const updateInmuebleAction = unwrapServerAction(updateInmuebleActionResult);
+
 
 const tipoOptions = TIPOS_INMUEBLE_OPTIONS.map((o) => ({ ...o }));
 const operacionOptions = OPERACIONES_INMUEBLE_OPTIONS.map((o) => ({ ...o }));

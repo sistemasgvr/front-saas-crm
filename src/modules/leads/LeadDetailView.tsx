@@ -30,11 +30,14 @@ import {
 } from "./meta-lead-payload";
 import { getLead } from "./queries";
 import { gestionarLeadAction } from "./actions";
-import { iniciarChatDesdeLeadAction } from "@/src/modules/chats/actions";
+import { iniciarChatDesdeLeadAction as iniciarChatDesdeLeadActionResult } from "@/src/modules/chats/actions";
 import {
   puedeIniciarChatDesdeLead,
   tituloIniciarChatDeshabilitado,
 } from "./puede-iniciar-chat";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const iniciarChatDesdeLeadAction = unwrapServerAction(iniciarChatDesdeLeadActionResult);
+
 
 type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 

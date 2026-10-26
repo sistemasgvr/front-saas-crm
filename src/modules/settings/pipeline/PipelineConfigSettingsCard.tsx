@@ -13,8 +13,11 @@ import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getPipelineConfig } from "./queries";
-import { updatePipelineConfigAction } from "./actions";
+import { updatePipelineConfigAction as updatePipelineConfigActionResult } from "./actions";
 import type { EmbudoPipelineConfig, PipelineConfigOverride } from "./types";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const updatePipelineConfigAction = unwrapServerAction(updatePipelineConfigActionResult);
+
 
 const TIPOS = ["COMPRA", "VENTA", "OTRO"] as const;
 type TipoEmbudo = (typeof TIPOS)[number];

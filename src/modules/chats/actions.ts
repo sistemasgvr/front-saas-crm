@@ -1,6 +1,9 @@
 "use server";
 
 import { apiFetch, ApiError } from "@/src/lib/api";
+import { unwrapAction } from "@/src/lib/action-result";
+import { runAction } from "@/src/lib/server-action";
+import type { ActionResult } from "@/src/lib/action-result";
 
 function fail(error: unknown, fallback: string): never {
   throw new Error(error instanceof ApiError ? error.message : fallback);
@@ -17,41 +20,47 @@ export async function enviarMensajeAction(
     /** Id propio del mensaje al que se responde — "Responder" del chat. */
     respondeAMensajeId?: string;
   },
-): Promise<void> {
-  try {
-    await apiFetch(`/whatsapp/chats/${conversacionId}/messages`, {
-      method: "POST",
-      body: JSON.stringify(input),
-    });
-  } catch (error) {
-    fail(error, "No se pudo enviar el mensaje");
-  }
+): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    try {
+      await apiFetch(`/whatsapp/chats/${conversacionId}/messages`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+    } catch (error) {
+      fail(error, "No se pudo enviar el mensaje");
+    }
+  });
 }
 
 /** emoji vacío ("") saca la reacción que ya estuviera puesta — mismo endpoint para poner y sacar. */
-export async function enviarReaccionAction(conversacionId: string, mensajeId: string, emoji: string): Promise<void> {
-  try {
-    await apiFetch(`/whatsapp/chats/${conversacionId}/messages/${mensajeId}/reaction`, {
-      method: "POST",
-      body: JSON.stringify({ emoji }),
-    });
-  } catch (error) {
-    fail(error, "No se pudo reaccionar al mensaje");
-  }
+export async function enviarReaccionAction(conversacionId: string, mensajeId: string, emoji: string): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    try {
+      await apiFetch(`/whatsapp/chats/${conversacionId}/messages/${mensajeId}/reaction`, {
+        method: "POST",
+        body: JSON.stringify({ emoji }),
+      });
+    } catch (error) {
+      fail(error, "No se pudo reaccionar al mensaje");
+    }
+  });
 }
 
 /** Sube y envía un archivo — timeout más alto que el default (documentos
  * grandes, hasta 100MB según Meta, pueden tardar en subir con conexiones lentas). */
-export async function enviarMediaAction(conversacionId: string, formData: FormData): Promise<void> {
-  try {
-    await apiFetch(`/whatsapp/chats/${conversacionId}/media`, {
-      method: "POST",
-      body: formData,
-      timeoutMs: 120_000,
-    });
-  } catch (error) {
-    fail(error, "No se pudo enviar el archivo");
-  }
+export async function enviarMediaAction(conversacionId: string, formData: FormData): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    try {
+      await apiFetch(`/whatsapp/chats/${conversacionId}/media`, {
+        method: "POST",
+        body: formData,
+        timeoutMs: 120_000,
+      });
+    } catch (error) {
+      fail(error, "No se pudo enviar el archivo");
+    }
+  });
 }
 
 export async function enviarUbicacionAction(
@@ -63,15 +72,17 @@ export async function enviarUbicacionAction(
     direccion?: string;
     respondeAMensajeId?: string;
   },
-): Promise<void> {
-  try {
-    await apiFetch(`/whatsapp/chats/${conversacionId}/location`, {
-      method: "POST",
-      body: JSON.stringify(input),
-    });
-  } catch (error) {
-    fail(error, "No se pudo enviar la ubicación");
-  }
+): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    try {
+      await apiFetch(`/whatsapp/chats/${conversacionId}/location`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+    } catch (error) {
+      fail(error, "No se pudo enviar la ubicación");
+    }
+  });
 }
 
 export async function enviarContactoAction(
@@ -80,15 +91,17 @@ export async function enviarContactoAction(
     contactos: { nombre: string; telefonos: { numero: string; tipo?: string }[]; organizacion?: string }[];
     respondeAMensajeId?: string;
   },
-): Promise<void> {
-  try {
-    await apiFetch(`/whatsapp/chats/${conversacionId}/contact`, {
-      method: "POST",
-      body: JSON.stringify(input),
-    });
-  } catch (error) {
-    fail(error, "No se pudo enviar el contacto");
-  }
+): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    try {
+      await apiFetch(`/whatsapp/chats/${conversacionId}/contact`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+    } catch (error) {
+      fail(error, "No se pudo enviar el contacto");
+    }
+  });
 }
 
 export async function enviarInteractivoAction(
@@ -104,44 +117,52 @@ export async function enviarInteractivoAction(
     url?: string;
     respondeAMensajeId?: string;
   },
-): Promise<void> {
-  try {
-    await apiFetch(`/whatsapp/chats/${conversacionId}/interactive`, {
-      method: "POST",
-      body: JSON.stringify(input),
-    });
-  } catch (error) {
-    fail(error, "No se pudo enviar el mensaje interactivo");
-  }
+): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    try {
+      await apiFetch(`/whatsapp/chats/${conversacionId}/interactive`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+    } catch (error) {
+      fail(error, "No se pudo enviar el mensaje interactivo");
+    }
+  });
 }
 
 /** Le pide a Meta mostrar "escribiendo…" en el WhatsApp del contacto (y de
  * paso confirma la lectura del último mensaje suyo) — pensado para llamarse
  * mientras el usuario escribe, con throttle en quien llama, no en cada tecla. */
-export async function notificarEscribiendoAction(conversacionId: string): Promise<void> {
-  try {
-    await apiFetch(`/whatsapp/chats/${conversacionId}/typing`, { method: "POST" });
-  } catch (error) {
-    fail(error, "No se pudo notificar que estás escribiendo");
-  }
+export async function notificarEscribiendoAction(conversacionId: string): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    try {
+      await apiFetch(`/whatsapp/chats/${conversacionId}/typing`, { method: "POST" });
+    } catch (error) {
+      fail(error, "No se pudo notificar que estás escribiendo");
+    }
+  });
 }
 
-export async function bloquearContactoAction(conversacionId: string, bloquear: boolean): Promise<void> {
-  try {
-    await apiFetch(`/whatsapp/chats/${conversacionId}/block`, {
-      method: bloquear ? "POST" : "DELETE",
-    });
-  } catch (error) {
-    fail(error, bloquear ? "No se pudo bloquear el contacto" : "No se pudo desbloquear el contacto");
-  }
+export async function bloquearContactoAction(conversacionId: string, bloquear: boolean): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    try {
+      await apiFetch(`/whatsapp/chats/${conversacionId}/block`, {
+        method: bloquear ? "POST" : "DELETE",
+      });
+    } catch (error) {
+      fail(error, bloquear ? "No se pudo bloquear el contacto" : "No se pudo desbloquear el contacto");
+    }
+  });
 }
 
 export async function reenviarMensajeAction(
   conversacionId: string,
   mensajeId: string,
   conversacionDestinoId: string,
-): Promise<void> {
-  await reenviarMensajesLoteAction(conversacionId, [mensajeId], [conversacionDestinoId]);
+): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    unwrapAction(await reenviarMensajesLoteAction(conversacionId, [mensajeId], [conversacionDestinoId]));
+  });
 }
 
 export type ResultadoReenvioLote = {
@@ -158,42 +179,48 @@ export async function reenviarMensajesLoteAction(
   conversacionId: string,
   mensajeIds: string[],
   conversacionDestinoIds: string[],
-): Promise<ResultadoReenvioLote> {
-  if (mensajeIds.length > MAX_MENSAJES_REENVIAR) {
-    throw new Error(`Máximo ${MAX_MENSAJES_REENVIAR} mensajes por reenvío`);
-  }
-  const destinaciones = [...new Set(conversacionDestinoIds.filter(Boolean))];
-  if (destinaciones.length < 1 || destinaciones.length > MAX_DESTINOS_REENVIAR) {
-    throw new Error(`Elige entre 1 y ${MAX_DESTINOS_REENVIAR} chats destino`);
-  }
-  try {
-    return await apiFetch<ResultadoReenvioLote>(`/whatsapp/chats/${conversacionId}/messages/forward`, {
-      method: "POST",
-      body: JSON.stringify({ conversacionDestinoIds: destinaciones, mensajeIds }),
-    });
-  } catch (error) {
-    fail(error, "No se pudieron reenviar los mensajes");
-  }
+): Promise<ActionResult<ResultadoReenvioLote>> {
+  return runAction(async () => {
+    if (mensajeIds.length > MAX_MENSAJES_REENVIAR) {
+      throw new Error(`Máximo ${MAX_MENSAJES_REENVIAR} mensajes por reenvío`);
+    }
+    const destinaciones = [...new Set(conversacionDestinoIds.filter(Boolean))];
+    if (destinaciones.length < 1 || destinaciones.length > MAX_DESTINOS_REENVIAR) {
+      throw new Error(`Elige entre 1 y ${MAX_DESTINOS_REENVIAR} chats destino`);
+    }
+    try {
+      return await apiFetch<ResultadoReenvioLote>(`/whatsapp/chats/${conversacionId}/messages/forward`, {
+        method: "POST",
+        body: JSON.stringify({ conversacionDestinoIds: destinaciones, mensajeIds }),
+      });
+    } catch (error) {
+      fail(error, "No se pudieron reenviar los mensajes");
+    }
+  });
 }
 
-export async function eliminarMensajeAction(conversacionId: string, mensajeId: string): Promise<void> {
-  try {
-    await apiFetch(`/whatsapp/chats/${conversacionId}/messages/${mensajeId}`, {
-      method: "DELETE",
-    });
-  } catch (error) {
-    fail(error, "No se pudo eliminar el mensaje");
-  }
+export async function eliminarMensajeAction(conversacionId: string, mensajeId: string): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    try {
+      await apiFetch(`/whatsapp/chats/${conversacionId}/messages/${mensajeId}`, {
+        method: "DELETE",
+      });
+    } catch (error) {
+      fail(error, "No se pudo eliminar el mensaje");
+    }
+  });
 }
 
-export async function iniciarChatDesdeLeadAction(leadId: string): Promise<{ conversacionId: string }> {
-  try {
-    return await apiFetch<{ conversacionId: string }>(`/whatsapp/chats/start-from-lead/${leadId}`, {
-      method: "POST",
-    });
-  } catch (error) {
-    fail(error, "No se pudo iniciar el chat");
-  }
+export async function iniciarChatDesdeLeadAction(leadId: string): Promise<ActionResult<{ conversacionId: string }>> {
+  return runAction(async () => {
+    try {
+      return await apiFetch<{ conversacionId: string }>(`/whatsapp/chats/start-from-lead/${leadId}`, {
+        method: "POST",
+      });
+    } catch (error) {
+      fail(error, "No se pudo iniciar el chat");
+    }
+  });
 }
 
 export async function crearLeadDesdeChatAction(
@@ -204,30 +231,34 @@ export async function crearLeadDesdeChatAction(
     telefono?: string;
     tipoLead?: string;
   },
-): Promise<{ leadId: string; creado: boolean }> {
-  try {
-    return await apiFetch<{ leadId: string; creado: boolean }>(
-      `/whatsapp/chats/${conversacionId}/crear-lead`,
-      {
-        method: "POST",
-        body: JSON.stringify(input),
-      },
-    );
-  } catch (error) {
-    fail(error, "No se pudo crear el lead desde el chat");
-  }
+): Promise<ActionResult<{ leadId: string; creado: boolean }>> {
+  return runAction(async () => {
+    try {
+      return await apiFetch<{ leadId: string; creado: boolean }>(
+        `/whatsapp/chats/${conversacionId}/crear-lead`,
+        {
+          method: "POST",
+          body: JSON.stringify(input),
+        },
+      );
+    } catch (error) {
+      fail(error, "No se pudo crear el lead desde el chat");
+    }
+  });
 }
 
 export async function renombrarChatAction(
   conversacionId: string,
   nombre: string,
-): Promise<void> {
-  try {
-    await apiFetch(`/whatsapp/chats/${conversacionId}/nombre`, {
-      method: "PATCH",
-      body: JSON.stringify({ nombre }),
-    });
-  } catch (error) {
-    fail(error, "No se pudo renombrar el chat");
-  }
+): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    try {
+      await apiFetch(`/whatsapp/chats/${conversacionId}/nombre`, {
+        method: "PATCH",
+        body: JSON.stringify({ nombre }),
+      });
+    } catch (error) {
+      fail(error, "No se pudo renombrar el chat");
+    }
+  });
 }

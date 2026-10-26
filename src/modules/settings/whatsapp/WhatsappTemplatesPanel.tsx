@@ -14,8 +14,11 @@ import EmptyState from "@/src/components/ui/EmptyState";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { crearPlantillaWhatsAppAction, type CrearPlantillaInput } from "./actions";
+import { crearPlantillaWhatsAppAction as crearPlantillaWhatsAppActionResult, type CrearPlantillaInput } from "./actions";
 import { getPlantillasWhatsAppTodas } from "./queries";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const crearPlantillaWhatsAppAction = unwrapServerAction(crearPlantillaWhatsAppActionResult);
+
 
 // Las 3 categorías que existen en WhatsApp Business Platform — no hay más
 // (Meta for Developers, "Aspectos básicos de las plantillas", vigente en v26).

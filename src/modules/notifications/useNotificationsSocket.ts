@@ -8,7 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { queryKeys } from "@/src/lib/query/keys";
 import type { ConversacionResumen } from "@/src/modules/chats/types";
-import { markWhatsappNotificationsReadAction, subscribePushAction, unsubscribePushAction } from "./actions";
+import { markWhatsappNotificationsReadAction as markWhatsappNotificationsReadActionResult, subscribePushAction as subscribePushActionResult, unsubscribePushAction as unsubscribePushActionResult } from "./actions";
 import { getSocketTicket, getVapidPublicKey } from "./queries";
 import { reproducirSonidoNotificacion } from "./notification-sounds";
 import {
@@ -33,6 +33,11 @@ import type {
   LlamadaEndedSocket,
   LlamadaIncomingSocket,
 } from "@/src/modules/calls/types";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const markWhatsappNotificationsReadAction = unwrapServerAction(markWhatsappNotificationsReadActionResult);
+const subscribePushAction = unwrapServerAction(subscribePushActionResult);
+const unsubscribePushAction = unwrapServerAction(unsubscribePushActionResult);
+
 
 /** Evento del backend (TiempoRealChatsService): un chat cambió. Sin
  * contenido — se vuelve a pedir por los endpoints que filtran permisos. */

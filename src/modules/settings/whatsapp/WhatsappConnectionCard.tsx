@@ -8,9 +8,14 @@ import TableAction from "@/src/components/ui/TableAction";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import CallingSettingsPanel from "@/src/modules/calls/CallingSettingsPanel";
-import { resyncWhatsappWebhookAction, unlinkWhatsappNumeroAction, verificarWhatsappWebhookAction } from "./actions";
+import { resyncWhatsappWebhookAction as resyncWhatsappWebhookActionResult, unlinkWhatsappNumeroAction as unlinkWhatsappNumeroActionResult, verificarWhatsappWebhookAction as verificarWhatsappWebhookActionResult } from "./actions";
 import type { WhatsappConexion } from "./types";
 import WhatsappEstadoConexion from "./WhatsappEstadoConexion";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const resyncWhatsappWebhookAction = unwrapServerAction(resyncWhatsappWebhookActionResult);
+const unlinkWhatsappNumeroAction = unwrapServerAction(unlinkWhatsappNumeroActionResult);
+const verificarWhatsappWebhookAction = unwrapServerAction(verificarWhatsappWebhookActionResult);
+
 
 const estados: Record<string, string> = { CONNECTED: "Conectado", DISCONNECTED: "Desconectado", PENDING: "Pendiente", BANNED: "Suspendido", RESTRICTED: "Restringido", UNVERIFIED: "Sin verificar", DELETED: "Eliminado", MIGRATED: "Migrado" };
 

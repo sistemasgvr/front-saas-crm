@@ -15,8 +15,11 @@ import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getAsignables } from "@/src/modules/leads/queries";
 import { getLeadAutoAsignacionConfig } from "./queries";
-import { updateLeadAutoAsignacionConfigAction, type UpdateLeadAutoAsignacionConfigInput } from "./actions";
+import { updateLeadAutoAsignacionConfigAction as updateLeadAutoAsignacionConfigActionResult, type UpdateLeadAutoAsignacionConfigInput } from "./actions";
 import type { LeadAutoAsignacionConfig } from "./types";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const updateLeadAutoAsignacionConfigAction = unwrapServerAction(updateLeadAutoAsignacionConfigActionResult);
+
 
 type FormState = {
   habilitado: boolean;

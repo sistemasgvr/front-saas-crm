@@ -7,9 +7,12 @@ import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { backfillMetaPageFormAction } from "./actions";
+import { backfillMetaPageFormAction as backfillMetaPageFormActionResult } from "./actions";
 import { aFechaInput, formatearFechaMeta, hoyFechaInput } from "./format";
 import type { ResultadoBackfill } from "./types";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const backfillMetaPageFormAction = unwrapServerAction(backfillMetaPageFormActionResult);
+
 
 /** Meta Lead Ads: leads suelen estar disponibles ~90 días vía API. */
 const DIAS_RETENCION_META = 90;

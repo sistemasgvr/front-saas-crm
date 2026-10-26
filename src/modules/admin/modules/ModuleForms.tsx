@@ -16,9 +16,9 @@ import { toFormData } from "@/src/lib/form-data";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import {
-  createModuleAction,
-  saveModuleGroupAction,
-  updateModuleAction,
+  createModuleAction as createModuleActionResult,
+  saveModuleGroupAction as saveModuleGroupActionResult,
+  updateModuleAction as updateModuleActionResult,
 } from "./actions";
 import {
   createModuleSchema,
@@ -27,6 +27,11 @@ import {
   type ModuleGroupValues,
 } from "./schema";
 import type { ModuloAdmin, ModuloGrupo } from "../types";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const createModuleAction = unwrapServerAction(createModuleActionResult);
+const saveModuleGroupAction = unwrapServerAction(saveModuleGroupActionResult);
+const updateModuleAction = unwrapServerAction(updateModuleActionResult);
+
 
 export const moduleGroupsKey = ["admin-module-groups"] as const;
 

@@ -14,7 +14,7 @@ import { canManageOrganization } from "@/src/lib/roles";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import EstadoPipelineBadge from "@/src/modules/leads/EstadoPipelineBadge";
-import { deleteInmuebleAction } from "./actions";
+import { deleteInmuebleAction as deleteInmuebleActionResult } from "./actions";
 import InmuebleForm from "./InmuebleForm";
 import { getInmueble, getInmuebleInteresados } from "./queries";
 import {
@@ -25,6 +25,9 @@ import {
   type InmuebleInteresadoRankeado,
   type OrigenInteresInmueble,
 } from "./types";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const deleteInmuebleAction = unwrapServerAction(deleteInmuebleActionResult);
+
 
 function colorEstado(estado: string): "success" | "warning" | "error" | "light" {
   if (estado === "DISPONIBLE") return "success";

@@ -15,7 +15,7 @@ import { unwrapAction } from "@/src/lib/action-result";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
-import { iniciarChatDesdeLeadAction } from "@/src/modules/chats/actions";
+import { iniciarChatDesdeLeadAction as iniciarChatDesdeLeadActionResult } from "@/src/modules/chats/actions";
 import {
   puedeIniciarChatDesdeLead,
   tituloIniciarChatDeshabilitado,
@@ -25,6 +25,9 @@ import LeadInmuebleInteresBlock from "./LeadInmuebleInteresBlock";
 import LeadPipelinePanel from "./LeadPipelinePanel";
 import { getLead } from "./queries";
 import { gestionarLeadAction } from "./actions";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const iniciarChatDesdeLeadAction = unwrapServerAction(iniciarChatDesdeLeadActionResult);
+
 
 type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 

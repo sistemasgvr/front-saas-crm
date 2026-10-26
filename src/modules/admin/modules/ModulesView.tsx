@@ -21,12 +21,16 @@ import {
   moduleGroupsKey,
 } from "./ModuleForms";
 import {
-  toggleModuleGroupStatusAction,
-  toggleModuleStatusAction,
+  toggleModuleGroupStatusAction as toggleModuleGroupStatusActionResult,
+  toggleModuleStatusAction as toggleModuleStatusActionResult,
 } from "./actions";
 import { getAdminModuleGroups, getAdminModules } from "./queries";
 import AutomationIntegrationCard from "./AutomationIntegrationCard";
 import type { ModuloAdmin, ModuloGrupo } from "../types";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const toggleModuleGroupStatusAction = unwrapServerAction(toggleModuleGroupStatusActionResult);
+const toggleModuleStatusAction = unwrapServerAction(toggleModuleStatusActionResult);
+
 
 type FormularioModulo = { modulo: ModuloAdmin | null; grupoId?: string };
 type CambioEstado =

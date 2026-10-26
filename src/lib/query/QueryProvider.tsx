@@ -4,20 +4,11 @@ import { MutationCache, QueryClient, QueryClientProvider } from "@tanstack/react
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { ActionLoader } from "@/src/components/ui/ActionLoader";
+import { errorMessage } from "@/src/lib/error-message";
 
 /** Next/React en prod reemplazan errores de Server Actions por #441/digest. */
 function mensajeToastError(error: unknown): string {
-  const raw = error instanceof Error ? error.message.trim() : "";
-  if (
-    !raw ||
-    /minified react error/i.test(raw) ||
-    /server components render/i.test(raw) ||
-    /\bdigest\b/i.test(raw) ||
-    /#4\d{2}\b/.test(raw)
-  ) {
-    return "No se pudo completar la acción. Intenta de nuevo.";
-  }
-  return raw;
+  return errorMessage(error);
 }
 
 function makeQueryClient() {

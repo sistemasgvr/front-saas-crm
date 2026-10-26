@@ -10,9 +10,12 @@ import { Icon } from "@/src/components/ui/Icon";
 import { toFormData } from "@/src/lib/form-data";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { updateOrganizationAdminAction } from "./actions";
+import { updateOrganizationAdminAction as updateOrganizationAdminActionResult } from "./actions";
 import { updateOrganizationAdminSchema, type UpdateOrganizationAdminValues } from "./schema";
 import type { OrganizacionAdmin } from "../types";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const updateOrganizationAdminAction = unwrapServerAction(updateOrganizationAdminActionResult);
+
 
 export default function EditOrganizationForm({ org }: { org: OrganizacionAdmin }) {
   const {

@@ -12,8 +12,14 @@ import { PageLoader } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { getMetaPermissions } from "./queries";
-import { grantMetaFeatureAction, requestMetaPermissionsAction, toggleMetaFeatureAction } from "./actions";
+import { grantMetaFeatureAction as grantMetaFeatureActionResult, requestMetaPermissionsAction as requestMetaPermissionsActionResult, toggleMetaFeatureAction as toggleMetaFeatureActionResult } from "./actions";
 import type { FeaturePermisoEstado, GrupoPermisoMeta } from "./types";
+import { unwrapServerAction } from "@/src/lib/action-result";
+import { withFormFeedback } from "@/src/lib/form-action";
+const grantMetaFeatureAction = unwrapServerAction(grantMetaFeatureActionResult);
+const requestMetaPermissionsAction = unwrapServerAction(requestMetaPermissionsActionResult);
+const toggleMetaFeatureAction = unwrapServerAction(toggleMetaFeatureActionResult);
+
 
 /** Orden y títulos de los grupos requeridos; los grupos llegan del back
  * (meta-permisos-matriz.ts), así que agregar un permiso allá no toca esta vista. */
@@ -111,7 +117,7 @@ function FeatureRow({
               : feature.scopesRequeridos.join(", ")}
           </p>
           {!requerido && feature.deseada && feature.estado === "falta" && (
-            <form action={grantMetaFeatureAction.bind(null, feature.id)} className="mt-1">
+            <form action={withFormFeedback(() => grantMetaFeatureAction(feature.id))} className="mt-1">
               <button type="submit" className="text-theme-xs font-medium text-brand-500 hover:underline">
                 Otorgar en Meta
               </button>
@@ -191,7 +197,7 @@ export default function MetaPermissionsPanel() {
           <p className="text-sm text-error-500" role="alert">
             {resultado.message}
           </p>
-          <form action={requestMetaPermissionsAction}>
+          <form action={withFormFeedback(requestMetaPermissionsAction)}>
             <SolicitarPermisosButton variant="primary" />
           </form>
         </div>
@@ -225,7 +231,7 @@ export default function MetaPermissionsPanel() {
                     Se piden juntos en un solo diálogo de Meta ({salud.scopesSolicitados.length} permisos).
                   </p>
                 </div>
-                <form action={requestMetaPermissionsAction} className="shrink-0">
+                <form action={withFormFeedback(requestMetaPermissionsAction)} className="shrink-0">
                   <SolicitarPermisosButton variant={todoOtorgado ? "outline" : "primary"} />
                 </form>
               </div>

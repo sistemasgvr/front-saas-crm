@@ -19,7 +19,9 @@ function load(relative, dependencies = {}) {
   return exports;
 }
 
-const results = load("../src/lib/action-result.ts");
+const results = load("../src/lib/action-result.ts", {
+  "./error-message": load("../src/lib/error-message.ts"),
+});
 class ApiError extends Error {
   constructor(status, message) { super(message); this.status = status; }
 }

@@ -12,13 +12,18 @@ import Badge from "@/src/components/ui/badge/Badge";
 import { Icon } from "@/src/components/ui/Icon";
 import ActionButton from "@/src/components/ui/ActionButton";
 import { getMetaConnection, getMetaPermissions } from "./queries";
-import { connectMetaAction, disconnectMetaAction } from "./actions";
+import { connectMetaAction as connectMetaActionResult, disconnectMetaAction as disconnectMetaActionResult } from "./actions";
 import MetaAppCredentialsForm from "./MetaAppCredentialsForm";
 import MetaCapiSettingsForm from "./MetaCapiSettingsForm";
 import MetaHubLayout from "./MetaHubLayout";
 import MetaPermissionsPanel from "./MetaPermissionsPanel";
 import MetaStatCard from "./MetaStatCard";
 import { formatearFechaMeta } from "./format";
+import { unwrapServerAction } from "@/src/lib/action-result";
+import { withFormFeedback } from "@/src/lib/form-action";
+const connectMetaAction = unwrapServerAction(connectMetaActionResult);
+const disconnectMetaAction = unwrapServerAction(disconnectMetaActionResult);
+
 
 export default function MetaHubView({ metaCallback }: { metaCallback?: string }) {
   const router = useRouter();
@@ -122,7 +127,7 @@ export default function MetaHubView({ metaCallback }: { metaCallback?: string })
                 portafolio y, si usas WhatsApp, tus cuentas de WhatsApp.
               </p>
             </div>
-            <form action={connectMetaAction}>
+            <form action={withFormFeedback(connectMetaAction)}>
               <Button type="submit" startIcon={<Icon name="mdi:facebook" size={18} />}>
                 Conectar con Meta
               </Button>

@@ -11,11 +11,11 @@ import { Icon } from "@/src/components/ui/Icon";
 import { Spinner } from "@/src/components/ui/Spinner";
 import { queryKeys } from "@/src/lib/query/keys";
 import {
-  acceptLlamadaAction,
-  actualizarLlamadaAction,
-  preAcceptLlamadaAction,
-  rejectLlamadaAction,
-  terminateLlamadaAction,
+  acceptLlamadaAction as acceptLlamadaActionResult,
+  actualizarLlamadaAction as actualizarLlamadaActionResult,
+  preAcceptLlamadaAction as preAcceptLlamadaActionResult,
+  rejectLlamadaAction as rejectLlamadaActionResult,
+  terminateLlamadaAction as terminateLlamadaActionResult,
 } from "./actions";
 import { detenerRingLlamada } from "./call-sounds";
 import { useCallStore } from "./call-store";
@@ -31,6 +31,13 @@ import {
   setSharedCallSession,
 } from "./shared-session";
 import { listarDispositivosAudio, WebrtcSession } from "./webrtc-session";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const acceptLlamadaAction = unwrapServerAction(acceptLlamadaActionResult);
+const actualizarLlamadaAction = unwrapServerAction(actualizarLlamadaActionResult);
+const preAcceptLlamadaAction = unwrapServerAction(preAcceptLlamadaActionResult);
+const rejectLlamadaAction = unwrapServerAction(rejectLlamadaActionResult);
+const terminateLlamadaAction = unwrapServerAction(terminateLlamadaActionResult);
+
 
 function etiquetaContacto(nombre?: string | null, waId?: string | null): string {
   return nombre?.trim() || waId || "Contacto WhatsApp";

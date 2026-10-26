@@ -19,15 +19,21 @@ import TableAction from "@/src/components/ui/TableAction";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getMetaPageFormMetaCounts, getMetaPageForms, getMetaPageProfile } from "./queries";
 import {
-  healthCheckMetaPageAction,
-  resyncMetaPageWebhookAction,
-  syncMetaPageFormsAction,
-  unlinkMetaPageAction,
+  healthCheckMetaPageAction as healthCheckMetaPageActionResult,
+  resyncMetaPageWebhookAction as resyncMetaPageWebhookActionResult,
+  syncMetaPageFormsAction as syncMetaPageFormsActionResult,
+  unlinkMetaPageAction as unlinkMetaPageActionResult,
 } from "./actions";
 import MetaFormBackfillPanel from "./MetaFormBackfillPanel";
 import MetaStatCard from "./MetaStatCard";
 import MetaWebhookBadge from "./MetaWebhookBadge";
 import { formatearFechaMeta } from "./format";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const healthCheckMetaPageAction = unwrapServerAction(healthCheckMetaPageActionResult);
+const resyncMetaPageWebhookAction = unwrapServerAction(resyncMetaPageWebhookActionResult);
+const syncMetaPageFormsAction = unwrapServerAction(syncMetaPageFormsActionResult);
+const unlinkMetaPageAction = unwrapServerAction(unlinkMetaPageActionResult);
+
 
 function colorEstadoFormulario(estado: string | null): "success" | "warning" | "error" | "light" {
   const v = (estado ?? "").toUpperCase();

@@ -1,11 +1,15 @@
 "use client";
 import { useState, useTransition, type FormEvent } from "react";
-import { changePasswordAction } from "@/src/modules/profile/actions";
+import { changePasswordAction as changePasswordActionResult } from "@/src/modules/profile/actions";
 import { logoutAction } from "./actions";
 import PasswordInput from "@/src/components/form/input/PasswordInput";
 import Label from "@/src/components/form/Label";
 import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
+import { unwrapServerAction } from "@/src/lib/action-result";
+import { errorMessage } from "@/src/lib/error-message";
+const changePasswordAction = unwrapServerAction(changePasswordActionResult);
+
 
 export default function CambiarPasswordTemporal() {
   const [pending, startTransition] = useTransition();
@@ -14,6 +18,10 @@ export default function CambiarPasswordTemporal() {
     e.preventDefault();
     setError("");
     const f = new FormData(e.currentTarget);
+    if (f.get("passwordActual") === f.get("passwordNueva")) {
+      setError("La nueva contraseña debe ser diferente a la contraseña temporal.");
+      return;
+    }
     if (f.get("passwordNueva") !== f.get("confirmacion")) {
       setError("Las contraseñas no coinciden");
       return;
@@ -25,7 +33,7 @@ export default function CambiarPasswordTemporal() {
         window.location.assign(new URL("/dashboard", window.location.origin));
       } catch (e) {
         setError(
-          e instanceof Error ? e.message : "No se pudo cambiar la contraseña",
+          errorMessage(e, "No se pudo cambiar la contraseña. Intenta de nuevo."),
         );
       }
     });

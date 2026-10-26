@@ -12,9 +12,13 @@ import { TableRowsSkeleton } from "@/src/components/ui/skeletons";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { getNotifications } from "./queries";
-import { markAllNotificationsReadAction, markNotificationReadAction } from "./actions";
+import { markAllNotificationsReadAction as markAllNotificationsReadActionResult, markNotificationReadAction as markNotificationReadActionResult } from "./actions";
 import { resolverRutaNotificacion, type NotificacionItem } from "./types";
 import { dismissAllOsNotifications, dismissOsNotificationByTag, dismissWhatsappOsNotification } from "./system-notifications";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const markAllNotificationsReadAction = unwrapServerAction(markAllNotificationsReadActionResult);
+const markNotificationReadAction = unwrapServerAction(markNotificationReadActionResult);
+
 
 function formatearFecha(iso: string) {
   return new Date(iso).toLocaleString("es-PE", { timeZone: "America/Lima", dateStyle: "short", timeStyle: "short" });

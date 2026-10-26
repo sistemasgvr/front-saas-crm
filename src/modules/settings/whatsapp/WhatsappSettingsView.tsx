@@ -9,9 +9,12 @@ import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
 import MetaLinkResourcePanel from "../meta/MetaLinkResourcePanel";
 import WhatsappTemplatesPanel from "./WhatsappTemplatesPanel";
-import { linkWhatsappNumeroAction } from "./actions";
+import { linkWhatsappNumeroAction as linkWhatsappNumeroActionResult } from "./actions";
 import WhatsappConnectionCard from "./WhatsappConnectionCard";
 import { getWhatsappConexiones, getWhatsappNumerosDisponibles } from "./queries";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const linkWhatsappNumeroAction = unwrapServerAction(linkWhatsappNumeroActionResult);
+
 
 const INVALIDATE = [queryKeys.whatsappConexiones, queryKeys.whatsappNumerosDisponibles];
 

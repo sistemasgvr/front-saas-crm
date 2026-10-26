@@ -6,13 +6,17 @@ import Button from "@/src/components/ui/button/Button";
 import Modal from "@/src/components/ui/modal/Modal";
 import { Icon } from "@/src/components/ui/Icon";
 import { getVapidPublicKey } from "./queries";
-import { subscribePushAction, unsubscribePushAction } from "./actions";
+import { subscribePushAction as subscribePushActionResult, unsubscribePushAction as unsubscribePushActionResult } from "./actions";
 import {
   pedirPermisoNotificacionesSistema,
   soportaNotificacionesSistema,
   useNotificacionesSistemaPermiso,
 } from "./system-notifications";
 import { asegurarSuscripcionPush, soportaWebPush } from "./web-push";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const subscribePushAction = unwrapServerAction(subscribePushActionResult);
+const unsubscribePushAction = unwrapServerAction(unsubscribePushActionResult);
+
 
 const SESSION_ACK_KEY = "crm-notif-unsupported-ack";
 const SESSION_LATER_KEY = "crm-notif-permission-later";

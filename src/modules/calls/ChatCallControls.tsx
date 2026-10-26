@@ -9,9 +9,12 @@ import { Spinner } from "@/src/components/ui/Spinner";
 import { DropdownItem } from "@/src/components/ui/dropdown/DropdownItem";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { solicitarPermisoLlamadaAction } from "./actions";
+import { solicitarPermisoLlamadaAction as solicitarPermisoLlamadaActionResult } from "./actions";
 import { iniciarLlamadaSalienteDesdeUi } from "./CallProvider";
 import { getCapacidadCalling, getPermisoLlamada } from "./queries";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const solicitarPermisoLlamadaAction = unwrapServerAction(solicitarPermisoLlamadaActionResult);
+
 
 function badgePermiso(status?: string | null, puede?: boolean) {
   if (puede) {

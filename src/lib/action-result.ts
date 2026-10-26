@@ -6,6 +6,8 @@
  * Importante: este módulo no debe depender de `api`/`session` (solo servidor)
  * porque `unwrapAction` se usa desde Client Components.
  */
+import { errorMessage } from "./error-message";
+
 export type ActionResult<T = void> =
   | (T extends void ? { ok: true; data?: undefined } : { ok: true; data: T })
   | { ok: false; error: string };
@@ -20,11 +22,9 @@ export function actionErr(
   error: unknown,
   fallback: string,
 ): { ok: false; error: string } {
-  const message =
-    error instanceof Error && error.message.trim() ? error.message.trim() : "";
   return {
     ok: false,
-    error: message || fallback,
+    error: errorMessage(error, fallback),
   };
 }
 
@@ -32,4 +32,11 @@ export function actionErr(
 export function unwrapAction<T>(result: ActionResult<T>): T {
   if (!result.ok) throw new Error(result.error);
   return (result as { ok: true; data: T }).data;
+}
+
+/** Adapta una Server Action al contrato habitual de consultas y mutaciones del cliente. */
+export function unwrapServerAction<Args extends unknown[], T>(
+  action: (...args: Args) => Promise<ActionResult<T>>,
+): (...args: Args) => Promise<T> {
+  return async (...args) => unwrapAction(await action(...args));
 }

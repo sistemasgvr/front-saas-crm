@@ -10,8 +10,11 @@ import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
 import EditOrganizationForm from "./EditOrganizationForm";
 import ModulesMatrix from "./ModulesMatrix";
-import { deactivateOrganizationAction } from "./actions";
+import { deactivateOrganizationAction as deactivateOrganizationActionResult } from "./actions";
 import { getAdminOrganization, getAdminOrganizationModules } from "./queries";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const deactivateOrganizationAction = unwrapServerAction(deactivateOrganizationActionResult);
+
 
 export default function OrganizationDetailView({ id }: { id: string }) {
   const orgQuery = useQuery({

@@ -30,7 +30,7 @@ import { unwrapAction } from "@/src/lib/action-result";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { canManageOrganization } from "@/src/lib/roles";
 import { toast } from "sonner";
-import { iniciarChatDesdeLeadAction } from "@/src/modules/chats/actions";
+import { iniciarChatDesdeLeadAction as iniciarChatDesdeLeadActionResult } from "@/src/modules/chats/actions";
 import { puedeIniciarChatDesdeLead } from "./puede-iniciar-chat";
 import { gestionarLeadAction, tomarLeadAction } from "./actions";
 import { getMetaPipeline, getTablero } from "./queries";
@@ -56,6 +56,9 @@ import type {
   MotivoMeta,
   TableroResultado,
 } from "./types";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const iniciarChatDesdeLeadAction = unwrapServerAction(iniciarChatDesdeLeadActionResult);
+
 
 type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 

@@ -11,8 +11,11 @@ import { Icon } from "@/src/components/ui/Icon";
 import { toFormData } from "@/src/lib/form-data";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { createOrganizationAction } from "./actions";
+import { createOrganizationAction as createOrganizationActionResult } from "./actions";
 import { createOrganizationSchema, type CreateOrganizationValues } from "./schema";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const createOrganizationAction = unwrapServerAction(createOrganizationActionResult);
+
 
 export default function CreateOrganizationForm() {
   const {

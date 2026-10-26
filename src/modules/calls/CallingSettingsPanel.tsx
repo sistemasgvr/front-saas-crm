@@ -8,13 +8,18 @@ import { Icon } from "@/src/components/ui/Icon";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import {
-  actualizarRolLineaAction,
-  actualizarSettingsLlamadaAction,
-  setPresenciaAction,
+  actualizarRolLineaAction as actualizarRolLineaActionResult,
+  actualizarSettingsLlamadaAction as actualizarSettingsLlamadaActionResult,
+  setPresenciaAction as setPresenciaActionResult,
 } from "./actions";
 import { getCallSettings, getCapacidadCalling, getPresencia } from "./queries";
 import { etiquetaRolLinea, type RolLineaWhatsapp } from "./types";
 import type { WhatsappConexion } from "@/src/modules/settings/whatsapp/types";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const actualizarRolLineaAction = unwrapServerAction(actualizarRolLineaActionResult);
+const actualizarSettingsLlamadaAction = unwrapServerAction(actualizarSettingsLlamadaActionResult);
+const setPresenciaAction = unwrapServerAction(setPresenciaActionResult);
+
 
 const ROL_OPTS = [
   { value: "MENSAJES", label: "Solo mensajes" },

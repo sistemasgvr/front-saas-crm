@@ -13,10 +13,14 @@ import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/c
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { getMetaAdAccountsAvailable, getMetaAdAccountsVinculadas } from "./queries";
-import { linkMetaAdAccountAction, unlinkMetaAdAccountAction } from "./actions";
+import { linkMetaAdAccountAction as linkMetaAdAccountActionResult, unlinkMetaAdAccountAction as unlinkMetaAdAccountActionResult } from "./actions";
 import MetaHubLayout from "./MetaHubLayout";
 import MetaLinkResourcePanel from "./MetaLinkResourcePanel";
 import { formatearFechaMeta } from "./format";
+import { unwrapServerAction } from "@/src/lib/action-result";
+const linkMetaAdAccountAction = unwrapServerAction(linkMetaAdAccountActionResult);
+const unlinkMetaAdAccountAction = unwrapServerAction(unlinkMetaAdAccountActionResult);
+
 
 function UnlinkAdAccountAction({ id }: { id: string }) {
   const mutation = useAppMutation({
