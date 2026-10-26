@@ -11,6 +11,7 @@ import Label from "@/src/components/form/Label";
 import Button from "@/src/components/ui/button/Button";
 import AppLogo from "@/src/components/ui/AppLogo";
 import { toFormData } from "@/src/lib/form-data";
+import { unwrapAction } from "@/src/lib/action-result";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { useAuthUiStore } from "@/src/stores/auth-ui.store";
 import { loginAction } from "./actions";
@@ -42,9 +43,9 @@ export default function LoginForm() {
 
   const login = useAppMutation({
     mutationFn: async (values: LoginValues) => {
-      const result = await loginAction(
+      const result = unwrapAction(await loginAction(
         toFormData({ email: values.email, password: values.password, rememberMe: values.rememberMe }),
-      );
+      ));
       if (values.rememberMe) remember(values.email, values.password);
       else forget();
 

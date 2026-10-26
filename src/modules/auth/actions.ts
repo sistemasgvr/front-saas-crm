@@ -1,6 +1,7 @@
 "use server";
 
-import { publicFetch } from "@/src/lib/api";
+import { ApiError, publicFetch } from "@/src/lib/api";
+import { actionOk, type ActionResult } from "@/src/lib/action-result";
 import { clearSessionCookies, getRefreshToken, setSessionCookies } from "@/src/lib/session";
 
 type LoginResponse = {
@@ -9,12 +10,12 @@ type LoginResponse = {
   usuario: { esAdminPlataforma: boolean; debeCambiarPassword: boolean };
 };
 
-export async function loginAction(formData: FormData): Promise<{ redirectTo: string }> {
+export async function loginAction(formData: FormData): Promise<ActionResult<{ redirectTo: string }>> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
   if (!email || !password) {
-    throw new Error("Ingresa tu email y contraseña");
+    return { ok: false, error: "Ingresa tu email y contraseña" };
   }
 
   let data: LoginResponse;
@@ -25,18 +26,24 @@ export async function loginAction(formData: FormData): Promise<{ redirectTo: str
     });
 
     if (!res.ok) {
-      throw new Error("Email o contraseña incorrectos");
+      const error = res.status === 401
+        ? "Correo o contraseña incorrectos. Revisa tus datos e intenta de nuevo."
+        : res.status === 400
+          ? "Revisa el formato del correo y completa la contraseña."
+          : res.status === 429
+            ? "Demasiados intentos. Espera unos minutos e intenta de nuevo."
+            : "No se pudo iniciar sesión por un problema del servidor. Intenta de nuevo en unos segundos.";
+      return { ok: false, error };
     }
 
     data = (await res.json()) as LoginResponse;
   } catch (error) {
-    if (error instanceof Error) {
-      if (error.message.includes("API_URL no está configurada")) throw error;
-      if (error.message !== "Email o contraseña incorrectos") {
-        throw new Error("No se pudo conectar con el servidor. Verifica que el backend esté activo.");
-      }
-    }
-    throw error;
+    return {
+      ok: false,
+      error: error instanceof ApiError && (error.status === 0 || error.status === 408)
+        ? error.message
+        : "No se pudo iniciar sesión por un problema del servidor. Intenta de nuevo en unos segundos.",
+    };
   }
 
   // Siempre persistir cookies (~24h). "Recordar email" solo afecta el store UI del formulario.
@@ -46,7 +53,7 @@ export async function loginAction(formData: FormData): Promise<{ redirectTo: str
   // Clientes van a /dashboard; si no tienen el módulo, esa página redirige.
   const redirectTo = data.usuario.debeCambiarPassword ? '/cambiar-password' : data.usuario.esAdminPlataforma ? "/admin/organizations" : "/dashboard";
 
-  return { redirectTo };
+  return actionOk({ redirectTo });
 }
 
 export async function logoutAction() {
