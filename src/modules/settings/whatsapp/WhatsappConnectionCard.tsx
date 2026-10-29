@@ -21,7 +21,7 @@ const estados: Record<string, string> = { CONNECTED: "Conectado", DISCONNECTED: 
 
 export default function WhatsappConnectionCard({ conexion }: { conexion: WhatsappConexion }) {
   const salud = useQuery({
-    queryKey: ["whatsapp", "connection-health", conexion.id],
+    queryKey: [...queryKeys.whatsappConexiones, "health", conexion.id],
     queryFn: () => verificarWhatsappWebhookAction(conexion.id),
     staleTime: 60_000,
     retry: false,

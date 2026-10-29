@@ -39,6 +39,9 @@ export default function MetaHubView({ metaCallback }: { metaCallback?: string })
       toast.error("No se pudo conectar con Meta. Intenta de nuevo.");
     }
     void queryClient.invalidateQueries({ queryKey: queryKeys.metaConnection });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.metaPermissions });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappConexiones });
+    void queryClient.invalidateQueries({ queryKey: ["whatsappCoexistenciaConfig"] });
     router.replace("/settings/meta");
   }, [metaCallback, queryClient, router]);
 
@@ -195,8 +198,11 @@ export default function MetaHubView({ metaCallback }: { metaCallback?: string })
                 startIcon={<Icon name="mdi:link-off" size={18} />}
                 invalidateKeys={[
                   queryKeys.metaConnection,
+                  queryKeys.metaPermissions,
                   queryKeys.metaPagesVinculadasAll,
                   queryKeys.metaAdAccountsVinculadasAll,
+                  queryKeys.whatsappConexiones,
+                  ["whatsappCoexistenciaConfig"],
                 ]}
               >
                 Desconectar Meta

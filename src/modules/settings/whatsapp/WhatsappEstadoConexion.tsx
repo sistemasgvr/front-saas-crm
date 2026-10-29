@@ -66,9 +66,9 @@ function armarChequeos(r: ResultadoSaludWebhookWhatsapp, rolLinea: string | null
     chequeos.push({
       id: "numero",
       nivel: "error",
-      titulo: "Meta reporta la línea desconectada",
-      detalle: "Restablece la vinculación desde la app WhatsApp Business (coexistencia).",
-      ayuda: "Re-suscribir el webhook no reconecta el número: la reconexión se hace en la app WhatsApp Business del celular o en WhatsApp Manager.",
+      titulo: "El número no está conectado a la API de WhatsApp",
+      detalle: "WhatsApp Business puede seguir funcionando en el celular. Completa o restablece la conexión del mismo número con la plataforma de Meta.",
+      ayuda: "Meta devuelve DISCONNECTED para la integración con su API; este estado no mide la conexión a internet del celular. La suscripción al webhook y el alta de coexistencia se comprueban por separado.",
     });
   }
 
