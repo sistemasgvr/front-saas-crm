@@ -60,7 +60,7 @@ export default function WhatsappSettingsView() {
             numero.verifiedName,
           );
         }}
-        successMessage="Número de WhatsApp vinculado"
+        successMessage="Número vinculado al CRM. Revisa el estado de Meta debajo."
         invalidateKeys={INVALIDATE}
       />
       <WhatsappCoexistencia />
