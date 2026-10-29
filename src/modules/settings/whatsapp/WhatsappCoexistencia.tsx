@@ -5,6 +5,7 @@ import { queryKeys } from "@/src/lib/query/keys";
 import { unwrapAction } from "@/src/lib/action-result";
 import { coexistenciaCode, coexistenciaComplete, coexistenciaConfig, guardarCoexistenciaConfig } from "./coexistencia-actions";
 import ConfiguracionCoexistenciaForm from "./ConfiguracionCoexistenciaForm";
+import { captureFacebookLoginRedirect } from "./facebook-login-redirect";
 
 type Config = { appId: string; configId: string; version: string };
 type Facebook = { init: (config: object) => void; login: (callback: (response: { authResponse?: { code?: string } }) => void, options: object) => void };
@@ -46,6 +47,8 @@ export default function WhatsappCoexistencia() {
     let session: Promise<{ sessionId: string }> | undefined;
     let asset: { wabaId: string; phoneNumberId?: string } | undefined;
     let completing = false;
+    let redirectUri: string | undefined;
+    let restoreRedirectCapture = () => {};
     const finish = (text: string) => { if (!active) return; setMessage(text); setBusy(false); cleanup.current(); };
     const timer = window.setTimeout(() => finish("La conexión tardó demasiado. Revisa el resultado en Meta antes de volver a intentarlo."), 15 * 60_000);
     const complete = async () => {
@@ -71,15 +74,17 @@ export default function WhatsappCoexistencia() {
       asset = { wabaId: data.data.waba_id, phoneNumberId: typeof data.data.phone_number_id === "string" ? data.data.phone_number_id : undefined };
       void complete();
     };
-    cleanup.current = () => { active = false; window.clearTimeout(timer); window.removeEventListener("message", listener); };
+    cleanup.current = () => { active = false; restoreRedirectCapture(); window.clearTimeout(timer); window.removeEventListener("message", listener); };
     window.addEventListener("message", listener);
     try {
+      restoreRedirectCapture = captureFacebookLoginRedirect(config.appId, config.configId, uri => { redirectUri = uri; });
       (window as FacebookWindow).FB!.login(response => {
         if (!active || session) return;
         const code = response.authResponse?.code;
         if (!code) { finish("No se recibió la autorización de Meta."); return; }
+        if (!redirectUri) { finish("No se pudo identificar la URI del diálogo de Meta. Actualiza la página antes de intentar nuevamente."); return; }
         // El code vence en 30 segundos: enviarlo inmediatamente, aun sin evento FINISH.
-        session = coexistenciaCode(code).then(unwrapAction);
+        session = coexistenciaCode(code, redirectUri).then(unwrapAction);
         session.catch(error => finish(error instanceof Error ? error.message : "Meta rechazó la autorización."));
         void complete();
       }, { config_id: config.configId, response_type: "code", override_default_response_type: true,
