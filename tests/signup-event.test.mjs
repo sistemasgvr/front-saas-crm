@@ -14,4 +14,9 @@ test('rechaza dominios suplantados, HTTP y mensajes ajenos',()=>{
  for(const origin of ['https://evilfacebook.com','https://facebook.com.evil.test','http://www.facebook.com','https://www.facebook.com:444'])assert.equal(parse(origin,data),null);
  for(const payload of ['bad JSON',null,{type:'OTHER',event:'FINISH'}, {type:'WA_EMBEDDED_SIGNUP'}])assert.equal(parse('https://www.facebook.com',payload),null);
 });
+test('expone el detalle de error y el paso abandonado que envía Meta',()=>{
+ const err=parse('https://www.facebook.com',{type:'WA_EMBEDDED_SIGNUP',event:'CANCEL',data:{error_message:'Número no elegible',error_code:3441045,session_id:'abc'}});
+ assert.equal(err.errorMessage,'Número no elegible');assert.equal(err.errorCode,'3441045');assert.equal(err.sessionId,'abc');
+ assert.equal(parse('https://www.facebook.com',{type:'WA_EMBEDDED_SIGNUP',event:'CANCEL',data:{current_step:'PHONE_NUMBER_SETUP'}}).currentStep,'PHONE_NUMBER_SETUP');
+});
 test('preserva cancelación, error y finalización sin teléfono',()=>{for(const event of ['CANCEL','ERROR','FINISH_ONLY_WABA'])assert.equal(parse('https://www.facebook.com',{type:'WA_EMBEDDED_SIGNUP',event}).event,event);});
