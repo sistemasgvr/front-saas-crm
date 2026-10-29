@@ -11,6 +11,7 @@ import MetaLinkResourcePanel from "../meta/MetaLinkResourcePanel";
 import WhatsappTemplatesPanel from "./WhatsappTemplatesPanel";
 import { linkWhatsappNumeroAction as linkWhatsappNumeroActionResult } from "./actions";
 import WhatsappConnectionCard from "./WhatsappConnectionCard";
+import WhatsappCoexistencia from "./WhatsappCoexistencia";
 import { getWhatsappConexiones, getWhatsappNumerosDisponibles } from "./queries";
 import { unwrapServerAction } from "@/src/lib/action-result";
 const linkWhatsappNumeroAction = unwrapServerAction(linkWhatsappNumeroActionResult);
@@ -35,6 +36,7 @@ export default function WhatsappSettingsView() {
         backLabel="Volver a Configuración"
       />
 
+      <WhatsappCoexistencia />
       <MetaLinkResourcePanel
         title="Vincular número de WhatsApp"
         icon="mdi:whatsapp"
