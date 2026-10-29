@@ -6,6 +6,7 @@ import { unwrapAction } from "@/src/lib/action-result";
 import { coexistenciaCode, coexistenciaComplete, coexistenciaConfig, guardarCoexistenciaConfig } from "./coexistencia-actions";
 import ConfiguracionCoexistenciaForm from "./ConfiguracionCoexistenciaForm";
 import { captureFacebookLoginRedirect } from "./facebook-login-redirect";
+import { parseSignupEvent } from "./signup-event";
 
 type Config = { appId: string; configId: string; version: string };
 type Facebook = { init: (config: object) => void; login: (callback: (response: { authResponse?: { code?: string } }) => void, options: object) => void };
@@ -49,11 +50,14 @@ export default function WhatsappCoexistencia() {
     let completing = false;
     let redirectUri: string | undefined;
     let restoreRedirectCapture = () => {};
+    let missingEventTimer: number | undefined;
     const finish = (text: string) => { if (!active) return; setMessage(text); setBusy(false); cleanup.current(); };
     const timer = window.setTimeout(() => finish("La conexión tardó demasiado. Revisa el resultado en Meta antes de volver a intentarlo."), 15 * 60_000);
     const complete = async () => {
       if (!active || !session || !asset || completing) return;
       completing = true;
+      window.clearTimeout(missingEventTimer);
+      setMessage("Validando el número y completando la conexión de WhatsApp…");
       try {
         const s = await session;
         if (!active) return;
@@ -63,18 +67,17 @@ export default function WhatsappCoexistencia() {
       } catch (error) { finish(error instanceof Error ? error.message : "No se pudo completar el alta."); }
     };
     const listener = (event: MessageEvent) => {
-      // Orígenes exactos: evilfacebook.com no debe poder completar una sesión.
-      if (!active || !["https://www.facebook.com", "https://web.facebook.com", "https://facebook.com"].includes(event.origin)) return;
-      let data;
-      try { data = typeof event.data === "string" ? JSON.parse(event.data) : event.data; } catch { return; }
-      if (data?.type !== "WA_EMBEDDED_SIGNUP") return;
+      if (!active) return;
+      const data = parseSignupEvent(event.origin, event.data);
+      if (!data) return;
       if (data.event === "CANCEL" || data.event === "ERROR") { finish("La conexión se canceló o Meta informó un error. Revisa el aviso de Meta."); return; }
-      if (data.event !== "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING") return;
-      if (typeof data.data?.waba_id !== "string" || !/^\d+$/.test(data.data.waba_id)) { finish("Meta no devolvió el identificador de la cuenta. Revisa el alta."); return; }
-      asset = { wabaId: data.data.waba_id, phoneNumberId: typeof data.data.phone_number_id === "string" ? data.data.phone_number_id : undefined };
+      if (data.event === "FINISH_ONLY_WABA") { finish("Meta terminó el flujo sin conectar un número. Revisa que la configuración incluya WhatsApp Cloud API y conectar una cuenta de WhatsApp Business existente."); return; }
+      if (!["FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING", "FINISH"].includes(data.event)) return;
+      if (!data.wabaId) { finish("Meta no devolvió el identificador de la cuenta. Revisa el alta."); return; }
+      asset = { wabaId: data.wabaId, phoneNumberId: data.phoneNumberId };
       void complete();
     };
-    cleanup.current = () => { active = false; restoreRedirectCapture(); window.clearTimeout(timer); window.removeEventListener("message", listener); };
+    cleanup.current = () => { active = false; restoreRedirectCapture(); window.clearTimeout(missingEventTimer); window.clearTimeout(timer); window.removeEventListener("message", listener); };
     window.addEventListener("message", listener);
     try {
       restoreRedirectCapture = captureFacebookLoginRedirect(config.appId, config.configId, uri => { redirectUri = uri; });
@@ -86,6 +89,13 @@ export default function WhatsappCoexistencia() {
         // El code vence en 30 segundos: enviarlo inmediatamente, aun sin evento FINISH.
         session = coexistenciaCode(code, redirectUri).then(unwrapAction);
         session.catch(error => finish(error instanceof Error ? error.message : "Meta rechazó la autorización."));
+        void session.then(() => {
+          if (!active || asset) return;
+          setMessage("Facebook autorizó la aplicación. Esperando que Meta confirme el alta del número de WhatsApp…");
+          missingEventTimer = window.setTimeout(() => {
+            if (active && !asset) finish("Facebook autorizó la aplicación, pero Meta no envió la cuenta de WhatsApp. Vuelve a conectar y elige Editar configuración; comprueba que completes las pantallas de WhatsApp Business. Si solo aparece el acceso a Facebook, revisa la variante WhatsApp Embedded Signup de este Configuration ID en Meta.");
+          }, 15000);
+        }, () => {});
         void complete();
       }, { config_id: config.configId, response_type: "code", override_default_response_type: true,
         extras: { setup: {}, featureType: "whatsapp_business_app_onboarding" } });
