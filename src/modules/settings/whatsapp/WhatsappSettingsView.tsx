@@ -36,7 +36,6 @@ export default function WhatsappSettingsView() {
         backLabel="Volver a Configuración"
       />
 
-      <WhatsappCoexistencia />
       <MetaLinkResourcePanel
         title="Vincular número de WhatsApp"
         icon="mdi:whatsapp"
@@ -64,6 +63,7 @@ export default function WhatsappSettingsView() {
         successMessage="Número de WhatsApp vinculado"
         invalidateKeys={INVALIDATE}
       />
+      <WhatsappCoexistencia />
 
       {conexionesQuery.isLoading ? (
         <PageLoader />

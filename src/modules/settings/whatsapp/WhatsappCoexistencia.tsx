@@ -34,7 +34,7 @@ function loadSdk(): Promise<Facebook> {
 
 const STEPS = [
   { title: "Autoriza en Meta", text: "Inicia sesión con Facebook y elige el portafolio de tu empresa." },
-  { title: "Confirma en el celular", text: "Escanea el código QR desde WhatsApp Business y decide si compartes el historial." },
+  { title: "Conecta tu número en Meta", text: "Completa las pantallas de WhatsApp Business y confirma en el celular con el código o QR que muestre Meta." },
   { title: "Sincronizamos el CRM", text: "Validamos el número y pedimos contactos e historial autorizados." },
 ];
 const STEP_BY_PHASE: Record<Phase, number> = { idle: -1, authorizing: 0, waiting: 1, completing: 2, done: 3, error: -1 };
@@ -135,7 +135,7 @@ export default function WhatsappCoexistencia() {
         void session.then(() => {
           if (!active || asset) return;
           setPhase("waiting");
-          setNotice({ tone: "info", text: "Autorizado. Esperando la confirmación desde tu celular…", detail: "Escanea el QR con WhatsApp Business y termina las pantallas de Meta." });
+          setNotice({ tone: "info", text: "Facebook autorizado. Falta que Meta confirme la cuenta de WhatsApp.", detail: "El código o QR aparece en la ventana de Meta. Si la ventana se cerró sin mostrar las pantallas de WhatsApp, revisa la variante y los productos del Configuration ID; esta pantalla no genera un QR." });
           missingEventTimer = window.setTimeout(() => {
             if (active && !asset) fail("Meta autorizó la aplicación, pero no envió la cuenta de WhatsApp.",
               "Vuelve a conectar y completa todas las pantallas de WhatsApp Business. Si solo aparece el acceso a Facebook, revisa que el Configuration ID sea de tipo WhatsApp Embedded Signup.");
@@ -158,8 +158,8 @@ export default function WhatsappCoexistencia() {
     error: "border-error-200 bg-error-50 text-error-800 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-300" };
   const noticeIcon = { info: "mdi:information-outline", success: "mdi:check-circle-outline", error: "mdi:alert-circle-outline" };
 
-  return <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-    <header className="flex flex-wrap items-start gap-4 border-b border-gray-100 p-5 dark:border-gray-800 sm:p-6">
+  return <details className="group/coexistencia overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+    <summary className="flex cursor-pointer list-none items-start gap-4 border-gray-100 p-5 text-left transition hover:bg-gray-50 group-open/coexistencia:border-b focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-500 dark:border-gray-800 dark:hover:bg-white/[0.02] sm:p-6 [&::-webkit-details-marker]:hidden">
       <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#25D366]/10 text-[#1DA851]"><Icon name="mdi:whatsapp" size={28} /></span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
@@ -168,7 +168,8 @@ export default function WhatsappCoexistencia() {
         </div>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Conserva tu número y sigue usando la app del celular junto con el CRM (coexistencia). Los mensajes de ambos lados se reflejan en el CRM.</p>
       </div>
-    </header>
+      <Icon name="mdi:chevron-down" size={20} className="mt-1 shrink-0 text-gray-400 transition-transform group-open/coexistencia:rotate-180" />
+    </summary>
 
     <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1fr_minmax(0,320px)]">
       <div className="space-y-5">
@@ -228,7 +229,7 @@ export default function WhatsappCoexistencia() {
           <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-white/90"><Icon name="mdi:cellphone-check" size={18} /> Antes de empezar</h3>
           <ul className="mt-3 space-y-2 text-xs leading-relaxed text-gray-600 dark:text-gray-400">
             <li className="flex gap-2"><Icon name="mdi:check" size={14} className="mt-0.5 shrink-0 text-success-500" />WhatsApp Business actualizado (2.24.17 o superior) en el celular del número.</li>
-            <li className="flex gap-2"><Icon name="mdi:check" size={14} className="mt-0.5 shrink-0 text-success-500" />Ten el celular a mano: Meta mostrará un QR para escanear desde la app.</li>
+            <li className="flex gap-2"><Icon name="mdi:check" size={14} className="mt-0.5 shrink-0 text-success-500" />Ten el celular a mano para confirmar la conexión con el código o QR que muestre Meta.</li>
             <li className="flex gap-2"><Icon name="mdi:check" size={14} className="mt-0.5 shrink-0 text-success-500" />Permite ventanas emergentes de este sitio y desactiva bloqueadores para Facebook.</li>
             <li className="flex gap-2"><Icon name="mdi:check" size={14} className="mt-0.5 shrink-0 text-success-500" />El historial solo puede sincronizarse dentro de las 24 h siguientes al alta.</li>
           </ul>
@@ -245,5 +246,5 @@ export default function WhatsappCoexistencia() {
         </details>
       </aside>
     </div>
-  </section>;
+  </details>;
 }
