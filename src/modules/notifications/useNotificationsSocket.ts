@@ -179,6 +179,7 @@ function pintarNotificacionEnVivo(
   if (!yaVista) {
     marcarNotificacionVistaReciente(data.id);
     toast.info(data.titulo, {
+      id: conversacionId ? tagNotificacionWhatsapp(conversacionId) : data.id,
       description: data.mensaje,
       ...(ruta
         ? {

@@ -162,6 +162,11 @@ export default function NotificationBell({ organizacionId }: NotificationBellPro
                         <span className="mt-0.5 block truncate text-theme-xs text-gray-500 dark:text-gray-400">
                           {item.mensaje}
                         </span>
+                        {item.tipo === "WHATSAPP_MENSAJE" && (item.cantidadNoLeidas ?? 0) > 1 && (
+                          <span className="mt-0.5 block text-theme-xs font-medium text-brand-500">
+                            {item.cantidadNoLeidas} mensajes sin leer
+                          </span>
+                        )}
                         <span className="mt-0.5 block text-theme-xs text-gray-400">
                           {formatearFecha(item.fechaCreacion)}
                         </span>

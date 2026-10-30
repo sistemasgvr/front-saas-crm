@@ -114,6 +114,11 @@ export default function NotificationsListView() {
                       <TableCell className="px-5 py-4">
                         <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">{item.titulo}</p>
                         <p className="text-theme-xs text-gray-500">{item.mensaje}</p>
+                        {item.tipo === "WHATSAPP_MENSAJE" && (item.cantidadNoLeidas ?? 0) > 1 && (
+                          <p className="text-theme-xs font-medium text-brand-500">
+                            {item.cantidadNoLeidas} mensajes sin leer
+                          </p>
+                        )}
                       </TableCell>
                       <TableCell className="px-5 py-4 text-theme-sm text-gray-500">
                         {formatearFecha(item.fechaCreacion)}

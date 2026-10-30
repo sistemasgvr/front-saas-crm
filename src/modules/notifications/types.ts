@@ -1,4 +1,5 @@
 export interface NotificacionItem {
+  cantidadNoLeidas?: number;
   id: string;
   tipo: string;
   titulo: string;
