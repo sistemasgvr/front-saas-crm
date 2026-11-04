@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getMe } from "@/src/lib/auth";
 import { isModuloHabilitado } from "@/src/lib/modules";
 import LeadDetailView from "@/src/modules/leads/LeadDetailView";
+import { tienePermiso } from "@/src/lib/permisos";
 
 export default async function LeadDetailPage({
   params,
@@ -13,11 +14,12 @@ export default async function LeadDetailPage({
   if (!me) {
     redirect("/login");
   }
-  if (!isModuloHabilitado(me.modulos, "LEADS")) redirect("/profile");
+  if (!isModuloHabilitado(me.modulos, "LEADS") ||
+    !tienePermiso(me.permisos, "leads.ver")
+  ) redirect("/profile");
   return (
     <LeadDetailView
       id={id}
-      rol={me.rol}
       usuarioId={me.usuario.id}
       whatsappHabilitado={isModuloHabilitado(me.modulos, "WHATSAPP")}
       inmueblesHabilitado={isModuloHabilitado(me.modulos, "INMUEBLES")}

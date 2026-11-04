@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/src/lib/auth";
-import { canManageOrganization } from "@/src/lib/roles";
 import { isModuloHabilitado } from "@/src/lib/modules";
 import WhatsappSettingsView from "@/src/modules/settings/whatsapp/WhatsappSettingsView";
+import { tienePermiso } from "@/src/lib/permisos";
 
 export default async function SettingsWhatsappPage() {
   const me = await getMe();
-  if (!me || !canManageOrganization(me.rol)) {
+  if (!me || !tienePermiso(me.permisos, "whatsapp.configurar")) {
     redirect("/profile");
   }
   if (!isModuloHabilitado(me.modulos, "WHATSAPP")) {

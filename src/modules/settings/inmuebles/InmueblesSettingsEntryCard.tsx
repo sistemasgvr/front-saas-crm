@@ -4,15 +4,12 @@ import Link from "next/link";
 import Button from "@/src/components/ui/button/Button";
 import CollapsibleSection from "@/src/components/ui/CollapsibleSection";
 import { Icon } from "@/src/components/ui/Icon";
-import { canManageOrganization } from "@/src/lib/roles";
+import { usePermisos } from "@/src/context/PermisosContext";
 
 /** Acceso al catálogo de inmuebles desde Configuración (sin CRUD duplicado). */
-export default function InmueblesSettingsEntryCard({
-  rol,
-}: {
-  rol: string | null | undefined;
-}) {
-  const puedeCrear = canManageOrganization(rol);
+export default function InmueblesSettingsEntryCard() {
+  const puede = usePermisos();
+  const puedeCrear = puede("inmuebles.crear");
 
   return (
     <CollapsibleSection

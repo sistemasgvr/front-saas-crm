@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { puedeVerConfiguracion } from "@/src/lib/permisos";
 import Link from "next/link";
 import type { Driver, DriveStep } from "driver.js";
 import { toast } from "sonner";
@@ -104,7 +105,15 @@ export default function GuideProvider({
     () => true,
     () => false,
   );
-  const allowed = useMemo(() => availableGuides(me), [me]);
+  const access = useMemo<GuideAccess>(
+    () => ({
+      gestiona: puedeVerConfiguracion(me.permisos),
+      modulos: me.modulos,
+      permisos: me.permisos,
+    }),
+    [me],
+  );
+  const allowed = useMemo(() => availableGuides(access), [access]);
   const [busy, setBusy] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [selection, setSelection] = useState<{
@@ -173,7 +182,7 @@ export default function GuideProvider({
         if (controller.signal.aborted) return;
         if (pathname !== path) router.push(path);
         await waitForPage(guide.ready, path, controller.signal);
-        const steps = guideSteps(guide, me);
+        const steps = guideSteps(guide, access);
         const progress = parseGuideStorage(read()).tours[id];
         const initial =
           resume && progress && !progress.completed
@@ -267,7 +276,7 @@ export default function GuideProvider({
         if (pending.current === controller) setBusy(false);
       }
     },
-    [allowed, pathname, dismissWelcome, key, router, me, read, write],
+    [allowed, pathname, dismissWelcome, key, router, access, read, write],
   );
 
   useEffect(() => {
@@ -323,7 +332,7 @@ export default function GuideProvider({
 
   return (
     <GuideContext.Provider
-      value={{ access: me, guides: allowed, storage, busy, start }}
+      value={{ access, guides: allowed, storage, busy, start }}
     >
       {hydrated &&
         !welcomeDismissed &&

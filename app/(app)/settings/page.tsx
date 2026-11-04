@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/src/lib/auth";
-import { canManageOrganization } from "@/src/lib/roles";
+import { puedeVerConfiguracion } from "@/src/lib/permisos";
 import SettingsView from "@/src/modules/settings/SettingsView";
 
 export default async function SettingsPage({
@@ -9,7 +9,7 @@ export default async function SettingsPage({
   searchParams: Promise<{ meta?: string }>;
 }) {
   const me = await getMe();
-  if (!me || !canManageOrganization(me.rol)) {
+  if (!me || !puedeVerConfiguracion(me.permisos)) {
     redirect("/profile");
   }
 

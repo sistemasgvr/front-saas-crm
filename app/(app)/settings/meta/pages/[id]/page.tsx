@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/src/lib/auth";
-import { canManageOrganization } from "@/src/lib/roles";
 import { isModuloHabilitado } from "@/src/lib/modules";
 import MetaPageProfileView from "@/src/modules/settings/meta/MetaPageProfileView";
+import { tienePermiso } from "@/src/lib/permisos";
 
 export default async function SettingsMetaPageProfilePage({
   params,
@@ -10,7 +10,7 @@ export default async function SettingsMetaPageProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const me = await getMe();
-  if (!me || !canManageOrganization(me.rol)) {
+  if (!me || !tienePermiso(me.permisos, "meta.configurar")) {
     redirect("/profile");
   }
   if (!isModuloHabilitado(me.modulos, "META_LEADS")) {

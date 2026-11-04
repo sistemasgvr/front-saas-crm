@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/src/lib/auth";
-import { canManageOrganization } from "@/src/lib/roles";
 import { isModuloHabilitado } from "@/src/lib/modules";
 import MetaAdAccountsListView from "@/src/modules/settings/meta/MetaAdAccountsListView";
+import { tienePermiso } from "@/src/lib/permisos";
 
 export default async function SettingsMetaAdAccountsPage() {
   const me = await getMe();
-  if (!me || !canManageOrganization(me.rol)) {
+  if (!me || !tienePermiso(me.permisos, "meta.configurar")) {
     redirect("/profile");
   }
   if (!isModuloHabilitado(me.modulos, "META_LEADS")) {

@@ -24,7 +24,8 @@ interface ModalProps {
  * solo `children` scrollea — así un modal con contenido largo (formularios,
  * paneles completos) nunca esconde el título ni los botones de acción.
  * Quien llama solo llena children (y header/footer si los necesita); no
- * arma su propio contenedor de scroll.
+ * arma su propio contenedor de scroll. Los botones de acción van siempre en
+ * `footer` (ver ModalFooter), nunca dentro de children.
  */
 export default function Modal({
   open,

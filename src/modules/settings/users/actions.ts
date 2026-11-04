@@ -20,7 +20,7 @@ export async function guardarUsuarioEmpresa(
     nombre: string;
     apellido: string;
     telefono: string;
-    rol: string;
+    rolId: string;
     email?: string;
     password?: string;
   },

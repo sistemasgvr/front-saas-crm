@@ -6,6 +6,7 @@ import AppLogo from "@/src/components/ui/AppLogo";
 import { Icon } from "@/src/components/ui/Icon";
 import NotificationBell from "@/src/modules/notifications/NotificationBell";
 import CallProvider from "@/src/modules/calls/CallProvider";
+import { usePermisos } from "@/src/context/PermisosContext";
 import { useSidebar } from "./SidebarContext";
 import GuideLauncher from "@/src/modules/guides/GuideLauncher";
 import UserMenu from "./UserMenu";
@@ -32,6 +33,7 @@ export default function Header({
   homeHref = "/dashboard",
 }: HeaderProps) {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
+  const usaLlamadas = usePermisos()("llamadas.usar");
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
   const handleToggle = () => {
@@ -89,7 +91,7 @@ export default function Header({
             )}
             <ThemeToggleButton />
             {organizacionId && <NotificationBell organizacionId={organizacionId} />}
-            {organizacionId && <CallProvider enabled />}
+            {organizacionId && <CallProvider enabled={usaLlamadas} />}
           </div>
           <UserMenu nombre={nombre} email={email} profileHref={profileHref} settingsHref={settingsHref} />
         </div>

@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import Button from "@/src/components/ui/button/Button";
 import Modal from "@/src/components/ui/modal/Modal";
+import ModalFooter from "@/src/components/ui/modal/ModalFooter";
 import { Icon } from "@/src/components/ui/Icon";
 import { queryKeys } from "@/src/lib/query/keys";
 import {
@@ -198,14 +199,20 @@ export default function WhatsappBotPanel({
         header={
           <ModalHeading title="Historial de permisos" icon="mdi:history" />
         }
+        footer={
+          historial.data?.data.length ? (
+            <div className="px-5 py-3">
+              <Pagination {...historial.data} onPageChange={setHistoryPage} itemLabel="eventos" />
+            </div>
+          ) : undefined
+        }
       >
-        <div className="max-h-96 overflow-y-auto p-5">
+        <div className="p-5">
           {historial.isLoading ? (
             <p role="status">Cargando…</p>
           ) : historial.isError ? (
             <button onClick={() => void historial.refetch()}>Reintentar</button>
           ) : historial.data?.data.length ? (
-            <>
             <ol className="divide-y divide-gray-100 dark:divide-gray-800">
               {historial.data.data.map((e) => (
                 <li key={e.id} className="flex items-start gap-3 py-3 text-xs">
@@ -225,8 +232,6 @@ export default function WhatsappBotPanel({
                 </li>
               ))}
             </ol>
-            <Pagination {...historial.data} onPageChange={setHistoryPage} itemLabel="eventos" />
-            </>
           ) : (
             <p className="text-sm">Sin cambios registrados.</p>
           )}
@@ -240,9 +245,31 @@ export default function WhatsappBotPanel({
         header={
           <ModalHeading title={objetivo ? "Permitir bot" : "Retirar permiso del bot"} icon={objetivo ? "mdi:shield-check-outline" : "mdi:shield-off-outline"} danger={!objetivo} />
         }
+        footer={
+          <ModalFooter>
+            <Button size="sm" variant="outline" disabled={actualizar.isPending} onClick={() => setObjetivo(null)}>Cancelar</Button>
+            <Button
+              size="sm"
+              startIcon={<Icon name={objetivo ? "mdi:shield-check-outline" : "mdi:shield-off-outline"} size={16} />}
+              type="submit"
+              form="bot-permiso-form"
+              variant={objetivo ? "primary" : "danger"}
+              loading={actualizar.isPending}
+              disabled={
+                config.isError ||
+                motivo.trim().length < 8 ||
+                motivo.trim().length > 500 ||
+                (!!objetivo && !puedeHabilitar)
+              }
+            >
+              {objetivo ? "Permitir bot" : "Retirar permiso"}
+            </Button>
+          </ModalFooter>
+        }
         className="max-w-lg"
       >
         <form
+          id="bot-permiso-form"
           className="space-y-4 p-5"
           onSubmit={(e) => {
             e.preventDefault();
@@ -278,24 +305,6 @@ export default function WhatsappBotPanel({
               placeholder="Indica el motivo (8 a 500 caracteres)"
             />
           </label>
-          <div className="flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">
-          <Button size="sm" variant="outline" disabled={actualizar.isPending} onClick={() => setObjetivo(null)}>Cancelar</Button>
-          <Button
-            size="sm"
-            startIcon={<Icon name={objetivo ? "mdi:shield-check-outline" : "mdi:shield-off-outline"} size={16} />}
-            type="submit"
-            variant={objetivo ? "primary" : "danger"}
-            loading={actualizar.isPending}
-            disabled={
-              config.isError ||
-              motivo.trim().length < 8 ||
-              motivo.trim().length > 500 ||
-              (!!objetivo && !puedeHabilitar)
-            }
-          >
-            {objetivo ? "Permitir bot" : "Retirar permiso"}
-          </Button>
-          </div>
         </form>
       </Modal>
     </section>

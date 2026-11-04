@@ -36,6 +36,7 @@ import type {
 } from "@/src/components/ui/filters/types";
 import ConfirmModal from "@/src/components/ui/modal/ConfirmModal";
 import Modal from "@/src/components/ui/modal/Modal";
+import ModalFooter from "@/src/components/ui/modal/ModalFooter";
 import ModalHeading from "@/src/components/ui/modal/ModalHeading";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
@@ -48,6 +49,7 @@ import {
   reasignarLeadsUsuario as reasignarLeadsUsuarioResult,
 } from "./actions";
 import type { UsuarioEmpresa } from "./types";
+import { getRolesEmpresa as getRolesEmpresaResult } from "../roles/actions";
 import { unwrapServerAction } from "@/src/lib/action-result";
 const getUsuariosEmpresa = unwrapServerAction(getUsuariosEmpresaResult);
 const getUsuariosEmpresaDestinos = unwrapServerAction(getUsuariosEmpresaDestinosResult);
@@ -55,18 +57,10 @@ const guardarUsuarioEmpresa = unwrapServerAction(guardarUsuarioEmpresaResult);
 const estadoUsuarioEmpresa = unwrapServerAction(estadoUsuarioEmpresaResult);
 const passwordTemporalEmpresa = unwrapServerAction(passwordTemporalEmpresaResult);
 const reasignarLeadsUsuario = unwrapServerAction(reasignarLeadsUsuarioResult);
+const getRolesEmpresa = unwrapServerAction(getRolesEmpresaResult);
 
 
 const key = ["organization-users"];
-const roles = {
-  PROPIETARIO: "Propietario",
-  ADMINISTRADOR: "Administrador",
-  USUARIO: "Asesor",
-};
-const opcionesRol = [
-  { value: "USUARIO", label: "Asesor" },
-  { value: "ADMINISTRADOR", label: "Administrador" },
-];
 const campos: DynamicFilterFieldDef[] = [
   {
     key: "q",
@@ -79,7 +73,12 @@ const campos: DynamicFilterFieldDef[] = [
     label: "Rol",
     type: "select",
     placeholder: "Todos",
-    options: [{ value: "PROPIETARIO", label: "Propietario" }, ...opcionesRol],
+    options: [
+      { value: "PROPIETARIO", label: "Propietario" },
+      { value: "ADMINISTRADOR", label: "Administrador" },
+      { value: "USUARIO", label: "Asesor" },
+      { value: "PERSONALIZADO", label: "Roles personalizados" },
+    ],
   },
   {
     key: "estado",
@@ -101,7 +100,7 @@ export default function UsuariosEmpresaView({
 }) {
   const [page, setPage] = useState(1);
   const [editor, setEditor] = useState<UsuarioEmpresa | "nuevo" | null>(null);
-  const [rolEditor, setRolEditor] = useState("USUARIO");
+  const [rolEditor, setRolEditor] = useState("");
   const [estado, setEstado] = useState<UsuarioEmpresa | null>(null);
   const [password, setPassword] = useState<UsuarioEmpresa | null>(null);
   const [reasignar, setReasignar] = useState<UsuarioEmpresa | null>(null);
@@ -117,7 +116,17 @@ export default function UsuariosEmpresaView({
     queryFn: getUsuariosEmpresaDestinos,
     enabled: !!reasignar,
   });
-  const invalidar = [key, queryKeys.me];
+  const rolesQuery = useQuery({
+    queryKey: queryKeys.organizationRoles,
+    queryFn: () => getRolesEmpresa(),
+  });
+  // El propietario lo asigna solo la plataforma.
+  const opcionesRol = (rolesQuery.data ?? [])
+    .filter((r) => r.codigo !== "PROPIETARIO")
+    .map((r) => ({ value: r.id, label: r.nombre }));
+  const rolAsesorId =
+    rolesQuery.data?.find((r) => r.codigo === "USUARIO")?.id ?? "";
+  const invalidar = [key, queryKeys.me, queryKeys.organizationRoles];
   const guardar = useAppMutation({
     mutationFn: async ({
       id,
@@ -170,7 +179,7 @@ export default function UsuariosEmpresaView({
   const filtrados = usuarios;
   const abrirEditor = (u: UsuarioEmpresa | "nuevo") => {
     guardar.reset();
-    setRolEditor(u === "nuevo" ? "USUARIO" : u.rol);
+    setRolEditor(u === "nuevo" ? rolAsesorId : (u.rolId ?? ""));
     setEditor(u);
   };
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -182,7 +191,7 @@ export default function UsuariosEmpresaView({
         nombre: String(f.get("nombre")).trim(),
         apellido: String(f.get("apellido") ?? "").trim(),
         telefono: String(f.get("telefono") ?? "").trim(),
-        rol: rolEditor,
+        rolId: rolEditor,
         ...(!actual
           ? {
               email: String(f.get("email")).trim(),
@@ -207,10 +216,12 @@ export default function UsuariosEmpresaView({
           ? "primary"
           : u.rol === "ADMINISTRADOR"
             ? "info"
-            : "light"
+            : u.rol === "PERSONALIZADO"
+              ? "warning"
+              : "light"
       }
     >
-      {roles[u.rol]}
+      {u.rolNombre}
     </Badge>
   );
   const detalle = (u: UsuarioEmpresa) => (
@@ -403,8 +414,32 @@ export default function UsuariosEmpresaView({
             }
           />
         }
+        footer={
+          <ModalFooter
+            error={guardar.isError ? guardar.error.message : undefined}
+          >
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={guardar.isPending}
+              onClick={() => setEditor(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form="usuario-form"
+              size="sm"
+              loading={guardar.isPending}
+              startIcon={<Icon name="mdi:content-save-outline" size={18} />}
+            >
+              Guardar usuario
+            </Button>
+          </ModalFooter>
+        }
       >
         <form
+          id="usuario-form"
           key={actual?.id ?? "nuevo"}
           onSubmit={submit}
           className="space-y-4 p-5"
@@ -474,33 +509,11 @@ export default function UsuariosEmpresaView({
                 id="usuario-rol"
                 name="rol"
                 options={opcionesRol}
-                placeholder=""
-                disabled={actual?.id === usuarioId}
+                placeholder="Selecciona un rol"
+                disabled={actual?.id === usuarioId || rolesQuery.isLoading}
                 value={rolEditor}
                 onChange={setRolEditor}
               />
-            </div>
-            {guardar.isError && (
-              <p role="alert" className="text-sm text-error-600">
-                {guardar.error.message}
-              </p>
-            )}
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditor(null)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                loading={guardar.isPending}
-                startIcon={<Icon name="mdi:content-save-outline" size={18} />}
-              >
-                Guardar usuario
-              </Button>
             </div>
           </fieldset>
         </form>
@@ -542,8 +555,30 @@ export default function UsuariosEmpresaView({
             icon="mdi:lock-reset"
           />
         }
+        footer={
+          <ModalFooter error={reset.isError ? reset.error.message : undefined}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={reset.isPending}
+              onClick={() => setPassword(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form="reset-password-form"
+              size="sm"
+              loading={reset.isPending}
+              startIcon={<Icon name="mdi:lock-reset" size={18} />}
+            >
+              Guardar contraseña temporal
+            </Button>
+          </ModalFooter>
+        }
       >
         <form
+          id="reset-password-form"
           key={password?.id ?? "password"}
           className="space-y-4 p-5"
           onSubmit={(e) => {
@@ -565,29 +600,6 @@ export default function UsuariosEmpresaView({
             disabled={reset.isPending}
             autoComplete="new-password"
           />
-          {reset.isError && (
-            <p role="alert" className="text-sm text-error-600">
-              {reset.error.message}
-            </p>
-          )}
-          <div className="flex justify-end gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={reset.isPending}
-              onClick={() => setPassword(null)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              size="sm"
-              loading={reset.isPending}
-              startIcon={<Icon name="mdi:lock-reset" size={18} />}
-            >
-              Guardar contraseña temporal
-            </Button>
-          </div>
         </form>
       </Modal>
       <Modal
@@ -601,8 +613,31 @@ export default function UsuariosEmpresaView({
             icon="mdi:account-switch-outline"
           />
         }
+        footer={
+          <ModalFooter error={mover.isError ? mover.error.message : undefined}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={mover.isPending}
+              onClick={() => setReasignar(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form="reasignar-form"
+              size="sm"
+              disabled={!destino}
+              loading={mover.isPending}
+              startIcon={<Icon name="mdi:account-switch-outline" size={18} />}
+            >
+              Confirmar reasignación
+            </Button>
+          </ModalFooter>
+        }
       >
         <form
+          id="reasignar-form"
           className="space-y-4 p-5"
           onSubmit={(e) => {
             e.preventDefault();
@@ -628,30 +663,6 @@ export default function UsuariosEmpresaView({
                 label: `${u.nombre} ${u.apellido ?? ""} · ${u.email}`,
               }))}
           />
-          {mover.isError && (
-            <p role="alert" className="text-sm text-error-600">
-              {mover.error.message}
-            </p>
-          )}
-          <div className="flex justify-end gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={mover.isPending}
-              onClick={() => setReasignar(null)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={!destino}
-              loading={mover.isPending}
-              startIcon={<Icon name="mdi:account-switch-outline" size={18} />}
-            >
-              Confirmar reasignación
-            </Button>
-          </div>
         </form>
       </Modal>
     </div>

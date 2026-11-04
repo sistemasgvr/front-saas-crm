@@ -28,7 +28,6 @@ import EmptyState from "@/src/components/ui/EmptyState";
 import { queryKeys } from "@/src/lib/query/keys";
 import { unwrapAction } from "@/src/lib/action-result";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { canManageOrganization } from "@/src/lib/roles";
 import { toast } from "sonner";
 import { iniciarChatDesdeLeadAction as iniciarChatDesdeLeadActionResult } from "@/src/modules/chats/actions";
 import { puedeIniciarChatDesdeLead } from "./puede-iniciar-chat";
@@ -57,10 +56,10 @@ import type {
   TableroResultado,
 } from "./types";
 import { unwrapServerAction } from "@/src/lib/action-result";
+import { usePermisos } from "@/src/context/PermisosContext";
 const iniciarChatDesdeLeadAction = unwrapServerAction(iniciarChatDesdeLeadActionResult);
 
 
-type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 
 interface PendingClose {
   leadId: string;
@@ -388,18 +387,17 @@ function KanbanColumn({
 }
 
 export default function LeadsKanbanView({
-  rol,
   usuarioId,
   whatsappHabilitado,
   inmueblesHabilitado = false,
 }: {
-  rol: Rol;
   usuarioId: string;
   whatsappHabilitado: boolean;
   inmueblesHabilitado?: boolean;
 }) {
   const [page, setPage] = useState(1);
-  const esAdmin = canManageOrganization(rol);
+  const puede = usePermisos();
+  const esAdmin = puede("leads.ver_todos");
   const [tipoFiltro, setTipoFiltro] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState("");
   const busquedaDeferred = useDeferredValue(busqueda);
@@ -853,7 +851,6 @@ export default function LeadsKanbanView({
         leadId={leadDetalleId}
         open={Boolean(leadDetalleId)}
         onClose={() => setLeadDetalleId(null)}
-        rol={rol}
         usuarioId={usuarioId}
         whatsappHabilitado={whatsappHabilitado}
         inmueblesHabilitado={inmueblesHabilitado}

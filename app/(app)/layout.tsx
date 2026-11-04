@@ -14,7 +14,8 @@ import Backdrop from "@/src/components/layout/Backdrop";
 import AppShell from "@/src/components/layout/AppShell";
 import BackendUnavailable from "@/src/components/ui/BackendUnavailable";
 
-import { canManageOrganization, canViewOrgDashboard } from "@/src/lib/roles";
+import { puedeVerConfiguracion, tienePermiso } from "@/src/lib/permisos";
+import { PermisosProvider } from "@/src/context/PermisosContext";
 
 const CLIENT_NAV_GROUPS: NavGroup[] = [
   {
@@ -25,24 +26,28 @@ const CLIENT_NAV_GROUPS: NavGroup[] = [
         icon: "mdi:view-dashboard-outline",
         path: "/dashboard",
         requiereModulo: "DASHBOARD",
+        requierePermiso: "dashboard.ver",
       },
       {
         name: "Leads",
         icon: "mdi:account-multiple-outline",
         path: "/leads",
         requiereModulo: "LEADS",
+        requierePermiso: "leads.ver",
       },
       {
         name: "Agenda",
         icon: "mdi:calendar-month-outline",
         path: "/agenda",
         requiereModulo: "LEADS",
+        requierePermiso: "leads.ver",
       },
       {
         name: "Inmuebles",
         icon: "mdi:home-city-outline",
         path: "/inmuebles",
         requiereModulo: "INMUEBLES",
+        requierePermiso: "inmuebles.ver",
       },
     ],
   },
@@ -54,12 +59,14 @@ const CLIENT_NAV_GROUPS: NavGroup[] = [
         icon: "mdi:whatsapp",
         path: "/chats",
         requiereModulo: "WHATSAPP",
+        requierePermiso: "chats.ver",
       },
       {
         name: "Llamadas",
         icon: "mdi:phone",
         path: "/llamadas",
         requiereModulo: "WHATSAPP",
+        requierePermiso: "llamadas.usar",
       },
     ],
   },
@@ -76,13 +83,15 @@ const CLIENT_NAV_GROUPS: NavGroup[] = [
 function filtrarGrupo(
   group: NavGroup,
   habilitados: Set<string>,
-  rol: string | null,
+  permisos: readonly string[],
 ): NavGroup | null {
   const items = group.items.filter((item: NavItem) => {
     if (item.requiereModulo && !habilitados.has(item.requiereModulo))
       return false;
-    if (item.path === "/dashboard" && !canViewOrgDashboard(rol)) return false;
-    if (item.path === "/settings" && !canManageOrganization(rol)) return false;
+    if (item.requierePermiso && !tienePermiso(permisos, item.requierePermiso))
+      return false;
+    if (item.path === "/settings" && !puedeVerConfiguracion(permisos))
+      return false;
     return true;
   });
   if (items.length === 0) return null;
@@ -112,12 +121,13 @@ export default async function AppLayout({
     me.modulos.filter((m) => m.habilitado).map((m) => m.codigo),
   );
   const groups = CLIENT_NAV_GROUPS.map((g) =>
-    filtrarGrupo(g, habilitados, me.rol),
+    filtrarGrupo(g, habilitados, me.permisos),
   ).filter((g): g is NavGroup => g !== null);
 
   const homeHref = getDefaultClientRoute(me);
 
   return (
+    <PermisosProvider permisos={me.permisos ?? []}>
     <SidebarProvider>
       <GuideProvider me={me}>
         <div className="min-h-screen xl:flex">
@@ -138,7 +148,7 @@ export default async function AppLayout({
                 organizacionLogoUrl={me.organizacion?.logoUrl}
                 profileHref="/profile"
                 settingsHref={
-                  canManageOrganization(me.rol) ? "/settings" : undefined
+                  puedeVerConfiguracion(me.permisos) ? "/settings" : undefined
                 }
                 homeHref={homeHref}
               />
@@ -149,5 +159,6 @@ export default async function AppLayout({
         </div>
       </GuideProvider>
     </SidebarProvider>
+    </PermisosProvider>
   );
 }

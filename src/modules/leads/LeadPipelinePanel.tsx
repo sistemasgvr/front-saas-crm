@@ -23,6 +23,7 @@ import PipelineStepper from "./PipelineStepper";
 import PipelineTimeline from "./PipelineTimeline";
 import TransicionPipelineModal from "./TransicionPipelineModal";
 import Modal from "@/src/components/ui/modal/Modal";
+import ModalFooter from "@/src/components/ui/modal/ModalFooter";
 import HelpTooltip from "@/src/components/ui/HelpTooltip";
 import { camposParaDestino } from "./pipeline-transicion";
 import {
@@ -513,6 +514,26 @@ export default function LeadPipelinePanel({
       <Modal
         open={Boolean(tipoPendienteConfirmacion)}
         onClose={() => setTipoPendienteConfirmacion(null)}
+        footer={
+          <ModalFooter>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setTipoPendienteConfirmacion(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              loading={gestionar.isPending}
+              onClick={confirmarCambioTipo}
+            >
+              Sí, cambiar tipo
+            </Button>
+          </ModalFooter>
+        }
       >
         <div className="p-5 sm:p-6">
           <div className="flex items-start gap-3">
@@ -544,24 +565,6 @@ export default function LeadPipelinePanel({
                 </li>
               </ul>
             </div>
-          </div>
-          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => setTipoPendienteConfirmacion(null)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              loading={gestionar.isPending}
-              onClick={confirmarCambioTipo}
-            >
-              Sí, cambiar tipo
-            </Button>
           </div>
         </div>
       </Modal>

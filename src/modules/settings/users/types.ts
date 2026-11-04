@@ -5,7 +5,10 @@ export interface UsuarioEmpresa {
   nombre: string;
   apellido: string | null;
   telefono: string | null;
-  rol: "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO";
+  rol: "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | "PERSONALIZADO";
+  /** Rol de la empresa y su nombre visible (roles personalizados incluidos). */
+  rolId: string | null;
+  rolNombre: string;
   estado: number;
   cuentaActiva: boolean;
   debeCambiarPassword: number;

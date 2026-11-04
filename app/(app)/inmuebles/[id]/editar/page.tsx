@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/src/lib/auth";
 import { getDefaultClientRoute, isModuloHabilitado } from "@/src/lib/modules";
-import { canManageOrganization } from "@/src/lib/roles";
 import InmuebleDetailView from "@/src/modules/inmuebles/InmuebleDetailView";
+import { tienePermiso } from "@/src/lib/permisos";
 
 export default async function EditarInmueblePage({
   params,
@@ -14,12 +14,14 @@ export default async function EditarInmueblePage({
   if (!me) {
     redirect("/login");
   }
-  if (!isModuloHabilitado(me.modulos, "INMUEBLES")) {
+  if (!isModuloHabilitado(me.modulos, "INMUEBLES") ||
+    !tienePermiso(me.permisos, "inmuebles.ver")
+  ) {
     redirect(getDefaultClientRoute(me));
   }
-  if (!canManageOrganization(me.rol)) {
+  if (!tienePermiso(me.permisos, "inmuebles.editar")) {
     redirect(`/inmuebles/${id}`);
   }
 
-  return <InmuebleDetailView id={id} rol={me.rol} editMode />;
+  return <InmuebleDetailView id={id} editMode />;
 }

@@ -15,7 +15,6 @@ import { QueryError } from "@/src/components/ui/PageLoader";
 import { unwrapAction } from "@/src/lib/action-result";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { canManageOrganization } from "@/src/lib/roles";
 import LeadAssignmentActions from "./LeadAssignmentActions";
 import LeadInmuebleInteresBlock from "./LeadInmuebleInteresBlock";
 import LeadPipelinePanel from "./LeadPipelinePanel";
@@ -36,10 +35,10 @@ import {
   tituloIniciarChatDeshabilitado,
 } from "./puede-iniciar-chat";
 import { unwrapServerAction } from "@/src/lib/action-result";
+import { usePermisos } from "@/src/context/PermisosContext";
 const iniciarChatDesdeLeadAction = unwrapServerAction(iniciarChatDesdeLeadActionResult);
 
 
-type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 
 function formatearFecha(iso: string | null | undefined) {
   if (!iso) return "—";
@@ -151,19 +150,19 @@ function resumenOrigen(lead: {
 
 export default function LeadDetailView({
   id,
-  rol,
   usuarioId,
   whatsappHabilitado,
   inmueblesHabilitado,
 }: {
   id: string;
-  rol: Rol;
   usuarioId: string;
   whatsappHabilitado: boolean;
   inmueblesHabilitado: boolean;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const puede = usePermisos();
+  const veTodos = puede("leads.ver_todos");
   const leadQuery = useQuery({
     queryKey: queryKeys.lead(id),
     queryFn: () => getLead(id),
@@ -202,7 +201,7 @@ export default function LeadDetailView({
   const lead = leadQuery.data;
   const nombre = lead.nombre ?? "Sin nombre";
   const puedeGestionar =
-    canManageOrganization(rol) || lead.asignado?.id === usuarioId;
+    puede("leads.editar") && (veTodos || lead.asignado?.id === usuarioId);
   const meta = parsearMetaLeadPayload(lead.datosCrudos);
   const respuestas = meta?.field_data ?? [];
   const previewRespuestas =
@@ -318,7 +317,6 @@ export default function LeadDetailView({
             <LeadAssignmentActions
               leadId={id}
               asignado={lead.asignado}
-              rol={rol}
             />
           </div>
 
@@ -355,7 +353,7 @@ export default function LeadDetailView({
             estadoGestionEn={lead.estadoGestionEn}
             motivoCierre={lead.motivoCierre}
             notaCierre={lead.notaCierre}
-            esAdmin={canManageOrganization(rol)}
+            esAdmin={veTodos}
             puedeGestionar={puedeGestionar}
             inmueblesHabilitado={inmueblesHabilitado}
           />

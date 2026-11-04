@@ -20,7 +20,6 @@ export default async function ChatDetailPage({
       id={id}
       inmueblesHabilitado={inmueblesHabilitado}
       usuarioId={me?.usuario.id ?? ""}
-      rol={me?.rol ?? null}
     />
   );
 }

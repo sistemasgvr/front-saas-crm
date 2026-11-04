@@ -8,22 +8,21 @@ import TableAction from "@/src/components/ui/TableAction";
 import { queryKeys } from "@/src/lib/query/keys";
 import { unwrapAction } from "@/src/lib/action-result";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { canManageOrganization } from "@/src/lib/roles";
 import { asignarLeadAction, liberarLeadAction, tomarLeadAction } from "./actions";
 import { getAsignables } from "./queries";
 import type { ReferenciaNombrada } from "./types";
+import { usePermisos } from "@/src/context/PermisosContext";
 
 export default function LeadAssignmentActions({
   leadId,
   asignado,
-  rol,
 }: {
   leadId: string;
   asignado: ReferenciaNombrada | null;
-  rol: "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 }) {
   const [asignarAbierto, setAsignarAbierto] = useState(false);
-  const esAdmin = canManageOrganization(rol);
+  const puede = usePermisos();
+  const esAdmin = puede("leads.asignar");
 
   const asignablesQuery = useQuery({
     queryKey: queryKeys.leadsAsignables,

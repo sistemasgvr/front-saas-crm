@@ -3,6 +3,7 @@
 import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
 import Modal from "@/src/components/ui/modal/Modal";
+import ModalFooter from "@/src/components/ui/modal/ModalFooter";
 import { ETIQUETA_TIPO_LEAD } from "./pipeline";
 import { TIPOS_LEAD_INMOBILIARIA } from "./types";
 
@@ -28,7 +29,17 @@ export default function ClasificarTipoLeadModal({
   onCancelar: () => void;
 }) {
   return (
-    <Modal open={open} onClose={onCancelar}>
+    <Modal
+      open={open}
+      onClose={onCancelar}
+      footer={
+        <ModalFooter>
+          <Button type="button" size="sm" variant="outline" onClick={onCancelar} disabled={loading}>
+            Cancelar
+          </Button>
+        </ModalFooter>
+      }
+    >
       <div className="p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
@@ -59,12 +70,6 @@ export default function ClasificarTipoLeadModal({
               {ETIQUETA_TIPO_LEAD[tipo] ?? tipo}
             </button>
           ))}
-        </div>
-
-        <div className="mt-4 flex justify-end">
-          <Button type="button" size="sm" variant="outline" onClick={onCancelar} disabled={loading}>
-            Cancelar
-          </Button>
         </div>
       </div>
     </Modal>

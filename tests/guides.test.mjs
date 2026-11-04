@@ -24,10 +24,18 @@ function load(file) {
 }
 const catalog = load("src/modules/guides/catalog.ts");
 const progress = load("src/modules/guides/progress.ts");
-const access = (rol, codes = []) => ({
-  rol,
-  modulos: codes.map((codigo) => ({ codigo, habilitado: true, grupo: "CRM" })),
-});
+const access = (rol, codes = []) => {
+  const gestiona = rol === "PROPIETARIO" || rol === "ADMINISTRADOR";
+  return {
+    gestiona,
+    permisos: gestiona ? ["roles.gestionar"] : [],
+    modulos: codes.map((codigo) => ({
+      codigo,
+      habilitado: true,
+      grupo: "CRM",
+    })),
+  };
+};
 const all = [
   "LEADS",
   "WHATSAPP",
@@ -99,6 +107,19 @@ test("un administrador sin un módulo tampoco ve su recorrido", () => {
     catalog.availableGuides(access("PROPIETARIO", all)).length,
     catalog.guides.length,
   );
+});
+test("la guía de roles exige el permiso de su pantalla, no solo entrar a Configuración", () => {
+  const conAcceso = access("ADMINISTRADOR");
+  const sinPermiso = { ...conAcceso, permisos: ["inmuebles.crear"] };
+  const ids = (a) => catalog.availableGuides(a).map((g) => g.id);
+  assert(ids(conAcceso).includes("roles-permisos"));
+  assert(!ids(sinPermiso).includes("roles-permisos"));
+  assert(!ids(access("USUARIO")).includes("roles-permisos"));
+
+  const config = catalog.guides.find((g) => g.id === "configuracion");
+  const titulos = (a) => catalog.guideSteps(config, a).map((s) => s.title);
+  assert(titulos(conAcceso).includes("Roles y permisos"));
+  assert(!titulos(sinPermiso).includes("Roles y permisos"));
 });
 test("detalle, tablero, alta y edición no se confunden entre sí", () => {
   const matches = (pathname) =>

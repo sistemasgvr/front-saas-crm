@@ -14,6 +14,7 @@ import {
 import { Icon } from "@/src/components/ui/Icon";
 import Button from "@/src/components/ui/button/Button";
 import Modal from "@/src/components/ui/modal/Modal";
+import ModalFooter from "@/src/components/ui/modal/ModalFooter";
 import ModalHeading from "@/src/components/ui/modal/ModalHeading";
 const key = ["admin", "automations", "integration"];
 export default function AutomationIntegrationCard() {
@@ -50,20 +51,13 @@ export default function AutomationIntegrationCard() {
       >
         {q.isError ? "Reintentar" : "Configurar"}
       </Button>
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
-        className="max-w-lg"
-        header={<ModalHeading title="Conexión n8n" icon="mdi:lan-connect" />}
-      >
-        {q.data && (
-          <IntegrationForm
-            key={q.data.version}
-            data={q.data}
-            close={() => setOpen(false)}
-          />
-        )}
-      </Modal>
+      {open && q.data && (
+        <IntegrationForm
+          key={q.data.version}
+          data={q.data}
+          close={() => setOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -110,85 +104,90 @@ function IntegrationForm({
   const inputClass =
     "mt-1 h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500";
   return (
-    <form
-      className="space-y-3 p-5"
-      onSubmit={(e) => {
-        e.preventDefault();
-        mutation.mutate();
-      }}
+    <Modal
+      open
+      onClose={close}
+      className="max-w-lg"
+      header={<ModalHeading title="Conexión n8n" icon="mdi:lan-connect" />}
+      footer={
+        <ModalFooter error={mutation.isError ? mutation.error.message : undefined}>
+          <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={close}>Cancelar</Button>
+          <Button type="submit" form="n8n-form" size="sm" loading={mutation.isPending} startIcon={<Icon name="mdi:content-save-outline" size={16} />}>Guardar</Button>
+        </ModalFooter>
+      }
     >
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-        <span className="flex items-center gap-2"><Icon name="mdi:link-variant" size={16} />URL del webhook</span>
-        <input
-          className={inputClass}
-          type="url"
-          required
-          maxLength={2048}
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://n8n.example.com/webhook/crm"
-          disabled={mutation.isPending}
-        />
-      </label>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-        <span className="flex items-center gap-2"><Icon name="mdi:shield-key-outline" size={16} />Cabecera de autenticación</span>
-        <input
-          className={inputClass}
-          required
-          maxLength={100}
-          value={header}
-          onChange={(e) => setHeader(e.target.value)}
-          disabled={mutation.isPending}
-        />
-      </label>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-        <span className="flex items-center gap-2"><Icon name="mdi:key-outline" size={16} />Secreto</span>
-        <span className="relative block">
-        <input
-          className={`${inputClass} pr-11`}
-          type={visible ? "text" : "password"}
-          autoComplete="new-password"
-          minLength={16}
-          maxLength={4096}
-          value={secret}
-          onChange={(e) => setSecret(e.target.value)}
-          disabled={remove || mutation.isPending}
-          placeholder={
-            data.credencialConfigurada
-              ? "Guardado · dejar vacío para conservar"
-              : "Sin configurar"
-          }
-        />
-        <button type="button" aria-label={visible ? "Ocultar secreto" : "Mostrar secreto"} aria-pressed={visible} disabled={remove || mutation.isPending} onClick={() => setVisible(!visible)} className="absolute right-1 top-2 flex h-9 w-9 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-brand-500 dark:text-gray-400 dark:hover:bg-white/10"><Icon name={visible ? "mdi:eye-off-outline" : "mdi:eye-outline"} size={18} /></button>
-        </span>
-      </label>
-      {data.credencialConfigurada && (
-        <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+      <form
+        id="n8n-form"
+        className="space-y-3 p-5"
+        onSubmit={(e) => {
+          e.preventDefault();
+          mutation.mutate();
+        }}
+      >
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="flex items-center gap-2"><Icon name="mdi:link-variant" size={16} />URL del webhook</span>
           <input
-            type="checkbox"
-            className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-950"
-            checked={remove}
+            className={inputClass}
+            type="url"
+            required
+            maxLength={2048}
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://n8n.example.com/webhook/crm"
             disabled={mutation.isPending}
-            onChange={(e) => {
-              setRemove(e.target.checked);
-              setSecret("");
-            }}
           />
-          Eliminar secreto guardado
         </label>
-      )}
-      <p className="flex items-start gap-2 rounded-lg bg-gray-50 p-3 text-xs leading-5 text-gray-600 dark:bg-white/5 dark:text-gray-400">
-        <Icon name="mdi:information-outline" size={16} />Configura la misma cabecera en n8n. Ejecución pendiente de Fase 2.
-      </p>
-      {mutation.isError && (
-        <p role="alert" className="text-sm text-error-600">
-          {mutation.error.message}
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="flex items-center gap-2"><Icon name="mdi:shield-key-outline" size={16} />Cabecera de autenticación</span>
+          <input
+            className={inputClass}
+            required
+            maxLength={100}
+            value={header}
+            onChange={(e) => setHeader(e.target.value)}
+            disabled={mutation.isPending}
+          />
+        </label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="flex items-center gap-2"><Icon name="mdi:key-outline" size={16} />Secreto</span>
+          <span className="relative block">
+          <input
+            className={`${inputClass} pr-11`}
+            type={visible ? "text" : "password"}
+            autoComplete="new-password"
+            minLength={16}
+            maxLength={4096}
+            value={secret}
+            onChange={(e) => setSecret(e.target.value)}
+            disabled={remove || mutation.isPending}
+            placeholder={
+              data.credencialConfigurada
+                ? "Guardado · dejar vacío para conservar"
+                : "Sin configurar"
+            }
+          />
+          <button type="button" aria-label={visible ? "Ocultar secreto" : "Mostrar secreto"} aria-pressed={visible} disabled={remove || mutation.isPending} onClick={() => setVisible(!visible)} className="absolute right-1 top-2 flex h-9 w-9 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-brand-500 dark:text-gray-400 dark:hover:bg-white/10"><Icon name={visible ? "mdi:eye-off-outline" : "mdi:eye-outline"} size={18} /></button>
+          </span>
+        </label>
+        {data.credencialConfigurada && (
+          <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-950"
+              checked={remove}
+              disabled={mutation.isPending}
+              onChange={(e) => {
+                setRemove(e.target.checked);
+                setSecret("");
+              }}
+            />
+            Eliminar secreto guardado
+          </label>
+        )}
+        <p className="flex items-start gap-2 rounded-lg bg-gray-50 p-3 text-xs leading-5 text-gray-600 dark:bg-white/5 dark:text-gray-400">
+          <Icon name="mdi:information-outline" size={16} />Configura la misma cabecera en n8n. Ejecución pendiente de Fase 2.
         </p>
-      )}
-      <div className="flex justify-end gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">
-        <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={close}>Cancelar</Button>
-        <Button type="submit" size="sm" loading={mutation.isPending} startIcon={<Icon name="mdi:content-save-outline" size={16} />}>Guardar</Button>
-      </div>
-    </form>
+      </form>
+    </Modal>
   );
 }

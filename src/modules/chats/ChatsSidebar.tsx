@@ -1,5 +1,6 @@
 "use client";
 
+import type { MeResponse } from "@/src/lib/auth";
 import AsignadoInactivoAviso from "@/src/components/ui/AsignadoInactivoAviso";
 import Pagination from "@/src/components/ui/Pagination";
 import Link from "next/link";
@@ -23,7 +24,7 @@ import { getChatsPage } from "./queries";
 
 const INTERVALO_REFRESCO_MS = 45_000;
 
-type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
+type Rol = MeResponse["rol"];
 
 function formatearFecha(iso: string | null) {
   if (!iso) return "";

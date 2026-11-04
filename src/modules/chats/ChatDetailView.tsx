@@ -51,6 +51,7 @@ import { toast } from "sonner";
 import RenombrarInline from "@/src/components/ui/RenombrarInline";
 import HelpTooltip from "@/src/components/ui/HelpTooltip";
 import { clearBorrador, setBorrador, useBorradorChat } from "./chat-borradores";
+import { usePermisos } from "@/src/context/PermisosContext";
 import {
   etiquetaTipoMensajeVacio,
   previewUltimoMensaje,
@@ -58,7 +59,6 @@ import {
 import { ChatBusquedaPanel } from "./ChatBusquedaPanel";
 import CrearLeadDesdeChatModal from "./CrearLeadDesdeChatModal";
 import CrearActividadAgendaModal from "@/src/modules/agenda/CrearActividadAgendaModal";
-import { canManageOrganization } from "@/src/lib/roles";
 import { unwrapAction } from "@/src/lib/action-result";
 import {
   crearActividadAgendaAction,
@@ -1464,15 +1464,16 @@ export default function ChatDetailView({
   id,
   inmueblesHabilitado = false,
   usuarioId = "",
-  rol = null,
 }: {
   id: string;
   inmueblesHabilitado?: boolean;
   usuarioId?: string;
-  rol?: string | null;
 }) {
   const queryClient = useQueryClient();
   /** Borrador = store Zustand (única fuente de verdad). Sin estado local paralelo. */
+  const puede = usePermisos();
+  const gestionaTodos = puede("chats.gestionar_todos");
+  const usaLlamadas = puede("llamadas.usar");
   const texto = useBorradorChat(id);
   const textoRef = useRef(texto);
   // Copia para handlers/rAF; se actualiza tras el render (no durante).
@@ -1639,7 +1640,7 @@ export default function ChatDetailView({
     !puedeOperarControl(
       controlQuery.data,
       usuarioId,
-      canManageOrganization(rol),
+      gestionaTodos,
       chatQuery.data?.lead?.asignadoUsuarioId,
     ) ||
     controlQuery.data?.modoAtencion === "TOMANDO_CONTROL";
@@ -1649,7 +1650,7 @@ export default function ChatDetailView({
       !puedeOperarControl(
         estado,
         usuarioId,
-        canManageOrganization(rol),
+        gestionaTodos,
         chatQuery.data?.lead?.asignadoUsuarioId,
       ) ||
       estado.modoAtencion === "TOMANDO_CONTROL"
@@ -2046,7 +2047,7 @@ export default function ChatDetailView({
           !puedeOperarControl(
             estado,
             usuarioId,
-            canManageOrganization(rol),
+            gestionaTodos,
             chatDestino?.lead?.asignadoUsuarioId,
           )
         )
@@ -2629,7 +2630,6 @@ export default function ChatDetailView({
                 id={id}
                 chat={chat}
                 usuarioId={usuarioId}
-                rol={rol}
                 query={controlQuery}
                 cerrarOpciones={() => setMenuAccionesAbierto(false)}
                 renderOpciones={(accionesAtencion) => (
@@ -2724,16 +2724,18 @@ export default function ChatDetailView({
                           Registrar actividad
                         </DropdownItem>
                       ) : null}
-                      <ChatCallControls
-                        puedeSolicitar={!envioBloqueadoPorControl}
-                        beforeSolicitar={asegurarEnvioControl}
-                        conversacionId={id}
-                        nombreContacto={nombre}
-                        waId={chat.waId}
-                        leadId={chat.lead?.id}
-                        variant="menu"
-                        onMenuClose={() => setMenuAccionesAbierto(false)}
-                      />
+                      {usaLlamadas && (
+                        <ChatCallControls
+                          puedeSolicitar={!envioBloqueadoPorControl}
+                          beforeSolicitar={asegurarEnvioControl}
+                          conversacionId={id}
+                          nombreContacto={nombre}
+                          waId={chat.waId}
+                          leadId={chat.lead?.id}
+                          variant="menu"
+                          onMenuClose={() => setMenuAccionesAbierto(false)}
+                        />
+                      )}
                       <DropdownItem
                         onClick={() => {
                           setMenuAccionesAbierto(false);
@@ -2830,14 +2832,16 @@ export default function ChatDetailView({
                 </button>
               ) : null}
 
-              <ChatCallControls
-                puedeSolicitar={!envioBloqueadoPorControl}
-                beforeSolicitar={asegurarEnvioControl}
-                conversacionId={id}
-                nombreContacto={nombre}
-                waId={chat.waId}
-                leadId={chat.lead?.id}
-              />
+              {usaLlamadas && (
+                <ChatCallControls
+                  puedeSolicitar={!envioBloqueadoPorControl}
+                  beforeSolicitar={asegurarEnvioControl}
+                  conversacionId={id}
+                  nombreContacto={nombre}
+                  waId={chat.waId}
+                  leadId={chat.lead?.id}
+                />
+              )}
 
               <button
                 type="button"
@@ -2915,7 +2919,7 @@ export default function ChatDetailView({
                     {anteriores.isError && <p role="alert" className="mt-2 text-xs text-error-600">{anteriores.error.message}</p>}
                   </div>
                 )}
-                <ChatLlamadasStrip conversacionId={id} />
+                {usaLlamadas && <ChatLlamadasStrip conversacionId={id} />}
                 {chat.mensajes.length === 0 ? (
                   <p className="text-center text-theme-sm text-gray-500 dark:text-gray-400">
                     Todavía no hay mensajes en esta conversación.
@@ -3943,7 +3947,7 @@ export default function ChatDetailView({
                     const checked = destinoReenvioIds.includes(chat.id);
                     const sinControl =
                       chat.modoAtencion === "TOMANDO_CONTROL" ||
-                      (!canManageOrganization(rol) &&
+                      (!gestionaTodos &&
                         ((!!chat.controlUsuarioId &&
                           chat.controlUsuarioId !== usuarioId) ||
                           (!!chat.lead?.asignadoUsuarioId &&
@@ -4077,7 +4081,7 @@ export default function ChatDetailView({
           <CrearActividadAgendaModal
             open={modalActividadAbierto}
             onClose={() => setModalActividadAbierto(false)}
-            esAdmin={canManageOrganization(rol)}
+            esAdmin={puede("leads.ver_todos")}
             usuarioId={usuarioId}
             loading={crearActividad.isPending}
             leadFijo={{

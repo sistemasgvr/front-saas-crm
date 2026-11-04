@@ -4,6 +4,8 @@ import { Spinner } from "@/src/components/ui/Spinner";
 interface ButtonProps {
   children: ReactNode;
   type?: "button" | "submit";
+  /** Id del <form> que envía cuando el botón vive fuera de él (footer de Modal). */
+  form?: string;
   size?: "sm" | "md";
   variant?: "primary" | "outline" | "danger";
   startIcon?: ReactNode;
@@ -17,6 +19,7 @@ interface ButtonProps {
 const Button: React.FC<ButtonProps> = ({
   children,
   type = "button",
+  form,
   size = "md",
   variant = "primary",
   startIcon,
@@ -44,6 +47,7 @@ const Button: React.FC<ButtonProps> = ({
   return (
     <button
       type={type}
+      form={form}
       className={`inline-flex items-center justify-center font-medium gap-2 rounded-lg transition ${className} ${sizeClasses[size]} ${variantClasses[variant]} ${
         isDisabled ? "cursor-not-allowed opacity-50" : ""
       }`}

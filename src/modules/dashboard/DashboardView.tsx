@@ -18,7 +18,6 @@ import type {
 import LineChart from "@/src/components/charts/LineChart";
 import BarChart from "@/src/components/charts/BarChart";
 import { queryKeys } from "@/src/lib/query/keys";
-import { canManageOrganization } from "@/src/lib/roles";
 import {
   getCampanasFiltro,
   getAnunciosFiltro,
@@ -57,8 +56,8 @@ import type {
   KpisPublicitarios,
   SeriesPublicitarias,
 } from "./types";
+import { usePermisos } from "@/src/context/PermisosContext";
 
-type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 
 function formatearFechaCorta(fechaYYYYMMDD: string) {
   const [, mes, dia] = fechaYYYYMMDD.split("-");
@@ -104,16 +103,15 @@ function formatearHoras(horas: number | null) {
 }
 
 export default function DashboardView({
-  rol,
   usuarioId,
   inmueblesHabilitado = false,
 }: {
-  rol: Rol;
   usuarioId: string;
   inmueblesHabilitado?: boolean;
 }) {
   const searchParams = useSearchParams();
-  const esAdmin = canManageOrganization(rol);
+  const puede = usePermisos();
+  const esAdmin = puede("dashboard.ver");
   const [values, setValues] = useState<DynamicFilterValues>(() => {
     const metaCuentaId = searchParams.get("metaCuentaId");
     const init: DynamicFilterValues = {};

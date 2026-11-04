@@ -1,6 +1,8 @@
 export const queryKeys = {
   me: ["me"] as const,
   organizationCurrent: ["organizations", "current"] as const,
+  organizationRoles: ["organizations", "current", "roles"] as const,
+  permisosCatalogo: ["organizations", "current", "roles", "catalogo"] as const,
   adminOrganizations: (params?: { page?: number; pageSize?: number; q?: string; estado?: number }) =>
     ["admin", "organizations", params ?? {}] as const,
   /** Prefijo para invalidar todas las páginas/tamaños a la vez (no usar para fetch). */

@@ -1,4 +1,5 @@
 import type { MeResponse } from "@/src/lib/auth";
+import type { CodigoPermiso } from "@/src/lib/permisos";
 
 export type GuideStep = {
   title: string;
@@ -7,6 +8,7 @@ export type GuideStep = {
   section?: string;
   module?: string;
   admin?: boolean;
+  permiso?: CodigoPermiso;
 };
 export type Guide = {
   id: string;
@@ -19,6 +21,8 @@ export type Guide = {
   ready: string;
   module?: string;
   admin?: boolean;
+  /** Permiso que exige la pantalla: sin él, la guía acabaría redirigida fuera. */
+  permiso?: CodigoPermiso;
   steps: GuideStep[];
 };
 
@@ -753,6 +757,13 @@ export const guides: Guide[] = [
         "Usuarios",
         "Desde aquí accedes a los miembros, roles, estado de acceso y reasignación de cartera. Hay un recorrido específico para administrar usuarios.",
       ),
+      {
+        ...section(
+          "Roles y permisos",
+          "Define qué puede ver y hacer cada rol del equipo. Hay un recorrido específico para crear roles y ajustar sus permisos.",
+        ),
+        permiso: "roles.gestionar",
+      },
       section(
         "Datos de la empresa",
         "Revisa nombre, contacto y zona horaria. Puedes subir el logo de tu empresa y verlo en el menú lateral y la cabecera móvil. El logo tiene su propio botón de guardado; usar el logo del sistema restaura la imagen original.",
@@ -858,7 +869,7 @@ export const guides: Guide[] = [
       ),
       step(
         "Elegir el rol",
-        "Propietario y Administrador gestionan la empresa. Usuario se orienta a atención y seguimiento. Otorga el rol que la persona necesita para su trabajo.",
+        "Propietario y Administrador gestionan la empresa. Asesor se orienta a atención y seguimiento. También puedes elegir los roles personalizados de tu empresa. Otorga el rol que la persona necesita para su trabajo.",
       ),
       step(
         "Desactivar acceso",
@@ -875,6 +886,72 @@ export const guides: Guide[] = [
       step(
         "Reactivar y verificar",
         "Para reactivar deben cumplirse los requisitos de cuenta y cupo. Después revisa su rol, las asignaciones y si debe volver al reparto automático.",
+      ),
+    ],
+  },
+  {
+    id: "roles-permisos",
+    title: "Definir roles y permisos del equipo",
+    category: "Administración",
+    icon: "mdi:shield-account-outline",
+    admin: true,
+    permiso: "roles.gestionar",
+    description:
+      "Roles de sistema y personalizados, permisos por módulo, dependencias y límites de edición.",
+    path: "/settings/roles",
+    ready: '[data-tour="roles-page"]',
+    steps: [
+      step(
+        "Qué puede hacer cada persona",
+        "Un rol es un conjunto de permisos y cada miembro del equipo tiene uno. Aquí decides qué ve y qué hace cada rol. Durante el recorrido no se guarda ningún cambio.",
+        '[data-tour="roles-page"]',
+      ),
+      step(
+        "Roles de sistema y personalizados",
+        "Propietario, Administrador y Asesor vienen con el sistema: no se renombran ni se eliminan. Los personalizados los creas tú para puestos concretos, como un supervisor o un captador.",
+        '[data-tour="roles-list"]',
+      ),
+      step(
+        "Leer una tarjeta",
+        "Cada tarjeta indica el tipo de rol, cuántos usuarios lo tienen y cuántos permisos incluye. Tu rol lleva una etiqueta. El lápiz edita; el ojo indica que solo puedes consultarlo.",
+        '[data-tour="role-card"]',
+      ),
+      step(
+        "Crear un rol",
+        "Nuevo rol pide un nombre que no se repita en la empresa, una descripción opcional y sus permisos. Una empresa puede tener hasta 30 roles activos, contando los de sistema.",
+        '[data-tour="page-header"]',
+      ),
+      step(
+        "Permisos por módulo",
+        "Al abrir un rol, los permisos aparecen agrupados en Empresa y en cada módulo activo de tu plan. Si un módulo se apaga, sus permisos dejan de tener efecto, pero se conservan para cuando vuelva a activarse.",
+      ),
+      step(
+        "Permisos que incluyen otros",
+        "Algunos permisos necesitan otros: marcar Asignar leads incluye Ver leads de todo el equipo y Ver leads. Al desmarcar un permiso también se quitan los que dependen de él. Revisa la lista antes de guardar.",
+      ),
+      step(
+        "Lo propio o todo el equipo",
+        "Ver leads y Ver chats alcanzan lo propio y lo que está sin asignar. Para acceder a lo de otros asesores hace falta el permiso de todo el equipo. Además, ver un chat no permite responderlo: son permisos distintos.",
+      ),
+      step(
+        "Roles que no puedes cambiar",
+        "El rol Propietario siempre tiene todos los permisos. Tampoco puedes editar tu propio rol, ni un rol con permisos que tú no tienes, ni otorgar permisos que no tienes. En esos casos se abre en solo lectura y se indica el motivo. Quien es propietario no tiene estos límites.",
+      ),
+      step(
+        "Restaurar un rol de sistema",
+        "El icono de restaurar devuelve Administrador o Asesor a sus permisos por defecto y descarta sus ajustes. Pide confirmación porque afecta a todos los usuarios con ese rol.",
+      ),
+      step(
+        "Eliminar un rol personalizado",
+        "Solo se eliminan roles personalizados sin usuarios activos. Si alguien aún lo usa, primero cámbiale el rol desde Usuarios.",
+      ),
+      step(
+        "Cuándo se aplican los cambios",
+        "Al guardar, el cambio alcanza a todos los usuarios con ese rol en su siguiente acción. No hace falta volver a asignarles el rol. Compruébalo con alguien del equipo después de un cambio importante.",
+      ),
+      step(
+        "Asignar el rol a una persona",
+        "El rol de cada miembro se elige en Usuarios, al crearlo o editarlo. Otorga solo lo que necesita para su trabajo: siempre podrás ampliar sus permisos más adelante.",
       ),
     ],
   },
@@ -1151,15 +1228,17 @@ guides.push({
   ],
 });
 
-export type GuideAccess = Pick<MeResponse, "rol" | "modulos">;
+/** `gestiona`: puede entrar a alguna sección de Configuración (guías de gestión). */
+export type GuideAccess = Pick<MeResponse, "modulos" | "permisos"> & {
+  gestiona: boolean;
+};
 export function hasGuideAccess(
-  rule: { admin?: boolean; module?: string },
+  rule: { admin?: boolean; module?: string; permiso?: CodigoPermiso },
   access: GuideAccess,
 ) {
   return (
-    (!rule.admin ||
-      access.rol === "PROPIETARIO" ||
-      access.rol === "ADMINISTRADOR") &&
+    (!rule.admin || access.gestiona) &&
+    (!rule.permiso || access.permisos.includes(rule.permiso)) &&
     (!rule.module ||
       access.modulos.some((m) => m.codigo === rule.module && m.habilitado))
   );

@@ -14,7 +14,6 @@ import { QueryError } from "@/src/components/ui/PageLoader";
 import { unwrapAction } from "@/src/lib/action-result";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { canManageOrganization } from "@/src/lib/roles";
 import { iniciarChatDesdeLeadAction as iniciarChatDesdeLeadActionResult } from "@/src/modules/chats/actions";
 import {
   puedeIniciarChatDesdeLead,
@@ -26,10 +25,10 @@ import LeadPipelinePanel from "./LeadPipelinePanel";
 import { getLead } from "./queries";
 import { gestionarLeadAction } from "./actions";
 import { unwrapServerAction } from "@/src/lib/action-result";
+import { usePermisos } from "@/src/context/PermisosContext";
 const iniciarChatDesdeLeadAction = unwrapServerAction(iniciarChatDesdeLeadActionResult);
 
 
-type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 
 function formatearFecha(iso: string | null | undefined) {
   if (!iso) return "—";
@@ -51,7 +50,6 @@ export default function LeadDetailModal({
   leadId,
   open,
   onClose,
-  rol,
   usuarioId,
   whatsappHabilitado,
   inmueblesHabilitado = false,
@@ -59,7 +57,6 @@ export default function LeadDetailModal({
   leadId: string | null;
   open: boolean;
   onClose: () => void;
-  rol: Rol;
   usuarioId: string;
   whatsappHabilitado: boolean;
   inmueblesHabilitado?: boolean;
@@ -78,9 +75,12 @@ export default function LeadDetailModal({
   const lead = leadQuery.data;
   const nombre = lead?.nombre ?? "Sin nombre";
   const cargado = !leadQuery.isLoading && !leadQuery.isError && Boolean(lead);
+  const puede = usePermisos();
+  const veTodos = puede("leads.ver_todos");
   const puedeGestionar =
     Boolean(lead) &&
-    (canManageOrganization(rol) || lead?.asignado?.id === usuarioId);
+    puede("leads.editar") &&
+    (veTodos || lead?.asignado?.id === usuarioId);
 
   return (
     <Modal
@@ -199,7 +199,6 @@ export default function LeadDetailModal({
                 <LeadAssignmentActions
                   leadId={leadId as string}
                   asignado={lead.asignado}
-                  rol={rol}
                 />
               </div>
 
@@ -235,10 +234,8 @@ export default function LeadDetailModal({
                 estadoGestionEn={lead.estadoGestionEn}
                 motivoCierre={lead.motivoCierre}
                 notaCierre={lead.notaCierre}
-                esAdmin={canManageOrganization(rol)}
-                puedeGestionar={
-                  canManageOrganization(rol) || lead.asignado?.id === usuarioId
-                }
+                esAdmin={veTodos}
+                puedeGestionar={puedeGestionar}
                 inmueblesHabilitado={inmueblesHabilitado}
               />
             </div>
@@ -247,7 +244,7 @@ export default function LeadDetailModal({
               leadId={leadId as string}
               inmuebleInteres={lead.inmuebleInteres ?? null}
               puedeGestionar={
-                canManageOrganization(rol) || lead.asignado?.id === usuarioId
+                puedeGestionar
               }
               inmueblesHabilitado={inmueblesHabilitado}
             />

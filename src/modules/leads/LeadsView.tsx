@@ -18,7 +18,6 @@ import TableAction from "@/src/components/ui/TableAction";
 import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
 import { aplicarCascadaFiltros, CASCADA_META_LEADS } from "@/src/components/ui/filters/cascadeFilters";
-import { canManageOrganization } from "@/src/lib/roles";
 import LeadAssignmentActions from "./LeadAssignmentActions";
 import {
   getAnunciosFiltro,
@@ -33,8 +32,8 @@ import type { AnuncioFiltroOpcion, CampanaFiltroOpcion, LeadResumen, ReferenciaN
 import EstadoPipelineBadge from "./EstadoPipelineBadge";
 import OrigenLeadBadge from "./OrigenLeadBadge";
 import { ETIQUETA_TIPO_LEAD } from "./pipeline";
+import { usePermisos } from "@/src/context/PermisosContext";
 
-type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 
 function formatearFecha(iso: string | null) {
   if (!iso) return "—";
@@ -43,10 +42,8 @@ function formatearFecha(iso: string | null) {
 
 function LeadMobileCard({
   lead,
-  rol,
 }: {
   lead: LeadResumen;
-  rol: Rol;
 }) {
   const nombre = lead.nombre ?? "Sin nombre";
 
@@ -100,7 +97,7 @@ function LeadMobileCard({
       </dl>
 
       <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-100 pt-3 dark:border-gray-800">
-        <LeadAssignmentActions leadId={lead.id} asignado={lead.asignado} rol={rol} />
+        <LeadAssignmentActions leadId={lead.id} asignado={lead.asignado} />
         <TableAction href={`/leads/${lead.id}`} icon="mdi:eye-outline" label={`Ver ${nombre}`} />
       </div>
     </article>
@@ -129,9 +126,10 @@ function CeldaConIcono({
   );
 }
 
-export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: string }) {
+export default function LeadsView({ usuarioId }: { usuarioId: string }) {
   const searchParams = useSearchParams();
-  const esAdmin = canManageOrganization(rol);
+  const puede = usePermisos();
+  const esAdmin = puede("leads.ver_todos");
   const [values, setValues] = useState<DynamicFilterValues>(() => {
     const init: DynamicFilterValues = {};
     const metaPaginaId = searchParams.get("metaPaginaId");
@@ -358,7 +356,7 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
               </div>
             ) : (
               (leadsQuery.data?.data ?? []).map((lead: LeadResumen) => (
-                <LeadMobileCard key={lead.id} lead={lead} rol={rol} />
+                <LeadMobileCard key={lead.id} lead={lead} />
               ))
             )}
           </div>
@@ -465,7 +463,7 @@ export default function LeadsView({ rol, usuarioId }: { rol: Rol; usuarioId: str
                     </TableCell>
                     <TableCell className="px-5 py-4">
                       <div className="flex items-center justify-end gap-1">
-                        <LeadAssignmentActions leadId={lead.id} asignado={lead.asignado} rol={rol} />
+                        <LeadAssignmentActions leadId={lead.id} asignado={lead.asignado} />
                         <TableAction href={`/leads/${lead.id}`} icon="mdi:eye-outline" label={`Ver ${nombre}`} />
                       </div>
                     </TableCell>

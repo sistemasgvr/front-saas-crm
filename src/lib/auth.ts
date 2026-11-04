@@ -17,7 +17,11 @@ export interface MeResponse {
     debeCambiarPassword: boolean;
   };
   organizacion: { id: string; nombre: string; slug: string; logoUrl?: string | null } | null;
-  rol: "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
+  /** PERSONALIZADO = rol personalizado de la empresa (ver rolNombre). */
+  rol: "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | "PERSONALIZADO" | null;
+  rolNombre: string | null;
+  /** Permisos efectivos: rol de la empresa ∩ módulos activos. */
+  permisos: string[];
   modulos: ModuloEstado[];
 }
 

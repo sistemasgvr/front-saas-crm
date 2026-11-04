@@ -15,7 +15,6 @@ import { Icon } from "@/src/components/ui/Icon";
 import Select from "@/src/components/form/Select";
 import ModalHeading from "@/src/components/ui/modal/ModalHeading";
 import { queryKeys } from "@/src/lib/query/keys";
-import { canManageOrganization } from "@/src/lib/roles";
 import { getBotPreferencias } from "@/src/modules/settings/automations/bot-actions";
 import type { ConversacionResumen } from "./types";
 import {
@@ -35,6 +34,7 @@ import {
   ErrorControl,
   type EstadoControl,
 } from "./control-types";
+import { usePermisos } from "@/src/context/PermisosContext";
 
 const fecha = (s: string) =>
   new Date(s).toLocaleString("es-PE", {
@@ -76,7 +76,6 @@ export default function ChatControlPanel({
   id,
   chat,
   usuarioId,
-  rol,
   query,
   renderOpciones,
   cerrarOpciones,
@@ -84,7 +83,6 @@ export default function ChatControlPanel({
   id: string;
   chat: ConversacionResumen;
   usuarioId: string;
-  rol: string | null;
   query: UseQueryResult<EstadoControl, Error>;
   renderOpciones: (items: ReactNode) => ReactNode;
   cerrarOpciones: () => void;
@@ -98,10 +96,12 @@ export default function ChatControlPanel({
   const [version, setVersion] = useState(0);
   const [asignadoEsperado, setAsignadoEsperado] = useState<string | null>(null);
   const c = query.data;
+  const puede = usePermisos();
+  const gestionaTodos = puede("chats.gestionar_todos");
   const permiso = puedeOperarControl(
     c,
     usuarioId,
-    canManageOrganization(rol),
+    gestionaTodos,
     chat.lead?.asignadoUsuarioId,
   );
   const preferencias = useQuery({
@@ -192,7 +192,7 @@ export default function ChatControlPanel({
       chat.lead?.asignadoUsuarioId && chat.lead.asignadoUsuarioId !== usuarioId
     );
   const puedeAsumirHumano =
-    permiso && humano && otroAsesor && canManageOrganization(rol);
+    permiso && humano && otroAsesor && gestionaTodos;
   const botDisponible =
     !!preferencias.data?.autorizado &&
     !!preferencias.data.integracion.operativa;

@@ -10,12 +10,15 @@ import { intervaloDeRespaldo } from "@/src/stores/tiempo-real.store";
 import { getChatsUnreadCount } from "@/src/modules/chats/queries";
 import { getLeadsNuevosCount } from "@/src/modules/leads/queries";
 import { useSidebar } from "./SidebarContext";
+import type { CodigoPermiso } from "@/src/lib/permisos";
 
 export type NavItem = {
   name: string;
   icon: string;
   path: string;
   requiereModulo?: string;
+  /** Permiso efectivo necesario (ver src/lib/permisos.ts). */
+  requierePermiso?: CodigoPermiso;
 };
 
 export type NavGroup = {

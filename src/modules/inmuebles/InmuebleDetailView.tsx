@@ -10,7 +10,6 @@ import { Icon } from "@/src/components/ui/Icon";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { DetailPageSkeleton, ListItemSkeleton } from "@/src/components/ui/skeletons";
 import { QueryError } from "@/src/components/ui/PageLoader";
-import { canManageOrganization } from "@/src/lib/roles";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import EstadoPipelineBadge from "@/src/modules/leads/EstadoPipelineBadge";
@@ -26,6 +25,7 @@ import {
   type OrigenInteresInmueble,
 } from "./types";
 import { unwrapServerAction } from "@/src/lib/action-result";
+import { usePermisos } from "@/src/context/PermisosContext";
 const deleteInmuebleAction = unwrapServerAction(deleteInmuebleActionResult);
 
 
@@ -134,14 +134,14 @@ function InteresadosSection({ inmuebleId }: { inmuebleId: string }) {
 
 export default function InmuebleDetailView({
   id,
-  rol,
   editMode = false,
 }: {
   id: string;
-  rol: string | null;
   editMode?: boolean;
 }) {
-  const puedeEditar = canManageOrganization(rol);
+  const puede = usePermisos();
+  const puedeEditar = puede("inmuebles.editar");
+  const puedeEliminar = puede("inmuebles.eliminar");
   const query = useQuery({
     queryKey: queryKeys.inmueble(id),
     queryFn: () => getInmueble(id),
@@ -182,8 +182,9 @@ export default function InmuebleDetailView({
         backHref="/inmuebles"
         backLabel="Volver a inmuebles"
       >
-        {puedeEditar ? (
+        {puedeEditar || puedeEliminar ? (
           <div className="flex flex-wrap gap-2">
+            {puedeEditar ? (
             <Link
               href={`/inmuebles/${row.id}/editar`}
               className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-theme-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-white/[0.03] dark:text-gray-300"
@@ -191,6 +192,8 @@ export default function InmuebleDetailView({
               <Icon name="mdi:pencil-outline" size={18} />
               Editar
             </Link>
+            ) : null}
+            {puedeEliminar ? (
             <Button
               type="button"
               size="sm"
@@ -201,6 +204,7 @@ export default function InmuebleDetailView({
             >
               {deleteMutation.isPending ? "Eliminando…" : "Eliminar"}
             </Button>
+            ) : null}
           </div>
         ) : null}
       </PageHeader>

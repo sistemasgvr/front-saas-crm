@@ -27,7 +27,6 @@ import { CalendarSkeleton } from "@/src/components/ui/skeletons";
 import { queryKeys } from "@/src/lib/query/keys";
 import { unwrapAction } from "@/src/lib/action-result";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
-import { canManageOrganization } from "@/src/lib/roles";
 import {
   actualizarActividadAgendaAction,
   actualizarVisitaAgendaAction,
@@ -43,6 +42,7 @@ import type {
 } from "@/src/modules/leads/types";
 import AgendaItemDetalleModal from "./AgendaItemDetalleModal";
 import CrearActividadAgendaModal from "./CrearActividadAgendaModal";
+import { usePermisos } from "@/src/context/PermisosContext";
 
 const FullCalendar = dynamic(() => import("@fullcalendar/react"), {
   ssr: false,
@@ -50,7 +50,6 @@ const FullCalendar = dynamic(() => import("@fullcalendar/react"), {
 
 const ZONA_AGENDA = "America/Lima";
 
-type Rol = "PROPIETARIO" | "ADMINISTRADOR" | "USUARIO" | null;
 
 const COLOR_ESTADO: Record<string, string> = {
   PROGRAMADA: "#465fff",
@@ -202,15 +201,14 @@ function EventoContenido({ arg }: { arg: EventContentArg }) {
 }
 
 export default function AgendaView({
-  rol,
   usuarioId,
   inmueblesHabilitado = false,
 }: {
-  rol: Rol;
   usuarioId: string;
   inmueblesHabilitado?: boolean;
 }) {
-  const esAdmin = canManageOrganization(rol);
+  const puede = usePermisos();
+  const esAdmin = puede("leads.ver_todos");
   const searchParams = useSearchParams();
   const deepLinkVisitaId = searchParams.get("visitaId");
   const deepLinkActividadId = searchParams.get("actividadId");

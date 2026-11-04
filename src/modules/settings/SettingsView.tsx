@@ -5,8 +5,11 @@ import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getMeQuery } from "@/src/modules/auth/queries";
 import { getCurrentOrganization } from "./queries";
-import { canManageOrganization } from "@/src/lib/roles";
-import type { ModuloEstado } from "@/src/lib/auth";
+import {
+  puedeVerConfiguracion,
+  tienePermiso,
+  type CodigoPermiso,
+} from "@/src/lib/permisos";
 import OrganizationSettingsForm from "./OrganizationSettingsForm";
 import MetaSettingsEntryCard from "./meta/MetaSettingsEntryCard";
 import WhatsappSettingsEntryCard from "./whatsapp/WhatsappSettingsEntryCard";
@@ -26,11 +29,13 @@ export default function SettingsView() {
     queryKey: queryKeys.me,
     queryFn: () => getMeQuery(),
   });
-  const canEdit = canManageOrganization(meQuery.data?.rol);
+  const permisos = meQuery.data?.permisos;
+  const puede = (codigo: CodigoPermiso) => tienePermiso(permisos, codigo);
+  const canEdit = puedeVerConfiguracion(permisos);
   const orgQuery = useQuery({
     queryKey: queryKeys.organizationCurrent,
     queryFn: () => getCurrentOrganization(),
-    enabled: canEdit,
+    enabled: puede("empresa.configurar"),
   });
 
   if (meQuery.isLoading) return <PageLoader label="Cargando permisos…" />;
@@ -39,25 +44,24 @@ export default function SettingsView() {
   if (!canEdit || !meQuery.data) {
     return (
       <p className="text-theme-sm text-gray-500 dark:text-gray-400">
-        Solo el propietario o un administrador pueden editar los datos de la
-        empresa.
+        Tu rol no tiene permisos de configuración. Pide acceso a un
+        administrador de la empresa.
       </p>
     );
   }
 
   const me = meQuery.data;
-  const leadsHabilitado = isModuloHabilitado(me.modulos, "LEADS");
-  const metaLeadsHabilitado = me.modulos.some(
-    (m: ModuloEstado) => m.codigo === "META_LEADS" && m.habilitado,
-  );
-  const whatsappHabilitado = me.modulos.some(
-    (m: ModuloEstado) => m.codigo === "WHATSAPP" && m.habilitado,
-  );
-  const inmueblesHabilitado = isModuloHabilitado(me.modulos, "INMUEBLES");
-  const automatizacionesHabilitado = isModuloHabilitado(
-    me.modulos,
-    "AUTOMATIZACIONES",
-  );
+  // Los permisos efectivos ya vienen limitados por los módulos activos.
+  const configuraLeads = puede("leads.configurar");
+  const creaInmuebles = puede("inmuebles.crear");
+  const configuraMeta = puede("meta.configurar");
+  const configuraWhatsapp = puede("whatsapp.configurar");
+  const configuraBot =
+    puede("bot.configurar") &&
+    isModuloHabilitado(me.modulos, "AUTOMATIZACIONES");
+  const empresa = puede("empresa.configurar");
+  const usuarios = puede("usuarios.gestionar");
+  const roles = puede("roles.gestionar");
 
   return (
     <div data-tour="settings-page" className="space-y-6">
@@ -65,63 +69,84 @@ export default function SettingsView() {
         title="Configuración"
         description="Datos de la empresa y conexión con Meta."
       />
-      <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Empresa</h2>
-      <CollapsibleSection
-        title="Usuarios"
-        icon="mdi:account-group-outline"
-        help="Administra los roles y el acceso del equipo según el límite del plan."
-        preview="Gestiona los usuarios de tu empresa."
-        defaultOpen={false}
-      >
-        <Link href="/settings/users">
-          <Button
-            size="sm"
-            startIcon={<Icon name="mdi:account-group-outline" size={18} />}
-          >
-            Gestionar usuarios
-          </Button>
-        </Link>
-      </CollapsibleSection>
-      {orgQuery.isLoading ? (
-        <PageLoader label="Cargando datos de la empresa…" />
-      ) : orgQuery.isError ? (
-        <QueryError error={orgQuery.error} />
-      ) : orgQuery.data ? (
+      {(empresa || usuarios || roles) && (
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Empresa</h2>
+      )}
+      {usuarios && (
         <CollapsibleSection
-          title="Datos de la empresa"
-          icon="mdi:office-building-outline"
-          help="Nombre, contacto, país y zona horaria de esta organización."
-          preview={orgQuery.data.nombre}
+          title="Usuarios"
+          icon="mdi:account-group-outline"
+          help="Administra el acceso del equipo según el límite del plan."
+          preview="Gestiona los usuarios de tu empresa."
           defaultOpen={false}
         >
-          <OrganizationSettingsForm org={orgQuery.data} />
+          <Link href="/settings/users">
+            <Button
+              size="sm"
+              startIcon={<Icon name="mdi:account-group-outline" size={18} />}
+            >
+              Gestionar usuarios
+            </Button>
+          </Link>
         </CollapsibleSection>
-      ) : (
-        <p className="text-theme-sm text-gray-500 dark:text-gray-400">
-          No se pudieron cargar los datos de la empresa.
-        </p>
       )}
+      {roles && (
+        <CollapsibleSection
+          title="Roles y permisos"
+          icon="mdi:shield-account-outline"
+          help="Define qué puede ver y hacer cada rol dentro de los módulos activos de tu plan."
+          preview="Crea roles y ajusta sus permisos."
+          defaultOpen={false}
+        >
+          <Link href="/settings/roles">
+            <Button
+              size="sm"
+              startIcon={<Icon name="mdi:shield-account-outline" size={18} />}
+            >
+              Gestionar roles
+            </Button>
+          </Link>
+        </CollapsibleSection>
+      )}
+      {empresa &&
+        (orgQuery.isLoading ? (
+          <PageLoader label="Cargando datos de la empresa…" />
+        ) : orgQuery.isError ? (
+          <QueryError error={orgQuery.error} />
+        ) : orgQuery.data ? (
+          <CollapsibleSection
+            title="Datos de la empresa"
+            icon="mdi:office-building-outline"
+            help="Nombre, contacto, país y zona horaria de esta organización."
+            preview={orgQuery.data.nombre}
+            defaultOpen={false}
+          >
+            <OrganizationSettingsForm org={orgQuery.data} />
+          </CollapsibleSection>
+        ) : (
+          <p className="text-theme-sm text-gray-500 dark:text-gray-400">
+            No se pudieron cargar los datos de la empresa.
+          </p>
+        ))}
 
-      {(leadsHabilitado || inmueblesHabilitado) && (
+      {(configuraLeads || creaInmuebles) && (
         <section className="space-y-4">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">CRM</h2>
-          {leadsHabilitado && (
+          {configuraLeads && (
             <>
               <PipelineConfigSettingsCard />
               <LeadAutoAssignmentSettingsCard />
             </>
           )}
-          {inmueblesHabilitado && <InmueblesSettingsEntryCard rol={me.rol} />}
+          {creaInmuebles && <InmueblesSettingsEntryCard />}
         </section>
       )}
-      {(metaLeadsHabilitado || whatsappHabilitado) && (
+      {(configuraMeta || configuraWhatsapp || configuraBot) && (
         <section className="space-y-4">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Meta</h2>
-          {metaLeadsHabilitado && <MetaSettingsEntryCard />}
-          {whatsappHabilitado && <WhatsappSettingsEntryCard />}
-          {whatsappHabilitado && automatizacionesHabilitado && (
-            <BotSettingsCard />
-          )}
+          {configuraMeta && <MetaSettingsEntryCard />}
+          {configuraWhatsapp && <WhatsappSettingsEntryCard />}
+          {configuraBot && <BotSettingsCard />}
         </section>
       )}
     </div>

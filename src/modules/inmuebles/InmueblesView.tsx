@@ -14,7 +14,6 @@ import { QueryError } from "@/src/components/ui/PageLoader";
 import { TablePageSkeleton } from "@/src/components/ui/skeletons";
 import TableAction from "@/src/components/ui/TableAction";
 import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
-import { canManageOrganization } from "@/src/lib/roles";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getInmuebles } from "./queries";
 import {
@@ -27,6 +26,7 @@ import {
   formatearPrecioInmueble,
   type InmuebleRow,
 } from "./types";
+import { usePermisos } from "@/src/context/PermisosContext";
 
 const PAGE_SIZE = 20;
 
@@ -113,8 +113,9 @@ function InmuebleMobileCard({ row }: { row: InmuebleRow }) {
   );
 }
 
-export default function InmueblesView({ rol }: { rol: string | null }) {
-  const puedeEditar = canManageOrganization(rol);
+export default function InmueblesView() {
+  const puede = usePermisos();
+  const puedeEditar = puede("inmuebles.crear");
   const [values, setValues] = useState<DynamicFilterValues>({});
   const [page, setPage] = useState(1);
   const deferredQ = useDeferredValue(values.q ?? "");

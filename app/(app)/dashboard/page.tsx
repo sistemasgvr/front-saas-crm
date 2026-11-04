@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/src/lib/auth";
 import { getDefaultClientRoute, isModuloHabilitado } from "@/src/lib/modules";
-import { canViewOrgDashboard } from "@/src/lib/roles";
+import { tienePermiso } from "@/src/lib/permisos";
 import DashboardView from "@/src/modules/dashboard/DashboardView";
 
 export default async function DashboardPage() {
@@ -11,14 +11,13 @@ export default async function DashboardPage() {
   }
   if (
     !isModuloHabilitado(me.modulos, "DASHBOARD") ||
-    !canViewOrgDashboard(me.rol)
+    !tienePermiso(me.permisos, "dashboard.ver")
   ) {
     redirect(getDefaultClientRoute(me));
   }
 
   return (
     <DashboardView
-      rol={me.rol}
       usuarioId={me.usuario.id}
       inmueblesHabilitado={isModuloHabilitado(me.modulos, "INMUEBLES")}
     />
