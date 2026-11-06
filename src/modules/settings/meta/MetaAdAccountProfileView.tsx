@@ -1,4 +1,5 @@
 "use client";
+import MetaLeadSourceToggle from "./MetaLeadSourceToggle";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -82,14 +83,14 @@ export default function MetaAdAccountProfileView({ id }: { id: string }) {
               <Icon name="mdi:chart-timeline-variant" size={20} className="text-gray-600 dark:text-gray-300" />
             </span>
             <div>
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Campañas recientes</h2>
-              <p className="text-theme-sm text-gray-500 dark:text-gray-400">Últimas campañas sincronizadas desde Meta.</p>
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Todas las campañas</h2>
+              <p className="text-theme-sm text-gray-500 dark:text-gray-400">Campañas sincronizadas desde Meta, incluidas las pausadas. Activa o desactiva la entrada automática de leads por campaña.</p>
             </div>
           </div>
           <ActionButton
             action={async () => {
               const resultado = await syncMetaAdAccountAction(cuenta.id);
-              if (resultado.truncado) {
+              if (resultado.truncado || resultado.incompleto) {
                 toast.warning(
                   resultado.aviso ??
                     "La sincronización se truncó; puede faltar jerarquía de anuncios.",
@@ -98,7 +99,7 @@ export default function MetaAdAccountProfileView({ id }: { id: string }) {
             }}
             successMessage="Estructura sincronizada"
             loadingText="Sincronizando…"
-            invalidateKeys={[queryKeys.metaAdAccountProfile(id), queryKeys.metaAdAccountsVinculadasAll]}
+            invalidateKeys={[["meta", "lead-sources"], queryKeys.metaAdAccountProfile(id), queryKeys.metaAdAccountsVinculadasAll]}
             startIcon={<Icon name="mdi:sync" size={18} />}
           >
             Sincronizar estructura
@@ -125,6 +126,7 @@ export default function MetaAdAccountProfileView({ id }: { id: string }) {
                   <TableCell isHeader className={thClass}>
                     Leads
                   </TableCell>
+                  <TableCell isHeader className={thClass}>Leads automáticos</TableCell>
                 </TableRow>
               </TableHeader>
               <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -135,6 +137,7 @@ export default function MetaAdAccountProfileView({ id }: { id: string }) {
                     </TableCell>
                     <TableCell className={tdClass}>{campana.estadoMeta ?? "—"}</TableCell>
                     <TableCell className={tdClass}>{campana.totalLeads}</TableCell>
+                    <TableCell className={tdClass}><MetaLeadSourceToggle tipo="campanas" id={campana.id} nombre={campana.nombre} /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>

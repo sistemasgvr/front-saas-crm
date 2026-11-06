@@ -76,3 +76,7 @@ export async function getMetaPageFormMetaCounts(pageId: string) {
     timeoutMs: 90_000,
   });
 }
+
+export async function getMetaLeadSources() {
+  return apiFetch<Record<'paginas' | 'campanas' | 'formularios', { id: string; importarLeadsAutomaticamente: boolean }[]>>("/meta/lead-sources");
+}

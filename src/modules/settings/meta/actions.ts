@@ -188,6 +188,8 @@ export interface ResultadoSync {
   anuncios: number;
   /** true si Graph cortó la paginación (jerarquía incompleta). */
   truncado?: boolean;
+  incompleto?: boolean;
+  errores?: number;
   aviso?: string;
 }
 
@@ -266,6 +268,16 @@ export async function backfillMetaPageFormAction(
       });
     } catch (error) {
       fail(error, "No se pudo reimportar los leads de este formulario");
+    }
+  });
+}
+
+export async function setMetaLeadSourceAction(tipo: 'paginas' | 'campanas' | 'formularios', id: string, habilitado: boolean): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    try {
+      await apiFetch(`/meta/lead-sources/${id}`, { method: "PATCH", body: JSON.stringify({ tipo, habilitado }) });
+    } catch (error) {
+      fail(error, "No se pudo cambiar la importación automática");
     }
   });
 }

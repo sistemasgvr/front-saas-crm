@@ -1,6 +1,7 @@
 "use client";
 import { usePaginationPage } from "@/src/components/ui/use-pagination-page";
 
+import MetaLeadSourceToggle from "./MetaLeadSourceToggle";
 import Pagination from "@/src/components/ui/Pagination";
 import { useState } from "react";
 import Link from "next/link";
@@ -63,7 +64,8 @@ export default function MetaPageProfileView({ id }: { id: string }) {
   });
 
   const formsQuery = useQuery({
-    queryKey: [...queryKeys.metaPageForms(id), page],
+    queryKey: [...["meta", "lead-sources"],
+                queryKeys.metaPageForms(id), page],
     queryFn: () => getMetaPageForms(id, page),
   });
 
@@ -87,6 +89,7 @@ export default function MetaPageProfileView({ id }: { id: string }) {
         backHref="/settings/meta/pages"
         backLabel="Volver a páginas"
       >
+        <MetaLeadSourceToggle tipo="paginas" id={pagina.id} nombre={pagina.nombre} />
         <MetaWebhookBadge suscrito={pagina.webhookSuscrito} size="md" />
       </PageHeader>
 
@@ -172,7 +175,7 @@ export default function MetaPageProfileView({ id }: { id: string }) {
             <div>
               <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Formularios</h2>
               <p className="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">
-                Lead Ads vinculados a esta página. Reimporta leads desde la creación del formulario hasta hoy.
+                La entrada automática requiere que la página, el formulario y la campaña estén habilitados. La reimportación manual es independiente.
               </p>
             </div>
           </div>
@@ -190,7 +193,8 @@ export default function MetaPageProfileView({ id }: { id: string }) {
             </ActionButton>
             <ActionButton
               action={async () => {
-                await syncMetaPageFormsAction(pagina.id);
+                const resultado = await syncMetaPageFormsAction(pagina.id);
+                if (resultado.sincronizados !== resultado.total) throw new Error(`Solo se sincronizaron ${resultado.sincronizados} de ${resultado.total} formularios. Vuelve a sincronizar para completar el listado.`);
               }}
               successMessage="Formularios sincronizados"
               loadingText="Sincronizando…"
@@ -237,6 +241,9 @@ export default function MetaPageProfileView({ id }: { id: string }) {
                   </TableCell>
                   <TableCell isHeader className="px-3 py-2 text-start text-theme-xs font-medium text-gray-500">
                     Última sync
+                  </TableCell>
+                  <TableCell isHeader className="px-3 py-2 text-end text-theme-xs font-medium text-gray-500">
+                    Leads automáticos
                   </TableCell>
                   <TableCell isHeader className="px-3 py-2 text-end text-theme-xs font-medium text-gray-500">
                     Acciones
@@ -291,6 +298,7 @@ export default function MetaPageProfileView({ id }: { id: string }) {
                       <TableCell className="px-3 py-2.5 text-theme-sm text-gray-500">
                         {formatearFechaMeta(formulario.ultimoSyncEn)}
                       </TableCell>
+                      <TableCell className="px-3 py-2.5"><MetaLeadSourceToggle tipo="formularios" id={formulario.id} nombre={formulario.nombre} paginaId={pagina.id} /></TableCell>
                       <TableCell className="px-3 py-2.5 text-end">
                         <TableAction
                           icon={abierto ? "mdi:close" : "mdi:database-import-outline"}

@@ -16,6 +16,7 @@ import { getMetaPagesAvailable, getMetaPagesVinculadas } from "./queries";
 import { linkMetaPageAction as linkMetaPageActionResult, unlinkMetaPageAction as unlinkMetaPageActionResult } from "./actions";
 import MetaHubLayout from "./MetaHubLayout";
 import MetaLinkResourcePanel from "./MetaLinkResourcePanel";
+import MetaLeadSourceToggle from "./MetaLeadSourceToggle";
 import MetaWebhookBadge from "./MetaWebhookBadge";
 import { unwrapServerAction } from "@/src/lib/action-result";
 const linkMetaPageAction = unwrapServerAction(linkMetaPageActionResult);
@@ -96,6 +97,9 @@ export default function MetaPagesListView() {
                     Webhook
                   </TableCell>
                   <TableCell isHeader className={thClassEnd}>
+                    Leads automáticos
+                  </TableCell>
+                  <TableCell isHeader className={thClassEnd}>
                     Acciones
                   </TableCell>
                 </TableRow>
@@ -103,7 +107,7 @@ export default function MetaPagesListView() {
               <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {pages.length === 0 && (
                   <EmptyState
-                    colSpan={3}
+                    colSpan={4}
                     icon="mdi:facebook"
                     title="No hay páginas vinculadas"
                     description="Agrega una página para empezar a recibir leads."
@@ -125,6 +129,7 @@ export default function MetaPagesListView() {
                     <TableCell className={tdClass}>
                       <MetaWebhookBadge suscrito={pagina.webhookSuscrito} />
                     </TableCell>
+                    <TableCell className={tdClass}><MetaLeadSourceToggle tipo="paginas" id={pagina.id} nombre={pagina.nombre} /></TableCell>
                     <TableCell className={`${tdClass} text-end`}>
                       <div className="inline-flex items-center gap-1">
                         <TableAction
