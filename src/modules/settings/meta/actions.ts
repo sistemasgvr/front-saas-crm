@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { apiFetch, ApiError } from "@/src/lib/api";
-import type { MetaConnection, ResultadoBackfill, ResultadoSyncFormularios, ResultadoSyncInsights } from "./types";
+import type { MetaDiagnosticoRecepcion, MetaConnection, ResultadoBackfill, ResultadoSyncFormularios, ResultadoSyncInsights } from "./types";
 import { runAction } from "@/src/lib/server-action";
 import type { ActionResult } from "@/src/lib/action-result";
 
@@ -279,5 +279,19 @@ export async function setMetaLeadSourceAction(tipo: 'paginas' | 'campanas' | 'fo
     } catch (error) {
       fail(error, "No se pudo cambiar la importación automática");
     }
+  });
+}
+
+export async function diagnoseMetaAdAccountAction(id: string): Promise<ActionResult<MetaDiagnosticoRecepcion>> {
+  return runAction(async () => {
+    try { return await apiFetch<MetaDiagnosticoRecepcion>(`/meta/ad-accounts/${id}/diagnostics`, { method: "POST", timeoutMs: TIMEOUT_SYNC_MS }); }
+    catch (error) { fail(error, "No se pudo verificar la recepción de Meta"); }
+  });
+}
+
+export async function reconcileMetaWhatsappCampaignsAction(id: string): Promise<ActionResult<{ vinculados: number }>> {
+  return runAction(async () => {
+    try { return await apiFetch<{ vinculados: number }>(`/meta/ad-accounts/${id}/reconcile-whatsapp`, { method: "POST", timeoutMs: TIMEOUT_SYNC_MS }); }
+    catch (error) { fail(error, "No se pudieron vincular los leads con sus campañas"); }
   });
 }

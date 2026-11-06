@@ -79,7 +79,6 @@ export interface CampanaResumen {
 export interface MetaCuentaPublicitariaPerfil extends MetaCuentaPublicitaria {
   totalCampanas: number;
   totalLeads: number;
-  ultimasCampanas: CampanaResumen[];
   spend: number;
   cpl: number | null;
 }
@@ -155,4 +154,13 @@ export interface ResultadoBackfill {
   /** true si el backend recortó `desde` al límite de retención ~90 días de Meta. */
   rangoRecortadoPorRetencion?: boolean;
   avisoRetencion?: string;
+}
+
+export interface MetaDiagnosticoRecepcion {
+  verificadoEn: string;
+  aviso: string;
+  paginas: { id: string; nombre: string; importacion: boolean; suscrito: boolean | null; error: string | null;
+    formularios: { formId: string; nombre: string; sincronizado: boolean; importacion: boolean | null; leadsMeta: number | null; leadsCRM: number; error: string | null }[];
+  }[];
+  whatsapp: { id: string; nombre: string; suscrito: boolean | null; ultimoMensajeEntranteEn: string | null; error: string | null }[];
 }

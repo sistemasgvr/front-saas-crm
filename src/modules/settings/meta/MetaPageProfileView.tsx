@@ -64,8 +64,7 @@ export default function MetaPageProfileView({ id }: { id: string }) {
   });
 
   const formsQuery = useQuery({
-    queryKey: [...["meta", "lead-sources"],
-                queryKeys.metaPageForms(id), page],
+    queryKey: [...queryKeys.metaPageForms(id), page],
     queryFn: () => getMetaPageForms(id, page),
   });
 

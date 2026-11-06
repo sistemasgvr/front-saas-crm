@@ -1,6 +1,9 @@
 "use client";
 import MetaLeadSourceToggle from "./MetaLeadSourceToggle";
 
+import Pagination from "@/src/components/ui/Pagination";
+import { usePaginationPage } from "@/src/components/ui/use-pagination-page";
+import MetaLeadDiagnosticsPanel from "./MetaLeadDiagnosticsPanel";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -15,7 +18,7 @@ import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import TableCard, { tdClass, thClass } from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
-import { getMetaAdAccountProfile } from "./queries";
+import { getMetaAdAccountProfile, getMetaAdAccountCampaigns } from "./queries";
 import { syncMetaAdAccountAction as syncMetaAdAccountActionResult, unlinkMetaAdAccountAction as unlinkMetaAdAccountActionResult } from "./actions";
 import MetaStatCard from "./MetaStatCard";
 import MetaInsightsSyncPanel from "./MetaInsightsSyncPanel";
@@ -27,6 +30,11 @@ const unlinkMetaAdAccountAction = unwrapServerAction(unlinkMetaAdAccountActionRe
 
 export default function MetaAdAccountProfileView({ id }: { id: string }) {
   const router = useRouter();
+  const [page, setPage] = usePaginationPage(id);
+  const campaigns = useQuery({
+    queryKey: ["meta", "ad-accounts", id, "campaigns", page],
+    queryFn: () => getMetaAdAccountCampaigns(id, page),
+  });
 
   const { data: cuenta, isLoading, isError, error } = useQuery({
     queryKey: queryKeys.metaAdAccountProfile(id),
@@ -74,6 +82,8 @@ export default function MetaAdAccountProfileView({ id }: { id: string }) {
         <MetaStatCard label="CPL" value={formatearMonto(cuenta.cpl, cuenta.moneda)} icon="mdi:account-cash-outline" />
       </div>
 
+      <MetaLeadDiagnosticsPanel cuentaId={id} />
+
       <MetaInsightsSyncPanel cuentaId={cuenta.id} />
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
@@ -99,21 +109,21 @@ export default function MetaAdAccountProfileView({ id }: { id: string }) {
             }}
             successMessage="Estructura sincronizada"
             loadingText="Sincronizando…"
-            invalidateKeys={[["meta", "lead-sources"], queryKeys.metaAdAccountProfile(id), queryKeys.metaAdAccountsVinculadasAll]}
+            invalidateKeys={[["meta", "lead-sources"], ["meta", "ad-accounts", id, "campaigns"], queryKeys.metaAdAccountProfile(id), queryKeys.metaAdAccountsVinculadasAll]}
             startIcon={<Icon name="mdi:sync" size={18} />}
           >
             Sincronizar estructura
           </ActionButton>
         </div>
 
-        {cuenta.ultimasCampanas.length === 0 ? (
+        {campaigns.isLoading ? <PageLoader /> : campaigns.isError ? <QueryError error={campaigns.error} /> : campaigns.data?.total === 0 ? (
           <EmptyState
             icon="mdi:bullhorn-outline"
             title="Sin campañas sincronizadas"
             description='Usa "Sincronizar ahora" para importar campañas desde Meta.'
           />
         ) : (
-          <TableCard>
+          <TableCard footer={campaigns.data ? <Pagination {...campaigns.data} onPageChange={setPage} itemLabel="campañas" className="p-4" /> : undefined}>
             <Table>
               <TableHeader className="border-b border-gray-100 dark:border-gray-800">
                 <TableRow>
@@ -124,18 +134,18 @@ export default function MetaAdAccountProfileView({ id }: { id: string }) {
                     Estado
                   </TableCell>
                   <TableCell isHeader className={thClass}>
-                    Leads
+                    Leads importados
                   </TableCell>
                   <TableCell isHeader className={thClass}>Leads automáticos</TableCell>
                 </TableRow>
               </TableHeader>
               <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {cuenta.ultimasCampanas.map((campana) => (
+                {(campaigns.data?.data ?? []).map((campana) => (
                   <TableRow key={campana.id}>
                     <TableCell className="px-5 py-3 text-theme-sm font-medium text-gray-800 dark:text-white/90">
                       {campana.nombre}
                     </TableCell>
-                    <TableCell className={tdClass}>{campana.estadoMeta ?? "—"}</TableCell>
+                    <TableCell className={tdClass}>{campana.estadoMeta === "ACTIVE" ? "Activa" : campana.estadoMeta === "PAUSED" ? "Pausada" : campana.estadoMeta ?? "—"}</TableCell>
                     <TableCell className={tdClass}>{campana.totalLeads}</TableCell>
                     <TableCell className={tdClass}><MetaLeadSourceToggle tipo="campanas" id={campana.id} nombre={campana.nombre} /></TableCell>
                   </TableRow>

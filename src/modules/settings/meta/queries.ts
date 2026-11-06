@@ -4,6 +4,7 @@ import type { PaginatedResult } from "@/src/lib/pagination";
 
 import { apiFetch, ApiError } from "@/src/lib/api";
 import type {
+  CampanaResumen,
   ListaMetaCuentasResultado,
   ListaMetaPaginasResultado,
   MetaConnection,
@@ -79,4 +80,8 @@ export async function getMetaPageFormMetaCounts(pageId: string) {
 
 export async function getMetaLeadSources() {
   return apiFetch<Record<'paginas' | 'campanas' | 'formularios', { id: string; importarLeadsAutomaticamente: boolean }[]>>("/meta/lead-sources");
+}
+
+export async function getMetaAdAccountCampaigns(id: string, page: number) {
+  return apiFetch<PaginatedResult<CampanaResumen>>(`/meta/ad-accounts/${id}/campaigns?page=${page}&pageSize=10`);
 }
