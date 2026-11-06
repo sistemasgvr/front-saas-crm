@@ -13,6 +13,7 @@ import Pagination from "@/src/components/ui/Pagination";
 import { QueryError } from "@/src/components/ui/PageLoader";
 import { TablePageSkeleton } from "@/src/components/ui/skeletons";
 import TableAction from "@/src/components/ui/TableAction";
+import MobileCard from "@/src/components/ui/MobileCard";
 import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
 import type { UsuarioAdmin } from "../types";
@@ -54,25 +55,24 @@ function UserMobileCard({ user }: { user: UsuarioAdmin }) {
   const fullName = `${user.nombre} ${user.apellido ?? ""}`.trim();
 
   return (
-    <article className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
-      <div className="flex items-start justify-between gap-3">
-        <EntityCell name={fullName} subtitle={user.email} size="sm" />
-        <div className="flex shrink-0 flex-col items-end gap-1">
+    <MobileCard
+      header={<EntityCell name={fullName} subtitle={user.email} size="md" />}
+      aside={
+        <>
           <Badge size="sm" color={user.esAdminPlataforma ? "info" : "light"}>
             {user.esAdminPlataforma ? "Plataforma" : "Cliente"}
           </Badge>
           <StatusBadge active={user.estado === 1} />
-        </div>
-      </div>
-
-      <div className="mt-3 flex items-center justify-end border-t border-gray-100 pt-3 dark:border-gray-800">
+        </>
+      }
+      actions={
         <TableAction
           href={`/admin/users/${user.id}`}
           icon="mdi:cog-outline"
           label={`Gestionar ${fullName}`}
         />
-      </div>
-    </article>
+      }
+    />
   );
 }
 

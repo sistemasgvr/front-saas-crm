@@ -22,6 +22,7 @@ import Pagination from "@/src/components/ui/Pagination";
 import { QueryError } from "@/src/components/ui/PageLoader";
 import { TablePageSkeleton } from "@/src/components/ui/skeletons";
 import TableAction from "@/src/components/ui/TableAction";
+import MobileCard from "@/src/components/ui/MobileCard";
 import TableCard, {
   tdClass,
   tdPrimaryClass,
@@ -61,46 +62,49 @@ function toEstado(value: string | undefined): 0 | 1 | undefined {
 
 function OrganizationMobileCard({ org }: { org: OrganizacionAdmin }) {
   return (
-    <article className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
-      <div className="flex items-start justify-between gap-3">
+    <MobileCard
+      header={
         <EntityCell
           name={org.nombre}
           subtitle={org.slug}
           src={org.logoUrl}
           shape="rounded"
           icon="mdi:office-building-outline"
-          size="sm"
+          size="md"
         />
-        <div className="shrink-0">
-          <StatusBadge
-            active={org.estado === 1}
-            activeLabel="Activa"
-            inactiveLabel="Desactivada"
-          />
-        </div>
-      </div>
-
-      <div className="mt-3 flex items-center justify-end border-t border-gray-100 pt-3 dark:border-gray-800">
-        <span className="mr-auto">
-          <Badge
-            color={
-              org.limiteUsuarios !== null &&
-              org.usuariosActivos > org.limiteUsuarios
-                ? "error"
-                : "info"
-            }
-          >
-            Usuarios: {org.usuariosActivos} /{" "}
-            {org.limiteUsuarios ?? "Sin límite"}
-          </Badge>
-        </span>
+      }
+      aside={
+        <StatusBadge
+          active={org.estado === 1}
+          activeLabel="Activa"
+          inactiveLabel="Desactivada"
+        />
+      }
+      fields={[
+        {
+          label: "Usuarios",
+          value: (
+            <Badge
+              color={
+                org.limiteUsuarios !== null &&
+                org.usuariosActivos > org.limiteUsuarios
+                  ? "error"
+                  : "info"
+              }
+            >
+              {org.usuariosActivos} / {org.limiteUsuarios ?? "Sin límite"}
+            </Badge>
+          ),
+        },
+      ]}
+      actions={
         <TableAction
           href={`/admin/organizations/${org.id}`}
           icon="mdi:eye-outline"
           label={`Ver ${org.nombre}`}
         />
-      </div>
-    </article>
+      }
+    />
   );
 }
 

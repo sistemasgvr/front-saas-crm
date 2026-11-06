@@ -19,6 +19,7 @@ import EmptyState from "@/src/components/ui/EmptyState";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import TableAction from "@/src/components/ui/TableAction";
+import MobileCard from "@/src/components/ui/MobileCard";
 import TableCard, {
   tdClass,
   tdPrimaryClass,
@@ -338,20 +339,19 @@ export default function UsuariosEmpresaView({
           </TableCard>
         ) : (
           filtrados.map((u) => (
-            <article
+            <MobileCard
               key={u.id}
-              className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]"
-            >
-              <EntityCell name={nombre(u)} subtitle={u.email} size="sm" />
-              <div className="mt-3 flex flex-wrap gap-2">
-                {rolUsuario(u)}
-                {estadoUsuario(u)}
-              </div>
-              {detalle(u)}
-              <div className="mt-3 flex justify-end border-t border-gray-100 pt-3 dark:border-gray-800">
-                {acciones(u)}
-              </div>
-            </article>
+              header={<EntityCell name={nombre(u)} subtitle={u.email} size="md" />}
+              aside={rolUsuario(u)}
+              fields={[
+                { label: "Estado", value: estadoUsuario(u) },
+                { label: "Leads asignados", value: u.leadsAsignados },
+                ...(u.debeCambiarPassword === 1
+                  ? [{ label: "Contraseña", value: <span className="text-warning-500">Cambio pendiente</span> }]
+                  : []),
+              ]}
+              actions={acciones(u)}
+            />
           ))
         )}
       </div>

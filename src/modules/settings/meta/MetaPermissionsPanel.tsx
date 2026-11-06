@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import ComponentCard from "@/src/components/common/ComponentCard";
 import Badge from "@/src/components/ui/badge/Badge";
 import Button from "@/src/components/ui/button/Button";
 import Checkbox from "@/src/components/form/input/Checkbox";
@@ -177,18 +178,21 @@ export default function MetaPermissionsPanel() {
   );
 
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50/80 p-4 dark:border-gray-800 dark:bg-white/[0.02]">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-theme-sm font-semibold text-gray-800 dark:text-white/90">Permisos Meta</h3>
-        <button
+    <ComponentCard
+      title="Permisos Meta"
+      desc="Permisos que el CRM usa en tu cuenta de Meta, agrupados por función."
+      actions={
+        <Button
           type="button"
-          onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.metaPermissions })}
-          className="inline-flex items-center gap-1 text-theme-xs font-medium text-brand-500 hover:underline"
+          size="sm"
+          variant="outline"
+          startIcon={<Icon name="mdi:refresh" size={18} />}
+          onClick={() => void queryClient.invalidateQueries({ queryKey: queryKeys.metaPermissions })}
         >
-          <Icon name="mdi:refresh" size={14} />
           Actualizar estado
-        </button>
-      </div>
+        </Button>
+      }
+    >
 
       {isLoading ? (
         <PageLoader label="Verificando permisos…" />
@@ -261,6 +265,6 @@ export default function MetaPermissionsPanel() {
           </div>
         )
       )}
-    </div>
+    </ComponentCard>
   );
 }

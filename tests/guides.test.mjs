@@ -183,8 +183,13 @@ test("las anclas propias de cada recorrido existen en las pantallas", () => {
       guide.ready,
       ...guide.steps.map((s) => s.target).filter(Boolean),
     ]) {
+      // `dataTour="x"` es la prop de componentes compartidos (ItemCard) que se
+      // renderiza como `data-tour="x"`.
       for (const [, id] of selector.matchAll(/\[data-tour="([^"]+)"\]/g))
-        assert(source.includes(`data-tour="${id}"`), `${guide.id}: ${id}`);
+        assert(
+          source.includes(`data-tour="${id}"`) || source.includes(`dataTour="${id}"`),
+          `${guide.id}: ${id}`,
+        );
     }
   }
 });

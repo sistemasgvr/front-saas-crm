@@ -1,6 +1,7 @@
 "use client";
 
 import { Icon } from "@/src/components/ui/Icon";
+import { cn } from "@/src/lib/cn";
 
 interface Option {
   value: string;
@@ -54,11 +55,14 @@ export default function Select({
           required={required}
           disabled={disabled || resolvedOptions.length === 0}
           onBlur={onBlur}
-          className={`h-11 w-full appearance-none rounded-lg border px-4 py-2.5 pr-11 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 ${
+          className={cn(
+            "h-11 w-full appearance-none rounded-lg border px-4 py-2.5 pr-11 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30",
             error
               ? "border-error-500 text-error-800 focus:ring-error-500/10 dark:border-error-500 dark:text-error-400"
-              : "border-gray-300 focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:focus:border-brand-800"
-          } ${selectedValue ? "text-gray-800 dark:text-white/90" : "text-gray-400 dark:text-gray-400"} ${className}`}
+              : "border-gray-300 focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:focus:border-brand-800",
+            selectedValue ? "text-gray-800 dark:text-white/90" : "text-gray-400 dark:text-gray-400",
+            className,
+          )}
           value={selectedValue}
           onChange={(event) => onChange?.(event.target.value)}
         >

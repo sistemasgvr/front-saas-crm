@@ -1,12 +1,18 @@
 import { Icon } from "@/src/components/ui/Icon";
 
-interface KpiCardProps {
+interface MetricCardProps {
   label: string;
-  value: number | string;
+  value: string | number;
+  /** Nombre Iconify, p. ej. "mdi:account-group-outline". */
   icon: string;
 }
 
-export default function KpiCard({ label, value, icon }: KpiCardProps) {
+/**
+ * Tarjeta de resumen compacta (la del dashboard) — única para todo el sistema.
+ * Agrúpalas con `grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-3`
+ * (o `grid-cols-2` si son solo dos).
+ */
+export default function MetricCard({ label, value, icon }: MetricCardProps) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 dark:border-gray-800 dark:bg-white/[0.03]">
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">

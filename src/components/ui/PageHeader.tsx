@@ -36,18 +36,18 @@ export default function PageHeader({
         {backHref && (
           <Link
             href={backHref}
-            className="mb-2 inline-flex items-center gap-1 text-theme-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="mb-2 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
             <Icon name="mdi:chevron-left" size={18} />
             {backLabel}
           </Link>
         )}
         <div className="flex items-center gap-1.5">
-          <h1 className="text-xl font-semibold text-gray-800 sm:text-title-sm dark:text-white/90">{title}</h1>
+          <h1 className="text-xl font-semibold text-gray-800 dark:text-white/90">{title}</h1>
           {help ? <HelpTooltip content={help} placement="bottom" /> : null}
         </div>
         {description && (
-          <p className="mt-1 text-theme-xs text-gray-500 sm:text-theme-sm dark:text-gray-400">{description}</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</p>
         )}
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">

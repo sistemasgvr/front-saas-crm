@@ -40,7 +40,7 @@ import type {
   ConjuntoAnuncioFiltroOpcion,
   ReferenciaNombrada,
 } from "@/src/modules/leads/types";
-import KpiCard from "./KpiCard";
+import MetricCard from "@/src/components/common/MetricCard";
 import {
   getDashboardAdsKpis,
   getDashboardAdsSeries,
@@ -389,22 +389,22 @@ export default function DashboardView({
       ) : (
         kpisQuery.data && (
           <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-3">
-            <KpiCard
+            <MetricCard
               label="Total"
               value={kpisQuery.data.total}
               icon="mdi:account-group"
             />
-            <KpiCard
+            <MetricCard
               label="Hoy"
               value={kpisQuery.data.hoy}
               icon="mdi:calendar-today"
             />
-            <KpiCard
+            <MetricCard
               label="Esta semana"
               value={kpisQuery.data.semana}
               icon="mdi:calendar-week"
             />
-            <KpiCard
+            <MetricCard
               label="Este mes"
               value={kpisQuery.data.mes}
               icon="mdi:calendar-month"
@@ -424,22 +424,22 @@ export default function DashboardView({
               Embudo de gestión
             </h2>
             <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-3">
-              <KpiCard
+              <MetricCard
                 label="Leads en periodo"
                 value={embudoData.total}
                 icon="mdi:filter-variant"
               />
-              <KpiCard
+              <MetricCard
                 label="Tasa de contacto"
                 value={formatearPorcentaje(embudoData.tasaContacto)}
                 icon="mdi:phone-check-outline"
               />
-              <KpiCard
+              <MetricCard
                 label="Conversión ganado"
                 value={formatearPorcentaje(embudoData.conversionGanado)}
                 icon="mdi:trophy-outline"
               />
-              <KpiCard
+              <MetricCard
                 label="Cerrados ganados"
                 value={embudoData.cerradosGanados}
                 icon="mdi:check-decagram-outline"
@@ -542,7 +542,7 @@ export default function DashboardView({
           </p>
         ) : (
           <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-3">
-            <KpiCard
+            <MetricCard
               label="Inversión"
               value={formatearMonto(
                 adsKpisQuery.data.spend,
@@ -550,7 +550,7 @@ export default function DashboardView({
               )}
               icon="mdi:cash-multiple"
             />
-            <KpiCard
+            <MetricCard
               label="CTR"
               value={
                 adsKpisQuery.data.ctr !== null
@@ -559,7 +559,7 @@ export default function DashboardView({
               }
               icon="mdi:cursor-default-click-outline"
             />
-            <KpiCard
+            <MetricCard
               label="CPC"
               value={formatearMonto(
                 adsKpisQuery.data.cpc,
@@ -567,7 +567,7 @@ export default function DashboardView({
               )}
               icon="mdi:mouse-outline"
             />
-            <KpiCard
+            <MetricCard
               label="CPL"
               value={formatearMonto(
                 adsKpisQuery.data.cpl,

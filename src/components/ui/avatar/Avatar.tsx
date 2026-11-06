@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/src/components/ui/Icon";
 
-type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
+type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 type AvatarShape = "circle" | "rounded";
 
 interface AvatarProps {
@@ -21,6 +21,7 @@ const sizeClasses: Record<AvatarSize, string> = {
   md: "h-10 w-10 text-sm",
   lg: "h-12 w-12 text-base",
   xl: "h-14 w-14 text-lg",
+  "2xl": "h-20 w-20 text-2xl",
 };
 
 const iconSizes: Record<AvatarSize, number> = {
@@ -29,6 +30,7 @@ const iconSizes: Record<AvatarSize, number> = {
   md: 20,
   lg: 24,
   xl: 28,
+  "2xl": 36,
 };
 
 const palettes = [

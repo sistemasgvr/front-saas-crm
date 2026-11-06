@@ -6,6 +6,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { queryKeys } from "@/src/lib/query/keys";
+import ComponentCard from "@/src/components/common/ComponentCard";
+import { InfoGrid, InfoItem } from "@/src/components/common/InfoItem";
+import MetricCard from "@/src/components/common/MetricCard";
+import Alert from "@/src/components/ui/alert/Alert";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import Button from "@/src/components/ui/button/Button";
 import Badge from "@/src/components/ui/badge/Badge";
@@ -17,7 +21,6 @@ import MetaAppCredentialsForm from "./MetaAppCredentialsForm";
 import MetaCapiSettingsForm from "./MetaCapiSettingsForm";
 import MetaHubLayout from "./MetaHubLayout";
 import MetaPermissionsPanel from "./MetaPermissionsPanel";
-import MetaStatCard from "./MetaStatCard";
 import { formatearFechaMeta } from "./format";
 import { unwrapServerAction } from "@/src/lib/action-result";
 import { withFormFeedback } from "@/src/lib/form-action";
@@ -90,14 +93,12 @@ export default function MetaHubView({ metaCallback }: { metaCallback?: string })
       title="Meta"
       description="Conexión, páginas y cuentas publicitarias de Facebook/Instagram Lead Ads."
     >
-      <div data-tour="meta-settings" className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div className="mb-5 flex items-start gap-4">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-light-50 text-blue-light-500 dark:bg-blue-light-500/15">
-            <Icon name="mdi:facebook" size={24} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Conexión Meta</h2>
+      <div data-tour="meta-settings" className="space-y-6">
+        <ComponentCard
+          title="Conexión Meta"
+          desc="Administra credenciales, OAuth y recursos vinculados de Lead Ads."
+          badges={
+            <>
               {connection.appConfigurada && (
                 <Badge color={connection.conectado ? "success" : "warning"} size="sm">
                   {connection.conectado ? "Conectado" : "Pendiente"}
@@ -108,72 +109,63 @@ export default function MetaHubView({ metaCallback }: { metaCallback?: string })
                   {permisosFaltantes} {permisosFaltantes === 1 ? "permiso faltante" : "permisos faltantes"}
                 </Badge>
               )}
-            </div>
-            <p className="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">
-              Administra credenciales, OAuth y recursos vinculados de Lead Ads.
-            </p>
-          </div>
-        </div>
+            </>
+          }
+          actions={
+            connection.appConfigurada && connection.conectado ? (
+              <ActionButton
+                action={disconnectMetaAction}
+                successMessage="Meta desconectado"
+                variant="danger"
+                startIcon={<Icon name="mdi:link-off" size={18} />}
+                invalidateKeys={[
+                  queryKeys.metaConnection,
+                  queryKeys.metaPermissions,
+                  queryKeys.metaPagesVinculadasAll,
+                  queryKeys.metaAdAccountsVinculadasAll,
+                  queryKeys.whatsappConexiones,
+                  ["whatsappCoexistenciaConfig"],
+                ]}
+              >
+                Desconectar Meta
+              </ActionButton>
+            ) : undefined
+          }
+        >
+          {!connection.appConfigurada && <MetaAppCredentialsForm />}
 
-        {!connection.appConfigurada && <MetaAppCredentialsForm />}
-
-        {connection.appConfigurada && !connection.conectado && (
-          <div className="space-y-5">
-            <div className="rounded-xl border border-gray-100 bg-gray-50/80 p-4 dark:border-gray-800 dark:bg-white/[0.02]">
-              <p className="text-theme-sm text-gray-600 dark:text-gray-300">
-                Meta App registrada · App ID{" "}
-                <span className="font-medium text-gray-800 dark:text-white/90">{connection.appId}</span>
-              </p>
-              <p className="mt-2 text-theme-sm text-gray-500 dark:text-gray-400">
-                Conecta tu cuenta de Meta para recibir leads de Facebook/Instagram Lead Ads. Se solicitan de una vez
-                todos los permisos que usa el CRM; acepta todos y selecciona tus páginas, cuentas publicitarias,
-                portafolio y, si usas WhatsApp, tus cuentas de WhatsApp.
-              </p>
-            </div>
-            <form action={withFormFeedback(connectMetaAction)}>
-              <Button type="submit" startIcon={<Icon name="mdi:facebook" size={18} />}>
-                Conectar con Meta
-              </Button>
-            </form>
-            <details className="text-theme-xs text-gray-500 dark:text-gray-400">
-              <summary className="cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-300">
-                ¿Necesitas cambiar el App ID o App Secret?
-              </summary>
-              <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-800">
-                <MetaAppCredentialsForm appIdActual={connection.appId} />
-              </div>
-            </details>
-          </div>
-        )}
-
-        {connection.appConfigurada && connection.conectado && (
-          <div className="space-y-6">
-            <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/80 px-4 py-3 dark:border-gray-800 dark:bg-white/[0.02]">
-              <Icon name="mdi:account-circle-outline" size={22} className="text-gray-500" />
-              <p className="text-theme-sm text-gray-700 dark:text-gray-300">
-                Conectado como <span className="font-medium">{connection.metaUserNombre}</span>
-              </p>
-              {connection.tokenExpiraEn && (
-                <span className="text-theme-xs text-gray-500">
-                  · Token expira {formatearFechaMeta(connection.tokenExpiraEn)}
-                </span>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <MetaStatCard label="Páginas activas" value={connection.paginasActivas} icon="mdi:facebook" />
-              <MetaStatCard
-                label="Cuentas publicitarias activas"
-                value={connection.cuentasActivas}
-                icon="mdi:bullhorn-outline"
+          {connection.appConfigurada && !connection.conectado && (
+            <>
+              <InfoGrid>
+                <InfoItem label="Meta App registrada">App ID {connection.appId}</InfoItem>
+              </InfoGrid>
+              <Alert
+                variant="info"
+                message="Conecta tu cuenta de Meta para recibir leads de Facebook/Instagram Lead Ads. Se solicitan de una vez todos los permisos que usa el CRM; acepta todos y selecciona tus páginas, cuentas publicitarias, portafolio y, si usas WhatsApp, tus cuentas de WhatsApp."
               />
-            </div>
+              <form action={withFormFeedback(connectMetaAction)}>
+                <Button type="submit" startIcon={<Icon name="mdi:facebook" size={18} />}>
+                  Conectar con Meta
+                </Button>
+              </form>
+              <details className="text-theme-xs text-gray-500 dark:text-gray-400">
+                <summary className="cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-300">
+                  ¿Necesitas cambiar el App ID o App Secret?
+                </summary>
+                <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-800">
+                  <MetaAppCredentialsForm appIdActual={connection.appId} />
+                </div>
+              </details>
+            </>
+          )}
 
-            <MetaPermissionsPanel />
-
-            <MetaCapiSettingsForm capiDatasetIdActual={connection.capiDatasetId} />
-
-            <div className="flex flex-wrap items-center justify-between gap-3">
+          {connection.appConfigurada && connection.conectado && (
+            <>
+              <InfoGrid>
+                <InfoItem label="Conectado como">{connection.metaUserNombre ?? "—"}</InfoItem>
+                <InfoItem label="Token expira">{formatearFechaMeta(connection.tokenExpiraEn)}</InfoItem>
+                <InfoItem label="App ID">{connection.appId ?? "—"}</InfoItem>
+              </InfoGrid>
               <div className="flex flex-wrap gap-3">
                 <Link href="/settings/meta/pages">
                   <Button type="button" size="sm" variant="outline" startIcon={<Icon name="mdi:facebook" size={18} />}>
@@ -191,24 +183,25 @@ export default function MetaHubView({ metaCallback }: { metaCallback?: string })
                   </Button>
                 </Link>
               </div>
-              <ActionButton
-                action={disconnectMetaAction}
-                successMessage="Meta desconectado"
-                variant="danger"
-                startIcon={<Icon name="mdi:link-off" size={18} />}
-                invalidateKeys={[
-                  queryKeys.metaConnection,
-                  queryKeys.metaPermissions,
-                  queryKeys.metaPagesVinculadasAll,
-                  queryKeys.metaAdAccountsVinculadasAll,
-                  queryKeys.whatsappConexiones,
-                  ["whatsappCoexistenciaConfig"],
-                ]}
-              >
-                Desconectar Meta
-              </ActionButton>
+            </>
+          )}
+        </ComponentCard>
+
+        {connection.appConfigurada && connection.conectado && (
+          <>
+            <div className="grid grid-cols-2 gap-2 lg:gap-3">
+              <MetricCard label="Páginas activas" value={connection.paginasActivas} icon="mdi:facebook" />
+              <MetricCard
+                label="Cuentas publicitarias activas"
+                value={connection.cuentasActivas}
+                icon="mdi:bullhorn-outline"
+              />
             </div>
-          </div>
+
+            <MetaPermissionsPanel />
+
+            <MetaCapiSettingsForm capiDatasetIdActual={connection.capiDatasetId} />
+          </>
         )}
       </div>
     </MetaHubLayout>

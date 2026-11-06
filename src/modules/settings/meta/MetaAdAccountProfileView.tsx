@@ -1,32 +1,45 @@
 "use client";
-import MetaLeadSourceToggle from "./MetaLeadSourceToggle";
 
-import Pagination from "@/src/components/ui/Pagination";
-import { usePaginationPage } from "@/src/components/ui/use-pagination-page";
-import MetaLeadDiagnosticsPanel from "./MetaLeadDiagnosticsPanel";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import MetricCard from "@/src/components/common/MetricCard";
+import ProfileCard from "@/src/components/common/ProfileCard";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/src/components/tables";
-import EntityCell from "@/src/components/ui/avatar/EntityCell";
-import EmptyState from "@/src/components/ui/EmptyState";
-import { Icon } from "@/src/components/ui/Icon";
 import ActionButton from "@/src/components/ui/ActionButton";
+import Badge from "@/src/components/ui/badge/Badge";
 import Button from "@/src/components/ui/button/Button";
+import EmptyState from "@/src/components/ui/EmptyState";
+import MobileCard from "@/src/components/ui/MobileCard";
+import { Icon } from "@/src/components/ui/Icon";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
-import TableCard, { tdClass, thClass } from "@/src/components/ui/TableCard";
+import Pagination from "@/src/components/ui/Pagination";
+import TableSectionCard, {
+  sectionTbodyClass,
+  sectionTdClass,
+  sectionTdPrimaryClass,
+  sectionThClass,
+  sectionTheadClass,
+} from "@/src/components/ui/TableSectionCard";
+import { usePaginationPage } from "@/src/components/ui/use-pagination-page";
+import { unwrapServerAction } from "@/src/lib/action-result";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getMetaAdAccountProfile, getMetaAdAccountCampaigns } from "./queries";
 import { syncMetaAdAccountAction as syncMetaAdAccountActionResult, unlinkMetaAdAccountAction as unlinkMetaAdAccountActionResult } from "./actions";
-import MetaStatCard from "./MetaStatCard";
 import MetaInsightsSyncPanel from "./MetaInsightsSyncPanel";
+import MetaLeadDiagnosticsPanel from "./MetaLeadDiagnosticsPanel";
+import MetaLeadSourceToggle from "./MetaLeadSourceToggle";
 import { formatearFechaMeta, formatearMonto } from "./format";
-import { unwrapServerAction } from "@/src/lib/action-result";
 const syncMetaAdAccountAction = unwrapServerAction(syncMetaAdAccountActionResult);
 const unlinkMetaAdAccountAction = unwrapServerAction(unlinkMetaAdAccountActionResult);
 
+function estadoCampana(estado: string | null): { label: string; color: "success" | "warning" | "light" } {
+  if (estado === "ACTIVE") return { label: "Activa", color: "success" };
+  if (estado === "PAUSED") return { label: "Pausada", color: "warning" };
+  return { label: estado ?? "—", color: "light" };
+}
 
 export default function MetaAdAccountProfileView({ id }: { id: string }) {
   const router = useRouter();
@@ -45,58 +58,67 @@ export default function MetaAdAccountProfileView({ id }: { id: string }) {
   if (isError) return <QueryError error={error} />;
   if (!cuenta) return null;
 
-  const subtitle = [cuenta.adAccountId, cuenta.moneda].filter(Boolean).join(" · ");
-
   return (
     <div className="space-y-6">
       <PageHeader
-        title={cuenta.nombre}
-        description={subtitle}
+        title="Cuenta publicitaria"
+        description="Campañas sincronizadas, métricas y recepción de leads de esta cuenta."
         backHref="/settings/meta/ad-accounts"
         backLabel="Volver a cuentas"
       />
 
-      <div className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-        <EntityCell
-          name={cuenta.nombre}
-          subtitle={subtitle}
-          icon="mdi:bullhorn-outline"
-          shape="rounded"
-          size="lg"
-        />
-      </div>
+      <ProfileCard
+        name={cuenta.nombre}
+        icon="mdi:bullhorn-outline"
+        meta={[
+          cuenta.adAccountId,
+          cuenta.moneda,
+          `Última sincronización: ${formatearFechaMeta(cuenta.ultimoSyncEn, "Nunca")}`,
+        ]}
+        actions={
+          <>
+            <Link href={`/leads?metaCuentaId=${cuenta.id}`}>
+              <Button type="button" size="sm" variant="outline" startIcon={<Icon name="mdi:account-multiple-outline" size={18} />}>
+                Leads
+              </Button>
+            </Link>
+            <Link href={`/dashboard?metaCuentaId=${cuenta.id}`}>
+              <Button type="button" size="sm" variant="outline" startIcon={<Icon name="mdi:view-dashboard-outline" size={18} />}>
+                Dashboard
+              </Button>
+            </Link>
+            <ActionButton
+              action={async () => {
+                await unlinkMetaAdAccountAction(cuenta.id);
+                router.push("/settings/meta/ad-accounts");
+              }}
+              successMessage="Cuenta desvinculada"
+              variant="outline"
+              startIcon={<Icon name="mdi:link-off" size={18} />}
+              invalidateKeys={[queryKeys.metaAdAccountsVinculadasAll, queryKeys.metaAdAccountsAvailable, queryKeys.metaConnection]}
+            >
+              Desvincular
+            </ActionButton>
+          </>
+        }
+      />
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-        <MetaStatCard label="Campañas sincronizadas" value={cuenta.totalCampanas} icon="mdi:bullhorn-outline" />
-        <MetaStatCard label="Leads totales" value={cuenta.totalLeads} icon="mdi:account-group-outline" />
-        <MetaStatCard
-          label="Última sincronización"
-          value={formatearFechaMeta(cuenta.ultimoSyncEn, "Nunca")}
-          icon="mdi:sync"
-        />
-        <MetaStatCard
-          label="Inversión (Insights)"
-          value={formatearMonto(cuenta.spend, cuenta.moneda)}
-          icon="mdi:cash-multiple"
-        />
-        <MetaStatCard label="CPL" value={formatearMonto(cuenta.cpl, cuenta.moneda)} icon="mdi:account-cash-outline" />
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-3">
+        <MetricCard label="Campañas sincronizadas" value={cuenta.totalCampanas} icon="mdi:bullhorn-outline" />
+        <MetricCard label="Leads totales" value={cuenta.totalLeads} icon="mdi:account-group-outline" />
+        <MetricCard label="Inversión (Insights)" value={formatearMonto(cuenta.spend, cuenta.moneda)} icon="mdi:cash-multiple" />
+        <MetricCard label="CPL" value={formatearMonto(cuenta.cpl, cuenta.moneda)} icon="mdi:account-cash-outline" />
       </div>
 
       <MetaLeadDiagnosticsPanel cuentaId={id} />
 
       <MetaInsightsSyncPanel cuentaId={cuenta.id} />
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
-              <Icon name="mdi:chart-timeline-variant" size={20} className="text-gray-600 dark:text-gray-300" />
-            </span>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Todas las campañas</h2>
-              <p className="text-theme-sm text-gray-500 dark:text-gray-400">Campañas sincronizadas desde Meta, incluidas las pausadas. Activa o desactiva la entrada automática de leads por campaña.</p>
-            </div>
-          </div>
+      <TableSectionCard
+        title="Todas las campañas"
+        desc="Activa o desactiva la entrada automática de leads por campaña."
+        help="Campañas sincronizadas desde Meta, incluidas las pausadas."
+        actions={
           <ActionButton
             action={async () => {
               const resultado = await syncMetaAdAccountAction(cuenta.id);
@@ -112,76 +134,94 @@ export default function MetaAdAccountProfileView({ id }: { id: string }) {
             invalidateKeys={[["meta", "lead-sources"], ["meta", "ad-accounts", id, "campaigns"], queryKeys.metaAdAccountProfile(id), queryKeys.metaAdAccountsVinculadasAll]}
             startIcon={<Icon name="mdi:sync" size={18} />}
           >
-            Sincronizar estructura
+            Sincronizar
           </ActionButton>
-        </div>
-
-        {campaigns.isLoading ? <PageLoader /> : campaigns.isError ? <QueryError error={campaigns.error} /> : campaigns.data?.total === 0 ? (
+        }
+        footer={
+          campaigns.data && campaigns.data.total > 0 ? (
+            <Pagination {...campaigns.data} onPageChange={setPage} itemLabel="campañas" />
+          ) : undefined
+        }
+      >
+        {campaigns.isLoading ? (
+          <PageLoader />
+        ) : campaigns.isError ? (
+          <QueryError error={campaigns.error} />
+        ) : campaigns.data?.total === 0 ? (
           <EmptyState
             icon="mdi:bullhorn-outline"
             title="Sin campañas sincronizadas"
-            description='Usa "Sincronizar ahora" para importar campañas desde Meta.'
+            description="Usa «Sincronizar» para importar campañas desde Meta."
           />
         ) : (
-          <TableCard footer={campaigns.data ? <Pagination {...campaigns.data} onPageChange={setPage} itemLabel="campañas" className="p-4" /> : undefined}>
-            <Table>
-              <TableHeader className="border-b border-gray-100 dark:border-gray-800">
-                <TableRow>
-                  <TableCell isHeader className={thClass}>
-                    Campaña
-                  </TableCell>
-                  <TableCell isHeader className={thClass}>
-                    Estado
-                  </TableCell>
-                  <TableCell isHeader className={thClass}>
-                    Leads importados
-                  </TableCell>
-                  <TableCell isHeader className={thClass}>Leads automáticos</TableCell>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {(campaigns.data?.data ?? []).map((campana) => (
+          <>
+            <div className="space-y-3 md:hidden">
+              {(campaigns.data?.data ?? []).map((campana) => {
+                const estado = estadoCampana(campana.estadoMeta);
+                return (
+                  <MobileCard
+                    key={campana.id}
+                    header={<p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">{campana.nombre}</p>}
+                    aside={
+                      <Badge size="sm" color={estado.color}>
+                        {estado.label}
+                      </Badge>
+                    }
+                    fields={[
+                      { label: "Leads importados", value: campana.totalLeads },
+                      {
+                        label: "Leads automáticos",
+                        value: <MetaLeadSourceToggle tipo="campanas" id={campana.id} nombre={campana.nombre} />,
+                      },
+                    ]}
+                  />
+                );
+              })}
+            </div>
+            <div className="hidden md:block">
+          <Table>
+            <TableHeader className={sectionTheadClass}>
+              <TableRow>
+                <TableCell isHeader className={sectionThClass}>
+                  Campaña
+                </TableCell>
+                <TableCell isHeader className={sectionThClass}>
+                  Estado
+                </TableCell>
+                <TableCell isHeader className={sectionThClass}>
+                  Leads importados
+                </TableCell>
+                <TableCell isHeader className={sectionThClass}>
+                  Leads automáticos
+                </TableCell>
+              </TableRow>
+            </TableHeader>
+            <TableBody className={sectionTbodyClass}>
+              {(campaigns.data?.data ?? []).map((campana) => {
+                const estado = estadoCampana(campana.estadoMeta);
+                return (
                   <TableRow key={campana.id}>
-                    <TableCell className="px-5 py-3 text-theme-sm font-medium text-gray-800 dark:text-white/90">
-                      {campana.nombre}
+                    <TableCell className={sectionTdPrimaryClass}>
+                      <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">{campana.nombre}</p>
                     </TableCell>
-                    <TableCell className={tdClass}>{campana.estadoMeta === "ACTIVE" ? "Activa" : campana.estadoMeta === "PAUSED" ? "Pausada" : campana.estadoMeta ?? "—"}</TableCell>
-                    <TableCell className={tdClass}>{campana.totalLeads}</TableCell>
-                    <TableCell className={tdClass}><MetaLeadSourceToggle tipo="campanas" id={campana.id} nombre={campana.nombre} /></TableCell>
+                    <TableCell className={sectionTdClass}>
+                      <Badge size="sm" color={estado.color}>
+                        {estado.label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className={sectionTdClass}>{campana.totalLeads}</TableCell>
+                    <TableCell className={sectionTdClass}>
+                      <MetaLeadSourceToggle tipo="campanas" id={campana.id} nombre={campana.nombre} />
+                    </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableCard>
+                );
+              })}
+            </TableBody>
+          </Table>
+            </div>
+          </>
         )}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div className="flex flex-wrap gap-3">
-          <Link href={`/leads?metaCuentaId=${cuenta.id}`}>
-            <Button type="button" size="sm" variant="outline" startIcon={<Icon name="mdi:account-multiple-outline" size={18} />}>
-              Ver leads
-            </Button>
-          </Link>
-          <Link href={`/dashboard?metaCuentaId=${cuenta.id}`}>
-            <Button type="button" size="sm" variant="outline" startIcon={<Icon name="mdi:view-dashboard-outline" size={18} />}>
-              Ver dashboard
-            </Button>
-          </Link>
-        </div>
-        <ActionButton
-          action={async () => {
-            await unlinkMetaAdAccountAction(cuenta.id);
-            router.push("/settings/meta/ad-accounts");
-          }}
-          successMessage="Cuenta desvinculada"
-          variant="outline"
-          startIcon={<Icon name="mdi:link-off" size={18} />}
-          invalidateKeys={[queryKeys.metaAdAccountsVinculadasAll, queryKeys.metaAdAccountsAvailable, queryKeys.metaConnection]}
-        >
-          Desvincular cuenta
-        </ActionButton>
-      </div>
+      </TableSectionCard>
     </div>
   );
 }

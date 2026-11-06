@@ -20,7 +20,7 @@ export function ListItemSkeleton({ count = 6 }: { count?: number }) {
   );
 }
 
-/** Grid de KPI cards (mismo layout que KpiCard). */
+/** Grid de KPI cards (mismo layout que MetricCard). */
 export function KpiCardsSkeleton({ count = 4, className = "mb-4" }: { count?: number; className?: string }) {
   return (
     <div

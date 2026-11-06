@@ -1,22 +1,36 @@
 "use client";
-import { usePaginationPage } from "@/src/components/ui/use-pagination-page";
 
-import MetaLeadSourceToggle from "./MetaLeadSourceToggle";
-import Pagination from "@/src/components/ui/Pagination";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import ComponentCard from "@/src/components/common/ComponentCard";
+import { InfoGrid, InfoItem } from "@/src/components/common/InfoItem";
+import MetricCard from "@/src/components/common/MetricCard";
+import ProfileCard from "@/src/components/common/ProfileCard";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/src/components/tables";
+import ActionButton from "@/src/components/ui/ActionButton";
+import Alert from "@/src/components/ui/alert/Alert";
 import EntityCell from "@/src/components/ui/avatar/EntityCell";
 import Badge from "@/src/components/ui/badge/Badge";
-import EmptyState from "@/src/components/ui/EmptyState";
-import { Icon } from "@/src/components/ui/Icon";
-import ActionButton from "@/src/components/ui/ActionButton";
 import Button from "@/src/components/ui/button/Button";
+import EmptyState from "@/src/components/ui/EmptyState";
+import MobileCard from "@/src/components/ui/MobileCard";
+import { Icon } from "@/src/components/ui/Icon";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
+import Pagination from "@/src/components/ui/Pagination";
 import TableAction from "@/src/components/ui/TableAction";
+import TableSectionCard, {
+  sectionTbodyClass,
+  sectionTdClass,
+  sectionTdPrimaryClass,
+  sectionThClass,
+  sectionThClassEnd,
+  sectionTheadClass,
+} from "@/src/components/ui/TableSectionCard";
+import { usePaginationPage } from "@/src/components/ui/use-pagination-page";
+import { unwrapServerAction } from "@/src/lib/action-result";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getMetaPageFormMetaCounts, getMetaPageForms, getMetaPageProfile } from "./queries";
 import {
@@ -26,10 +40,9 @@ import {
   unlinkMetaPageAction as unlinkMetaPageActionResult,
 } from "./actions";
 import MetaFormBackfillPanel from "./MetaFormBackfillPanel";
-import MetaStatCard from "./MetaStatCard";
+import MetaLeadSourceToggle from "./MetaLeadSourceToggle";
 import MetaWebhookBadge from "./MetaWebhookBadge";
 import { formatearFechaMeta } from "./format";
-import { unwrapServerAction } from "@/src/lib/action-result";
 const healthCheckMetaPageAction = unwrapServerAction(healthCheckMetaPageActionResult);
 const resyncMetaPageWebhookAction = unwrapServerAction(resyncMetaPageWebhookActionResult);
 const syncMetaPageFormsAction = unwrapServerAction(syncMetaPageFormsActionResult);
@@ -80,105 +93,146 @@ export default function MetaPageProfileView({ id }: { id: string }) {
   if (isError) return <QueryError error={error} />;
   if (!pagina) return null;
 
+  const formularioBackfill = formsQuery.data?.data.find((f) => f.formId === backfillFormId);
+  const formularios = formsQuery.data?.data ?? [];
+
+  const conteoMeta = (formId: string, totalLeads: number) => {
+    const enMeta = conteosMeta?.[formId];
+    if (metaCountsQuery.isLoading || metaCountsQuery.isFetching) return <span className="text-gray-400">…</span>;
+    if (conteosMeta === null || metaCountsQuery.isError) return <span className="text-gray-400">—</span>;
+    if (enMeta === undefined) {
+      return (
+        <span className="text-gray-400" title="No se pudo consultar Meta para este formulario">
+          error
+        </span>
+      );
+    }
+    if (enMeta > totalLeads) {
+      return (
+        <span className="font-medium text-warning-500">
+          {enMeta} (faltan {enMeta - totalLeads})
+        </span>
+      );
+    }
+    return <span className="text-success-500">{enMeta}</span>;
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title={pagina.nombre}
-        description={pagina.pageId}
+        title="Página de Meta"
+        description="Recepción de leads, webhook y formularios de esta página."
         backHref="/settings/meta/pages"
         backLabel="Volver a páginas"
+      />
+
+      <ProfileCard
+        name={pagina.nombre}
+        src={pagina.fotoUrl}
+        icon="mdi:facebook"
+        meta={[pagina.categoria, pagina.pageId, `Vinculada desde ${formatearFechaMeta(pagina.fechaCreacion)}`]}
+        badges={
+          <>
+            <MetaWebhookBadge suscrito={pagina.webhookSuscrito} size="md" />
+            <MetaLeadSourceToggle tipo="paginas" id={pagina.id} nombre={pagina.nombre} label="Leads automáticos" />
+          </>
+        }
+        actions={
+          <>
+            <Link href={`/leads?metaPaginaId=${pagina.id}`}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                startIcon={<Icon name="mdi:account-multiple-outline" size={18} />}
+              >
+                Leads
+              </Button>
+            </Link>
+            <ActionButton
+              action={async () => {
+                await unlinkMetaPageAction(pagina.id);
+                router.push("/settings/meta/pages");
+              }}
+              successMessage="Página desvinculada"
+              variant="outline"
+              startIcon={<Icon name="mdi:link-off" size={18} />}
+              invalidateKeys={[
+                queryKeys.metaPagesVinculadasAll,
+                queryKeys.metaPagesAvailable,
+                queryKeys.metaConnection,
+              ]}
+            >
+              Desvincular
+            </ActionButton>
+          </>
+        }
+      />
+
+      <div className="grid grid-cols-2 gap-2 lg:gap-3">
+        <MetricCard label="Leads totales" value={pagina.totalLeads} icon="mdi:account-group-outline" />
+        <MetricCard label="Leads últimos 7 días" value={pagina.leadsUltimos7Dias} icon="mdi:calendar-week" />
+      </div>
+
+      <ComponentCard
+        title="Estado del webhook"
+        desc="Meta avisa al CRM por este webhook cada vez que llega un lead nuevo."
+        actions={
+          <>
+            <ActionButton
+              action={() => resyncMetaPageWebhookAction(pagina.id)}
+              successMessage="Webhook re-suscrito"
+              loadingText="Re-suscribiendo…"
+              invalidateKeys={[queryKeys.metaPageProfile(id), queryKeys.metaPagesVinculadasAll]}
+              startIcon={<Icon name="mdi:refresh" size={18} />}
+            >
+              Re-suscribir
+            </ActionButton>
+            <ActionButton
+              action={async () => {
+                const resultado = await healthCheckMetaPageAction(pagina.id);
+                if (!resultado.webhookSuscrito) {
+                  throw new Error(
+                    resultado.webhookUltimoError ??
+                      "El webhook de la página no está suscrito en Meta",
+                  );
+                }
+              }}
+              successMessage="Verificación completada"
+              loadingText="Verificando…"
+              variant="outline"
+              invalidateKeys={[queryKeys.metaPageProfile(id), queryKeys.metaPagesVinculadasAll]}
+              startIcon={<Icon name="mdi:shield-check-outline" size={18} />}
+            >
+              Verificar
+            </ActionButton>
+          </>
+        }
       >
-        <MetaLeadSourceToggle tipo="paginas" id={pagina.id} nombre={pagina.nombre} />
-        <MetaWebhookBadge suscrito={pagina.webhookSuscrito} size="md" />
-      </PageHeader>
+        <InfoGrid>
+          <InfoItem label="Suscrita desde">
+            {pagina.webhookSuscrito ? formatearFechaMeta(pagina.webhookSuscritoEn) : "No suscrita"}
+          </InfoItem>
+          <InfoItem label="Última verificación">{formatearFechaMeta(pagina.webhookUltimoCheckEn, "Sin verificar")}</InfoItem>
+        </InfoGrid>
+        {pagina.webhookUltimoError && (
+          <Alert variant="error" title="Último error del webhook" message={pagina.webhookUltimoError} />
+        )}
+        {!pagina.webhookSuscrito && !pagina.webhookUltimoError && (
+          <Alert
+            variant="warning"
+            title="Sin leads en vivo"
+            message="La página no está suscrita al webhook de leads. Usa «Re-suscribir» para reintentar."
+          />
+        )}
+      </ComponentCard>
 
-      <div className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-        <EntityCell
-          name={pagina.nombre}
-          subtitle={pagina.categoria ?? pagina.pageId}
-          src={pagina.fotoUrl}
-          icon="mdi:facebook"
-          size="lg"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <MetaStatCard label="Leads totales" value={pagina.totalLeads} icon="mdi:account-group-outline" />
-        <MetaStatCard label="Leads últimos 7 días" value={pagina.leadsUltimos7Dias} icon="mdi:calendar-week" />
-        <MetaStatCard
-          label="Vinculada desde"
-          value={formatearFechaMeta(pagina.fechaCreacion)}
-          icon="mdi:calendar-check-outline"
-        />
-      </div>
-
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div className="mb-4 flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
-            <Icon name="mdi:webhook" size={20} className="text-gray-600 dark:text-gray-300" />
-          </span>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Estado del webhook</h2>
-            <p className="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">
-              {pagina.webhookSuscrito
-                ? `Suscrita al webhook de leads desde ${formatearFechaMeta(pagina.webhookSuscritoEn)}.`
-                : "No está recibiendo leads en vivo — reintenta la suscripción al webhook."}
-            </p>
-            {pagina.webhookUltimoCheckEn && (
-              <p className="mt-1 text-theme-xs text-gray-400">
-                Última verificación: {formatearFechaMeta(pagina.webhookUltimoCheckEn)}
-              </p>
-            )}
-            {pagina.webhookUltimoError && (
-              <p className="mt-1 text-theme-xs text-error-500">{pagina.webhookUltimoError}</p>
-            )}
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <ActionButton
-            action={() => resyncMetaPageWebhookAction(pagina.id)}
-            successMessage="Webhook re-suscrito"
-            loadingText="Re-suscribiendo…"
-            invalidateKeys={[queryKeys.metaPageProfile(id), queryKeys.metaPagesVinculadasAll]}
-            startIcon={<Icon name="mdi:refresh" size={18} />}
-          >
-            Re-suscribir webhook
-          </ActionButton>
-          <ActionButton
-            action={async () => {
-              const resultado = await healthCheckMetaPageAction(pagina.id);
-              if (!resultado.webhookSuscrito) {
-                throw new Error(
-                  resultado.webhookUltimoError ??
-                    "El webhook de la página no está suscrito en Meta",
-                );
-              }
-            }}
-            successMessage="Verificación completada"
-            loadingText="Verificando…"
-            variant="outline"
-            invalidateKeys={[queryKeys.metaPageProfile(id), queryKeys.metaPagesVinculadasAll]}
-            startIcon={<Icon name="mdi:shield-check-outline" size={18} />}
-          >
-            Verificar en Meta
-          </ActionButton>
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
-              <Icon name="mdi:form-select" size={20} className="text-gray-600 dark:text-gray-300" />
-            </span>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Formularios</h2>
-              <p className="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">
-                La entrada automática requiere que la página, el formulario y la campaña estén habilitados. La reimportación manual es independiente.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
+      <TableSectionCard
+        title="Formularios"
+        desc="Lead Ads de esta página y su entrada automática."
+        help="La entrada automática requiere que la página, el formulario y la campaña estén habilitados. La reimportación manual es independiente."
+        actions={
+          <>
             <ActionButton
               action={async () => {
                 await metaCountsQuery.refetch();
@@ -188,7 +242,7 @@ export default function MetaPageProfileView({ id }: { id: string }) {
               variant="outline"
               startIcon={<Icon name="mdi:facebook" size={18} />}
             >
-              Comparar con Meta
+              Comparar
             </ActionButton>
             <ActionButton
               action={async () => {
@@ -203,11 +257,16 @@ export default function MetaPageProfileView({ id }: { id: string }) {
               ]}
               startIcon={<Icon name="mdi:sync" size={18} />}
             >
-              Sincronizar formularios
+              Sincronizar
             </ActionButton>
-          </div>
-        </div>
-
+          </>
+        }
+        footer={
+          formsQuery.data && formsQuery.data.total > 0 ? (
+            <Pagination {...formsQuery.data} onPageChange={setPage} itemLabel="formularios" />
+          ) : undefined
+        }
+      >
         {formsQuery.isLoading ? (
           <PageLoader />
         ) : formsQuery.isError ? (
@@ -216,145 +275,139 @@ export default function MetaPageProfileView({ id }: { id: string }) {
           <EmptyState
             icon="mdi:form-select"
             title="Sin formularios sincronizados"
-            description='Usa "Sincronizar formularios" para traer los Lead Ads de esta página desde Meta.'
+            description="Usa «Sincronizar» para traer los Lead Ads de esta página desde Meta."
           />
         ) : (
-          <div className="max-w-full overflow-x-auto">
-            <Table>
-              <TableHeader className="border-b border-gray-100 dark:border-gray-800">
-                <TableRow>
-                  <TableCell isHeader className="px-3 py-2 text-start text-theme-xs font-medium text-gray-500">
-                    Formulario
-                  </TableCell>
-                  <TableCell isHeader className="px-3 py-2 text-start text-theme-xs font-medium text-gray-500">
-                    Estado
-                  </TableCell>
-                  <TableCell isHeader className="px-3 py-2 text-start text-theme-xs font-medium text-gray-500">
-                    Leads
-                  </TableCell>
-                  <TableCell isHeader className="px-3 py-2 text-start text-theme-xs font-medium text-gray-500">
-                    Total en Meta
-                  </TableCell>
-                  <TableCell isHeader className="px-3 py-2 text-start text-theme-xs font-medium text-gray-500">
-                    Creado
-                  </TableCell>
-                  <TableCell isHeader className="px-3 py-2 text-start text-theme-xs font-medium text-gray-500">
-                    Última sync
-                  </TableCell>
-                  <TableCell isHeader className="px-3 py-2 text-end text-theme-xs font-medium text-gray-500">
-                    Leads automáticos
-                  </TableCell>
-                  <TableCell isHeader className="px-3 py-2 text-end text-theme-xs font-medium text-gray-500">
-                    Acciones
-                  </TableCell>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {(formsQuery.data?.data ?? []).map((formulario) => {
-                  const abierto = backfillFormId === formulario.formId;
-                  return (
-                    <TableRow
-                      key={formulario.id}
-                      className={abierto ? "bg-brand-50/40 dark:bg-brand-500/5" : undefined}
-                    >
-                      <TableCell className="px-3 py-2.5">
+          <>
+            <div className="space-y-3 md:hidden">
+              {formularios.map((formulario) => {
+                const abierto = backfillFormId === formulario.formId;
+                return (
+                  <MobileCard
+                    key={formulario.id}
+                    className={abierto ? "border-brand-300 dark:border-brand-500/40" : ""}
+                    header={
+                      <EntityCell name={formulario.nombre} subtitle={formulario.formId} icon="mdi:form-select" size="md" />
+                    }
+                    aside={
+                      <Badge color={colorEstadoFormulario(formulario.estadoMeta)} size="sm">
+                        {etiquetaEstadoFormulario(formulario.estadoMeta)}
+                      </Badge>
+                    }
+                    fields={[
+                      { label: "Leads", value: formulario.totalLeads },
+                      { label: "Total en Meta", value: conteoMeta(formulario.formId, formulario.totalLeads) },
+                      { label: "Creado", value: formatearFechaMeta(formulario.fechaCreacion) },
+                      { label: "Última sync", value: formatearFechaMeta(formulario.ultimoSyncEn) },
+                      {
+                        label: "Leads automáticos",
+                        value: (
+                          <MetaLeadSourceToggle
+                            tipo="formularios"
+                            id={formulario.id}
+                            nombre={formulario.nombre}
+                            paginaId={pagina.id}
+                          />
+                        ),
+                      },
+                    ]}
+                    actions={
+                      <TableAction
+                        icon={abierto ? "mdi:close" : "mdi:database-import-outline"}
+                        label={abierto ? "Cerrar reimportación" : "Reimportar leads"}
+                        onClick={() => setBackfillFormId(abierto ? null : formulario.formId)}
+                      />
+                    }
+                  />
+                );
+              })}
+            </div>
+            <div className="hidden md:block">
+          <Table>
+            <TableHeader className={sectionTheadClass}>
+              <TableRow>
+                <TableCell isHeader className={sectionThClass}>
+                  Formulario
+                </TableCell>
+                <TableCell isHeader className={sectionThClass}>
+                  Estado
+                </TableCell>
+                <TableCell isHeader className={sectionThClass}>
+                  Leads
+                </TableCell>
+                <TableCell isHeader className={sectionThClass}>
+                  Total en Meta
+                </TableCell>
+                <TableCell isHeader className={sectionThClass}>
+                  Creado
+                </TableCell>
+                <TableCell isHeader className={sectionThClass}>
+                  Última sync
+                </TableCell>
+                <TableCell isHeader className={sectionThClass}>
+                  Leads automáticos
+                </TableCell>
+                <TableCell isHeader className={sectionThClassEnd}>
+                  Acciones
+                </TableCell>
+              </TableRow>
+            </TableHeader>
+            <TableBody className={sectionTbodyClass}>
+              {formularios.map((formulario) => {
+                const abierto = backfillFormId === formulario.formId;
+                return (
+                  <TableRow
+                    key={formulario.id}
+                    className={abierto ? "bg-brand-50/40 dark:bg-brand-500/5" : undefined}
+                  >
+                    <TableCell className={sectionTdPrimaryClass}>
+                      <div className="max-w-[18rem]" title={formulario.nombre}>
                         <EntityCell
                           name={formulario.nombre}
                           subtitle={formulario.formId}
                           icon="mdi:form-select"
-                          size="sm"
+                          size="md"
                         />
-                      </TableCell>
-                      <TableCell className="px-3 py-2.5">
-                        <Badge color={colorEstadoFormulario(formulario.estadoMeta)} size="sm">
-                          {etiquetaEstadoFormulario(formulario.estadoMeta)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="px-3 py-2.5 text-theme-sm text-gray-500">
-                        {formulario.totalLeads}
-                      </TableCell>
-                      <TableCell className="px-3 py-2.5 text-theme-sm">
-                        {metaCountsQuery.isLoading || metaCountsQuery.isFetching ? (
-                          <span className="text-gray-400">…</span>
-                        ) : conteosMeta === null || metaCountsQuery.isError ? (
-                          <span className="text-gray-400">—</span>
-                        ) : conteosMeta[formulario.formId] === undefined ? (
-                          <span className="text-gray-400" title="No se pudo consultar Meta para este formulario">
-                            error
-                          </span>
-                        ) : conteosMeta[formulario.formId] > formulario.totalLeads ? (
-                          <span className="font-medium text-warning-500">
-                            {conteosMeta[formulario.formId]} (faltan{" "}
-                            {conteosMeta[formulario.formId] - formulario.totalLeads})
-                          </span>
-                        ) : (
-                          <span className="text-success-500">{conteosMeta[formulario.formId]}</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="px-3 py-2.5 text-theme-sm text-gray-500">
-                        {formatearFechaMeta(formulario.fechaCreacion)}
-                      </TableCell>
-                      <TableCell className="px-3 py-2.5 text-theme-sm text-gray-500">
-                        {formatearFechaMeta(formulario.ultimoSyncEn)}
-                      </TableCell>
-                      <TableCell className="px-3 py-2.5"><MetaLeadSourceToggle tipo="formularios" id={formulario.id} nombre={formulario.nombre} paginaId={pagina.id} /></TableCell>
-                      <TableCell className="px-3 py-2.5 text-end">
-                        <TableAction
-                          icon={abierto ? "mdi:close" : "mdi:database-import-outline"}
-                          label={abierto ? "Cerrar reimportación" : "Reimportar leads"}
-                          onClick={() => setBackfillFormId(abierto ? null : formulario.formId)}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-            <Pagination {...formsQuery.data!} onPageChange={setPage} itemLabel="formularios" className="p-4" />
-          </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className={sectionTdClass}>
+                      <Badge color={colorEstadoFormulario(formulario.estadoMeta)} size="sm">
+                        {etiquetaEstadoFormulario(formulario.estadoMeta)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className={sectionTdClass}>{formulario.totalLeads}</TableCell>
+                    <TableCell className={sectionTdClass}>{conteoMeta(formulario.formId, formulario.totalLeads)}</TableCell>
+                    <TableCell className={sectionTdClass}>{formatearFechaMeta(formulario.fechaCreacion)}</TableCell>
+                    <TableCell className={sectionTdClass}>{formatearFechaMeta(formulario.ultimoSyncEn)}</TableCell>
+                    <TableCell className={sectionTdClass}>
+                      <MetaLeadSourceToggle tipo="formularios" id={formulario.id} nombre={formulario.nombre} paginaId={pagina.id} />
+                    </TableCell>
+                    <TableCell className={`${sectionTdClass} text-end`}>
+                      <TableAction
+                        icon={abierto ? "mdi:close" : "mdi:database-import-outline"}
+                        label={abierto ? "Cerrar reimportación" : "Reimportar leads"}
+                        onClick={() => setBackfillFormId(abierto ? null : formulario.formId)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+            </div>
+          </>
         )}
+      </TableSectionCard>
 
-        {backfillFormId && (
-          <MetaFormBackfillPanel
-            pageId={pagina.id}
-            formId={backfillFormId}
-            formNombre={
-              formsQuery.data?.data.find((f) => f.formId === backfillFormId)?.nombre ?? backfillFormId
-            }
-            fechaCreacion={formsQuery.data?.data.find((f) => f.formId === backfillFormId)?.fechaCreacion}
-            onClose={() => setBackfillFormId(null)}
-          />
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-        <Link href={`/leads?metaPaginaId=${pagina.id}`}>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            startIcon={<Icon name="mdi:account-multiple-outline" size={18} />}
-          >
-            Ver leads de esta página
-          </Button>
-        </Link>
-        <ActionButton
-          action={async () => {
-            await unlinkMetaPageAction(pagina.id);
-            router.push("/settings/meta/pages");
-          }}
-          successMessage="Página desvinculada"
-          variant="outline"
-          startIcon={<Icon name="mdi:link-off" size={18} />}
-          invalidateKeys={[
-            queryKeys.metaPagesVinculadasAll,
-            queryKeys.metaPagesAvailable,
-            queryKeys.metaConnection,
-          ]}
-        >
-          Desvincular página
-        </ActionButton>
-      </div>
+      {backfillFormId && (
+        <MetaFormBackfillPanel
+          pageId={pagina.id}
+          formId={backfillFormId}
+          formNombre={formularioBackfill?.nombre ?? backfillFormId}
+          fechaCreacion={formularioBackfill?.fechaCreacion}
+          onClose={() => setBackfillFormId(null)}
+        />
+      )}
     </div>
   );
 }

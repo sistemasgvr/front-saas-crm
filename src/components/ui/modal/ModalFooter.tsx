@@ -21,7 +21,7 @@ export default function ModalFooter({
           {error}
         </p>
       )}
-      <div className="flex flex-wrap justify-end gap-2">{children}</div>
+      <div className="flex w-full flex-wrap items-center justify-end gap-3">{children}</div>
     </div>
   );
 }

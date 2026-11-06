@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import ComponentCard from "@/src/components/common/ComponentCard";
 import Label from "@/src/components/form/Label";
+import Alert from "@/src/components/ui/alert/Alert";
 import Input from "@/src/components/form/input/InputField";
 import Button from "@/src/components/ui/button/Button";
 import { queryKeys } from "@/src/lib/query/keys";
@@ -34,8 +36,10 @@ export default function MetaInsightsSyncPanel({ cuentaId }: { cuentaId: string }
   });
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-white/[0.03]">
-      <p className="mb-3 text-theme-sm font-medium text-gray-800 dark:text-white/90">Sincronizar métricas (Insights)</p>
+    <ComponentCard
+      title="Sincronizar métricas (Insights)"
+      desc="Trae de Meta la inversión diaria de la cuenta y sus campañas en el rango elegido; con ella se calculan Inversión y CPL."
+    >
       <div className="flex flex-wrap items-end gap-3">
         <div className="w-40">
           <Label htmlFor="insights-desde">Desde</Label>
@@ -52,15 +56,17 @@ export default function MetaInsightsSyncPanel({ cuentaId }: { cuentaId: string }
           disabled={mutation.isPending}
           onClick={() => mutation.mutate(undefined, { onSuccess: (data) => setResultado(data) })}
         >
-          {mutation.isPending ? "Sincronizando…" : "Sincronizar métricas"}
+          {mutation.isPending ? "Sincronizando…" : "Sincronizar"}
         </Button>
       </div>
       {resultado && (
-        <p className="mt-3 text-theme-sm text-gray-600 dark:text-gray-300">
-          {resultado.filasCuenta} días de cuenta · {resultado.filasCampana} filas de campaña
-          {resultado.errores > 0 ? ` · ${resultado.errores} errores` : ""}
-        </p>
+        <Alert
+          variant={resultado.errores > 0 ? "warning" : "success"}
+          message={`${resultado.filasCuenta} días de cuenta · ${resultado.filasCampana} filas de campaña${
+            resultado.errores > 0 ? ` · ${resultado.errores} errores` : ""
+          }`}
+        />
       )}
-    </div>
+    </ComponentCard>
   );
 }

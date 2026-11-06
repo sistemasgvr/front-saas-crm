@@ -80,6 +80,10 @@ export default function Pagination({
     );
   }
 
+  // Botones y números: estilo de tables/Pagination.tsx del template TailAdmin.
+  const navBtn =
+    "flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-700 shadow-theme-xs hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]";
+
   return (
     <div data-tour="pagination"
       className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${className}`}
@@ -90,25 +94,21 @@ export default function Pagination({
         <span className="font-medium text-gray-700 dark:text-gray-300">{total}</span> {itemLabel}
       </p>
 
-      <div className="flex items-center justify-center gap-1 sm:justify-end">
+      <div className="flex items-center justify-center sm:justify-end">
         <button
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          aria-label="Página anterior"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-white/[0.03]"
+          className={`mr-2.5 ${navBtn}`}
         >
-          <Icon name="mdi:chevron-left" size={18} />
+          Anterior
         </button>
 
-        <div className="hidden items-center gap-1 sm:flex">
+        <div className="hidden items-center gap-2 sm:flex">
           {pageNumbers(page, totalPages).map((p, idx) =>
             p === "…" ? (
-              <span
-                key={`ellipsis-${idx}`}
-                className="flex h-9 w-9 items-center justify-center text-theme-sm text-gray-400"
-              >
-                …
+              <span key={`ellipsis-${idx}`} className="px-2 text-gray-700 dark:text-gray-400">
+                ...
               </span>
             ) : (
               <button
@@ -116,10 +116,10 @@ export default function Pagination({
                 key={p}
                 onClick={() => onPageChange(p)}
                 aria-current={p === page ? "page" : undefined}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg text-theme-sm font-medium ${
+                className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium ${
                   p === page
                     ? "bg-brand-500 text-white"
-                    : "border border-gray-300 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.03]"
+                    : "text-gray-700 hover:bg-blue-500/[0.08] hover:text-brand-500 dark:text-gray-400 dark:hover:text-brand-500"
                 }`}
               >
                 {p}
@@ -128,7 +128,7 @@ export default function Pagination({
           )}
         </div>
 
-        <span className="px-2 text-theme-sm text-gray-600 dark:text-gray-300 sm:hidden">
+        <span className="px-2 text-sm text-gray-700 dark:text-gray-400 sm:hidden">
           {page} / {totalPages}
         </span>
 
@@ -136,10 +136,9 @@ export default function Pagination({
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          aria-label="Página siguiente"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-white/[0.03]"
+          className={`ml-2.5 ${navBtn}`}
         >
-          <Icon name="mdi:chevron-right" size={18} />
+          Siguiente
         </button>
       </div>
     </div>

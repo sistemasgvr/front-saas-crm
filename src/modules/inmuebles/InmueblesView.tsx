@@ -13,6 +13,7 @@ import Pagination from "@/src/components/ui/Pagination";
 import { QueryError } from "@/src/components/ui/PageLoader";
 import { TablePageSkeleton } from "@/src/components/ui/skeletons";
 import TableAction from "@/src/components/ui/TableAction";
+import MobileCard from "@/src/components/ui/MobileCard";
 import TableCard, { tdClass, tdPrimaryClass, thClass, thClassEnd } from "@/src/components/ui/TableCard";
 import { queryKeys } from "@/src/lib/query/keys";
 import { getInmuebles } from "./queries";
@@ -70,9 +71,9 @@ function colorEstado(estado: string): "success" | "warning" | "error" | "light" 
 
 function InmuebleMobileCard({ row }: { row: InmuebleRow }) {
   return (
-    <article className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+    <MobileCard
+      header={
+        <>
           <Link
             href={`/inmuebles/${row.id}`}
             className="font-medium text-gray-800 hover:underline dark:text-white/90"
@@ -83,33 +84,27 @@ function InmuebleMobileCard({ row }: { row: InmuebleRow }) {
             {row.titulo}
             {row.zona ? ` · ${row.zona}` : ""}
           </p>
-        </div>
+        </>
+      }
+      aside={
         <Badge size="sm" color={colorEstado(row.estadoInmueble)}>
           {etiquetaEstadoInmueble(row.estadoInmueble)}
         </Badge>
-      </div>
-
-      <dl className="mt-3 space-y-1.5 text-theme-sm text-gray-600 dark:text-gray-300">
-        <div className="flex justify-between gap-3">
-          <dt className="text-gray-400">Tipo</dt>
-          <dd className="truncate text-right">{etiquetaTipoInmueble(row.tipo)}</dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-gray-400">Operación</dt>
-          <dd className="truncate text-right">{etiquetaOperacionInmueble(row.operacion)}</dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-gray-400">Precio</dt>
-          <dd className="truncate text-right font-medium text-gray-800 dark:text-white/90">
-            {formatearPrecioInmueble(row.precio, row.moneda)}
-          </dd>
-        </div>
-      </dl>
-
-      <div className="mt-3 flex items-center justify-end border-t border-gray-100 pt-3 dark:border-gray-800">
-        <TableAction href={`/inmuebles/${row.id}`} label="Ver" icon="mdi:eye-outline" />
-      </div>
-    </article>
+      }
+      fields={[
+        { label: "Tipo", value: etiquetaTipoInmueble(row.tipo) },
+        { label: "Operación", value: etiquetaOperacionInmueble(row.operacion) },
+        {
+          label: "Precio",
+          value: (
+            <span className="font-medium text-gray-800 dark:text-white/90">
+              {formatearPrecioInmueble(row.precio, row.moneda)}
+            </span>
+          ),
+        },
+      ]}
+      actions={<TableAction href={`/inmuebles/${row.id}`} label="Ver" icon="mdi:eye-outline" />}
+    />
   );
 }
 

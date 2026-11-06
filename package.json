@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:guides": "node --test tests/guides.test.mjs",
+    "test:ui": "node --test tests/class-merge.test.mjs",
     "test:logos": "node --test tests/organization-logo.test.mjs",
     "test:action-errors": "node --test tests/login.test.mjs tests/action-errors.test.mjs"
   },

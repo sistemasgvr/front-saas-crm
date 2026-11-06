@@ -10,6 +10,8 @@ import { Icon } from "@/src/components/ui/Icon";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import TableAction from "@/src/components/ui/TableAction";
+import HelpTooltip from "@/src/components/ui/HelpTooltip";
+import ItemCard from "@/src/components/ui/ItemCard";
 import Badge from "@/src/components/ui/badge/Badge";
 import Button from "@/src/components/ui/button/Button";
 import ConfirmModal from "@/src/components/ui/modal/ConfirmModal";
@@ -184,22 +186,19 @@ export default function RolesEmpresaView() {
         className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
       >
         {roles.map((rol) => (
-          <article
+          <ItemCard
             key={rol.id}
-            data-tour="role-card"
-            className="flex flex-col rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="truncate text-base font-semibold text-gray-900 dark:text-gray-100">
-                  {rol.nombre}
-                </h2>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {etiquetaTipo(rol)}
-                  {rol.esPropio && <Badge color="light">Tu rol</Badge>}
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
+            dataTour="role-card"
+            title={rol.nombre}
+            icon="mdi:shield-account-outline"
+            badges={
+              <>
+                {etiquetaTipo(rol)}
+                {rol.esPropio && <Badge color="light">Tu rol</Badge>}
+              </>
+            }
+            aside={
+              <>
                 <TableAction
                   icon={rol.editable ? "mdi:pencil-outline" : "mdi:eye-outline"}
                   label={rol.editable ? `Editar ${rol.nombre}` : `Ver ${rol.nombre}`}
@@ -226,27 +225,31 @@ export default function RolesEmpresaView() {
                     }}
                   />
                 )}
-              </div>
-            </div>
-            {rol.descripcion && (
-              <p className="mt-3 text-theme-sm text-gray-500 dark:text-gray-400">
-                {rol.descripcion}
-              </p>
-            )}
-            <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 border-t border-gray-100 pt-3 text-theme-xs text-gray-500 dark:border-gray-800 dark:text-gray-400">
-              <span className="inline-flex items-center gap-1">
-                <Icon name="mdi:account-multiple-outline" size={16} />
-                {rol.usuarios} {rol.usuarios === 1 ? "usuario" : "usuarios"}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <Icon name="mdi:shield-check-outline" size={16} />
-                {rol.permisos.length} de {totalPermisos} permisos
-              </span>
-            </div>
-            {!rol.editable && rol.motivo && (
-              <p className="mt-2 text-theme-xs text-gray-400">{rol.motivo}</p>
-            )}
-          </article>
+              </>
+            }
+            description={rol.descripcion}
+            footer={
+              <>
+                <span className="inline-flex items-center gap-1 text-theme-xs text-gray-500 dark:text-gray-400">
+                  <Icon name="mdi:account-multiple-outline" size={16} />
+                  {rol.usuarios} {rol.usuarios === 1 ? "usuario" : "usuarios"}
+                </span>
+                <span className="inline-flex items-center gap-1 text-theme-xs text-gray-500 dark:text-gray-400">
+                  <Icon name="mdi:shield-check-outline" size={16} />
+                  {rol.permisos.length} de {totalPermisos} permisos
+                </span>
+                {!rol.editable && rol.motivo && (
+                  <HelpTooltip
+                    content={rol.motivo}
+                    label="Por qué no se puede editar"
+                    iconName="mdi:lock-outline"
+                    align="end"
+                    className="ml-auto"
+                  />
+                )}
+              </>
+            }
+          />
         ))}
       </div>
 
@@ -346,7 +349,7 @@ export default function RolesEmpresaView() {
                     className="rounded-xl border border-gray-200 dark:border-gray-800"
                   >
                     <header className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
-                      <h3 className="text-theme-sm font-semibold text-gray-800 dark:text-gray-100">
+                      <h3 className="text-theme-sm font-semibold text-gray-800 dark:text-white/90">
                         {grupo.nombre}
                       </h3>
                       <span className="text-theme-xs text-gray-500">

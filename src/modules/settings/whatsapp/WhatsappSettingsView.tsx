@@ -1,13 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import Pagination from "@/src/components/ui/Pagination";
 import { useClientPagination } from "@/src/components/ui/use-client-pagination";
 import { useQuery } from "@tanstack/react-query";
+import Button from "@/src/components/ui/button/Button";
 import EmptyState from "@/src/components/ui/EmptyState";
+import { Icon } from "@/src/components/ui/Icon";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { queryKeys } from "@/src/lib/query/keys";
-import MetaLinkResourcePanel from "../meta/MetaLinkResourcePanel";
+import MetaLinkResourceModal from "../meta/MetaLinkResourceModal";
 import WhatsappTemplatesPanel from "./WhatsappTemplatesPanel";
 import { linkWhatsappNumeroAction as linkWhatsappNumeroActionResult } from "./actions";
 import WhatsappConnectionCard from "./WhatsappConnectionCard";
@@ -20,6 +23,7 @@ const linkWhatsappNumeroAction = unwrapServerAction(linkWhatsappNumeroActionResu
 const INVALIDATE = [queryKeys.whatsappConexiones, queryKeys.whatsappNumerosDisponibles];
 
 export default function WhatsappSettingsView() {
+  const [vincularAbierto, setVincularAbierto] = useState(false);
 
   const conexionesQuery = useQuery({
     queryKey: queryKeys.whatsappConexiones,
@@ -34,9 +38,19 @@ export default function WhatsappSettingsView() {
         description="Vincula el número de WhatsApp Business de la organización para chatear con tus leads."
         backHref="/settings"
         backLabel="Volver a Configuración"
-      />
+      >
+        <Button
+          size="sm"
+          startIcon={<Icon name="mdi:link-plus" size={18} />}
+          onClick={() => setVincularAbierto(true)}
+        >
+          Vincular número
+        </Button>
+      </PageHeader>
 
-      <MetaLinkResourcePanel
+      <MetaLinkResourceModal
+        open={vincularAbierto}
+        onClose={() => setVincularAbierto(false)}
         title="Vincular número de WhatsApp"
         icon="mdi:whatsapp"
         loadingLabel="Buscando números disponibles…"
@@ -73,7 +87,7 @@ export default function WhatsappSettingsView() {
         <EmptyState
           icon="mdi:whatsapp"
           title="Sin número vinculado"
-          description="Vincula un número arriba para empezar a chatear con tus leads."
+          description="Usa «Vincular número» para empezar a chatear con tus leads."
         />
       ) : (
         <div className="space-y-3">

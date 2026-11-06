@@ -10,6 +10,7 @@ import EmptyState from "@/src/components/ui/EmptyState";
 import DynamicFilters from "@/src/components/ui/filters/DynamicFilters";
 import type { DynamicFilterFieldDef, DynamicFilterValues } from "@/src/components/ui/filters/types";
 import { Icon } from "@/src/components/ui/Icon";
+import MobileCard from "@/src/components/ui/MobileCard";
 import PageHeader from "@/src/components/ui/PageHeader";
 import Pagination from "@/src/components/ui/Pagination";
 import { QueryError } from "@/src/components/ui/PageLoader";
@@ -46,61 +47,59 @@ function LeadMobileCard({
   lead: LeadResumen;
 }) {
   const nombre = lead.nombre ?? "Sin nombre";
+  const texto = (value: string | null | undefined) => {
+    const t = value?.trim() || "—";
+    return (
+      <span className="min-w-0 truncate" title={t}>
+        {t}
+      </span>
+    );
+  };
 
   return (
-    <article className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
-      <div className="flex items-start justify-between gap-3">
-        <EntityCell name={nombre} subtitle={lead.email ?? "Sin email"} icon="mdi:account-outline" size="sm" />
-        <div className="flex shrink-0 flex-col items-end gap-1">
+    <MobileCard
+      header={<EntityCell name={nombre} subtitle={lead.email ?? "Sin email"} icon="mdi:account-outline" size="md" />}
+      aside={
+        <>
           <OrigenLeadBadge origen={lead.origen} />
           {lead.tipoLead ? (
             <span className="text-theme-xs text-gray-400">{ETIQUETA_TIPO_LEAD[lead.tipoLead] ?? lead.tipoLead}</span>
           ) : null}
           <EstadoPipelineBadge tipoLead={lead.tipoLead} estado={lead.estadoGestion} />
-        </div>
-      </div>
-
-      <dl className="mt-3 space-y-2 text-theme-sm text-gray-600 dark:text-gray-300">
-        <div>
-          <CeldaConIcono icon="mdi:phone-outline" value={lead.telefono} />
-        </div>
-        {lead.inmuebleInteres ? (
-          <div>
-            <CeldaConIcono
-              icon="mdi:home-city-outline"
-              value={`${lead.inmuebleInteres.codigo} · ${lead.inmuebleInteres.titulo}`}
-            />
-          </div>
-        ) : null}
-        <div>
-          <CeldaConIcono icon="mdi:bullhorn-outline" value={lead.campana?.nombre} />
-        </div>
-        <div>
-          <CeldaConIcono icon="mdi:image-outline" value={lead.anuncio?.nombre} />
-        </div>
-        <div>
-          {lead.asignado ? (
-            <span className="inline-flex items-center gap-1">
-              <CeldaConIcono icon="mdi:account-check-outline" value={lead.asignado.nombre} />
+        </>
+      }
+      fields={[
+        { label: "Teléfono", value: texto(lead.telefono) },
+        ...(lead.inmuebleInteres
+          ? [
+              {
+                label: "Inmueble",
+                value: texto(`${lead.inmuebleInteres.codigo} · ${lead.inmuebleInteres.titulo}`),
+              },
+            ]
+          : []),
+        { label: "Campaña", value: texto(lead.campana?.nombre) },
+        { label: "Anuncio", value: texto(lead.anuncio?.nombre) },
+        {
+          label: "Asignado",
+          value: lead.asignado ? (
+            <span className="inline-flex min-w-0 items-center gap-1">
+              {texto(lead.asignado.nombre)}
               <AsignadoInactivoAviso asignado={lead.asignado} />
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-warning-500">
-              <Icon name="mdi:account-question-outline" size={16} className="shrink-0" />
-              Sin asignar
-            </span>
-          )}
-        </div>
-        <div>
-          <CeldaConIcono icon="mdi:calendar-clock-outline" value={formatearFecha(lead.fechaLead)} />
-        </div>
-      </dl>
-
-      <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-100 pt-3 dark:border-gray-800">
-        <LeadAssignmentActions leadId={lead.id} asignado={lead.asignado} />
-        <TableAction href={`/leads/${lead.id}`} icon="mdi:eye-outline" label={`Ver ${nombre}`} />
-      </div>
-    </article>
+            <span className="text-warning-500">Sin asignar</span>
+          ),
+        },
+        { label: "Fecha", value: texto(formatearFecha(lead.fechaLead)) },
+      ]}
+      actions={
+        <>
+          <LeadAssignmentActions leadId={lead.id} asignado={lead.asignado} />
+          <TableAction href={`/leads/${lead.id}`} icon="mdi:eye-outline" label={`Ver ${nombre}`} />
+        </>
+      }
+    />
   );
 }
 

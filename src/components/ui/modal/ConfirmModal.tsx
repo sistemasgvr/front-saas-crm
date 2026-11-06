@@ -44,7 +44,7 @@ export default function ConfirmModal({
         />
       }
       footer={
-        <div className="flex justify-end gap-2 px-5 py-4">
+        <div className="flex w-full items-center justify-end gap-3 px-5 py-4">
           <Button
             type="button"
             size="sm"

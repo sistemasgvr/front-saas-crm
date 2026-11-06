@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ComponentCard from "@/src/components/common/ComponentCard";
 import Label from "@/src/components/form/Label";
 import Input from "@/src/components/form/input/InputField";
 import Button from "@/src/components/ui/button/Button";
@@ -27,26 +28,22 @@ export default function MetaCapiSettingsForm({ capiDatasetIdActual }: { capiData
   });
 
   return (
-    <div className="rounded-xl border border-gray-100 p-4 dark:border-gray-800">
-      <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400">
-          <Icon name="mdi:chart-line" size={18} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-theme-sm font-medium text-gray-800 dark:text-white/90">Conversions API — Conversion Leads</p>
-          <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
-            Cuando un lead se marca como ganado, perdido o descartado, se le avisa a Meta con este dataset de{" "}
-            <span className="text-gray-700 dark:text-gray-300">Events Manager</span> para que optimice la entrega de
-            campañas por calidad real. Déjalo vacío para no mandar nada.
-          </p>
-        </div>
-      </div>
+    <ComponentCard
+      title="Conversions API — Conversion Leads"
+      desc={
+        <>
+          Cuando un lead se marca como ganado, perdido o descartado, se le avisa a Meta con este dataset de{" "}
+          <span className="text-gray-700 dark:text-gray-300">Events Manager</span> para que optimice la entrega de
+          campañas por calidad real. Déjalo vacío para no mandar nada.
+        </>
+      }
+    >
       <form
         onSubmit={(e) => {
           e.preventDefault();
           mutation.mutate(capiDatasetId.trim());
         }}
-        className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end"
+        className="flex flex-col gap-3 sm:flex-row sm:items-end"
       >
         <div className="flex-1">
           <Label htmlFor="capiDatasetId">Dataset ID</Label>
@@ -67,6 +64,6 @@ export default function MetaCapiSettingsForm({ capiDatasetIdActual }: { capiData
           Guardar
         </Button>
       </form>
-    </div>
+    </ComponentCard>
   );
 }
