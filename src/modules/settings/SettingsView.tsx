@@ -17,6 +17,7 @@ import BotSettingsCard from "./automations/BotSettingsCard";
 import LeadAutoAssignmentSettingsCard from "./leads/LeadAutoAssignmentSettingsCard";
 import PipelineConfigSettingsCard from "./pipeline/PipelineConfigSettingsCard";
 import InmueblesSettingsEntryCard from "./inmuebles/InmueblesSettingsEntryCard";
+import DataExportCard from "./DataExportCard";
 import CollapsibleSection from "@/src/components/ui/CollapsibleSection";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
@@ -62,6 +63,8 @@ export default function SettingsView() {
   const empresa = puede("empresa.configurar");
   const usuarios = puede("usuarios.gestionar");
   const roles = puede("roles.gestionar");
+  // Exportar saca TODOS los datos de la empresa: solo dueño/admin (igual que el backend).
+  const exporta = me.rol === "PROPIETARIO" || me.rol === "ADMINISTRADOR";
 
   return (
     <div data-tour="settings-page" className="space-y-6">
@@ -69,7 +72,7 @@ export default function SettingsView() {
         title="Configuración"
         description="Datos de la empresa y conexión con Meta."
       />
-      {(empresa || usuarios || roles) && (
+      {(empresa || usuarios || roles || exporta) && (
         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Empresa</h2>
       )}
       {usuarios && (
@@ -128,6 +131,7 @@ export default function SettingsView() {
             No se pudieron cargar los datos de la empresa.
           </p>
         ))}
+      {exporta && <DataExportCard />}
 
       {(configuraLeads || creaInmuebles) && (
         <section className="space-y-4">
