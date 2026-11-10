@@ -30,7 +30,7 @@ export async function GET(request: Request): Promise<Response> {
   if (!res.ok || !res.body) {
     const mensaje =
       res.status === 403
-        ? "Solo el propietario o un administrador puede exportar los datos."
+        ? "Tu rol no tiene permiso para exportar los datos de la empresa."
         : "No se pudo generar la exportación. Intenta de nuevo.";
     return new Response(mensaje, {
       status: res.status || 502,

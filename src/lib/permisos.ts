@@ -6,6 +6,7 @@
  */
 export type CodigoPermiso =
   | "empresa.configurar"
+  | "empresa.exportar"
   | "usuarios.gestionar"
   | "roles.gestionar"
   | "dashboard.ver"
@@ -39,6 +40,7 @@ export function tienePermiso(
 /** Permisos que dan acceso a alguna sección de Configuración. */
 export const PERMISOS_CONFIGURACION: readonly CodigoPermiso[] = [
   "empresa.configurar",
+  "empresa.exportar",
   "usuarios.gestionar",
   "roles.gestionar",
   "leads.configurar",

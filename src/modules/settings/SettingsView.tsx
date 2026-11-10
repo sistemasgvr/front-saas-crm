@@ -63,8 +63,7 @@ export default function SettingsView() {
   const empresa = puede("empresa.configurar");
   const usuarios = puede("usuarios.gestionar");
   const roles = puede("roles.gestionar");
-  // Exportar saca TODOS los datos de la empresa: solo dueño/admin (igual que el backend).
-  const exporta = me.rol === "PROPIETARIO" || me.rol === "ADMINISTRADOR";
+  const exporta = puede("empresa.exportar");
 
   return (
     <div data-tour="settings-page" className="space-y-6">

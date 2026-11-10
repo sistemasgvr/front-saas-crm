@@ -46,7 +46,7 @@ export default function DataExportCard() {
     <CollapsibleSection
       title="Exportar datos"
       icon="mdi:database-export-outline"
-      help="Descarga la información de tu empresa en archivos CSV dentro de un ZIP. Solo el propietario o un administrador puede hacerlo."
+      help="Descarga la información de tu empresa en archivos CSV dentro de un ZIP. Requiere el permiso «Exportar datos de la empresa»."
       preview="Descarga tus datos en CSV."
       defaultOpen={false}
     >
