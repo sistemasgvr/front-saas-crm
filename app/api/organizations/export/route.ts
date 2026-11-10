@@ -47,6 +47,7 @@ export async function GET(request: Request): Promise<Response> {
         'attachment; filename="exportacion-crm.zip"',
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
+      "X-Export-Estimado": res.headers.get("X-Export-Estimado") ?? "",
     },
   });
 }
