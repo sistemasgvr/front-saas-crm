@@ -58,7 +58,12 @@ export default function CrearActividadAgendaModal({
   usuarioId: string;
   initialStart?: string | null;
   /** Si viene, el lead ya está elegido (p. ej. desde el chat) y no se busca. */
-  leadFijo?: { id: string; nombre: string } | null;
+  leadFijo?: {
+    id: string;
+    nombre: string;
+    /** Asesor dueño del lead: se usa como asesor por defecto de la actividad. */
+    asignadoUsuarioId?: string | null;
+  } | null;
   /** Prefill de inmueble cuando el lead ya tiene uno de interés (solo VISITA). */
   inmueblePrefill?: { id: string; etiqueta: string } | null;
   loading?: boolean;
@@ -77,7 +82,9 @@ export default function CrearActividadAgendaModal({
   const [inmuebleId, setInmuebleId] = useState("");
   const [modalidad, setModalidad] = useState("PRESENCIAL");
   const [nota, setNota] = useState("");
-  const [asignadoUsuarioId, setAsignadoUsuarioId] = useState(usuarioId);
+  const [asignadoUsuarioId, setAsignadoUsuarioId] = useState(
+    leadFijo?.asignadoUsuarioId || usuarioId,
+  );
 
   const esVisita = tipo === "VISITA";
   const leadBloqueado = Boolean(leadFijo?.id);
@@ -104,10 +111,11 @@ export default function CrearActividadAgendaModal({
     setInmuebleId(inmueblePrefill?.id ?? "");
     setModalidad("PRESENCIAL");
     setNota("");
-    setAsignadoUsuarioId(usuarioId);
+    setAsignadoUsuarioId(leadFijo?.asignadoUsuarioId || usuarioId);
   }, [
     open,
     leadFijo?.id,
+    leadFijo?.asignadoUsuarioId,
     inmueblePrefill?.id,
     inmueblePrefill?.etiqueta,
     initialStart,
@@ -149,6 +157,15 @@ export default function CrearActividadAgendaModal({
       })),
     [asignablesQuery.data],
   );
+
+  /** Al elegir un lead, el asesor por defecto pasa a ser su dueño (si tiene). */
+  function elegirLead(id: string) {
+    setLeadId(id);
+    const lead = (leadsQuery.data?.data ?? []).find(
+      (l: LeadResumen) => l.id === id,
+    );
+    setAsignadoUsuarioId(lead?.asignado?.id || usuarioId);
+  }
 
   const puedeCrear =
     Boolean(leadId) &&
@@ -256,7 +273,7 @@ export default function CrearActividadAgendaModal({
               <Select
                 options={opcionesLead}
                 value={leadId}
-                onChange={setLeadId}
+                onChange={elegirLead}
                 placeholder={leadsQuery.isLoading ? "Cargando…" : "Elige un lead"}
               />
             </div>

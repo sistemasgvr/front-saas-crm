@@ -4087,6 +4087,7 @@ export default function ChatDetailView({
             leadFijo={{
               id: chat.lead.id,
               nombre: chat.lead.nombre?.trim() || nombre,
+              asignadoUsuarioId: chat.lead.asignadoUsuarioId,
             }}
             inmueblePrefill={
               chat.lead.inmuebleInteres
