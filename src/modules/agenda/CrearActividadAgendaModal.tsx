@@ -185,7 +185,7 @@ export default function CrearActividadAgendaModal({
             Nueva actividad
           </p>
           <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
-            Llamada, reunión, seguimiento o visita — sin mover el pipeline. Lun–sáb
+            Llamada, reunión, seguimiento o visita — sin mover el pipeline. Todos los días
             08:00–20:00 Lima.
           </p>
         </div>

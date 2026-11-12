@@ -188,7 +188,7 @@ export default function TransicionPipelineModal({
         )}
         {campos.some((c) => c.codigo === "visitaProgramadaEn") ? (
           <p className="mt-3 text-theme-xs text-gray-500 dark:text-gray-400">
-            Horario laboral: lun–sáb 08:00–20:00 (Lima). No se puede solapar con otra visita del mismo asesor.
+            Horario: todos los días 08:00–20:00 (Lima). No se puede solapar con otra visita del mismo asesor.
           </p>
         ) : null}
       </div>
