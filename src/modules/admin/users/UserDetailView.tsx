@@ -1,20 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import ActionButton from "@/src/components/ui/ActionButton";
 import Avatar from "@/src/components/ui/avatar/Avatar";
 import Badge, { StatusBadge } from "@/src/components/ui/badge/Badge";
+import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
+import ConfirmModal from "@/src/components/ui/modal/ConfirmModal";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { PageLoader, QueryError } from "@/src/components/ui/PageLoader";
 import { unwrapAction } from "@/src/lib/action-result";
 import { queryKeys } from "@/src/lib/query/keys";
+import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import AssignOrgForm from "./AssignOrgForm";
 import { toggleUserStatusAction } from "./actions";
 import { getAdminUser } from "./queries";
 import { getAdminOrganizations } from "../organizations/queries";
 
 export default function UserDetailView({ id }: { id: string }) {
+  const [confirmarBaja, setConfirmarBaja] = useState(false);
   const userQuery = useQuery({
     queryKey: queryKeys.adminUser(id),
     queryFn: () => getAdminUser(id),
@@ -23,29 +27,60 @@ export default function UserDetailView({ id }: { id: string }) {
     queryKey: queryKeys.adminOrganizations({ page: 1, pageSize: 100, estado: 1 }),
     queryFn: () => getAdminOrganizations({ page: 1, pageSize: 100, estado: 1 }),
   });
+  const cambiarEstado = useAppMutation({
+    mutationFn: async (estado: 0 | 1) => {
+      unwrapAction(await toggleUserStatusAction(id, estado));
+      setConfirmarBaja(false);
+    },
+    successMessage: "Estado actualizado",
+    invalidateKeys: [
+      queryKeys.adminUsersAll,
+      queryKeys.adminUser(id),
+      ["organization-users"],
+      queryKeys.leadsAll,
+      queryKeys.whatsappChats,
+    ],
+  });
 
   if (userQuery.isLoading) return <PageLoader />;
   if (userQuery.isError) return <QueryError error={userQuery.error} />;
   if (!userQuery.data) return null;
 
   const user = userQuery.data;
-  const nextEstado = user.estado === 1 ? 0 : 1;
   const isActive = user.estado === 1;
   const fullName = `${user.nombre} ${user.apellido ?? ""}`.trim();
 
   return (
     <div className="space-y-6">
       <PageHeader title={fullName} description={user.email} backHref="/admin/users" backLabel="Volver a usuarios">
-        <ActionButton
-          action={async () => unwrapAction(await toggleUserStatusAction(user.id, nextEstado))}
-          successMessage={isActive ? "Usuario desactivado" : "Usuario activado"}
-          loadingText={isActive ? "Desactivando…" : "Activando…"}
+        <Button
+          size="sm"
+          variant="outline"
+          loading={cambiarEstado.isPending}
+          onClick={() => {
+            if (isActive) {
+              cambiarEstado.reset();
+              setConfirmarBaja(true);
+            } else cambiarEstado.mutate(1);
+          }}
           startIcon={<Icon name={isActive ? "mdi:account-off-outline" : "mdi:account-check-outline"} size={18} />}
-          invalidateKeys={[queryKeys.adminUsersAll, queryKeys.adminUser(user.id)]}
         >
           {isActive ? "Desactivar" : "Activar"}
-        </ActionButton>
+        </Button>
       </PageHeader>
+      <ConfirmModal
+        open={confirmarBaja}
+        title="Desactivar cuenta"
+        description="La cuenta perderá el acceso. Sus leads activos pasarán a Sin asignar en sus empresas y se liberará el control de sus chats."
+        confirmLabel="Desactivar"
+        variant="danger"
+        loading={cambiarEstado.isPending}
+        error={cambiarEstado.isError ? cambiarEstado.error.message : undefined}
+        onClose={() => {
+          if (!cambiarEstado.isPending) setConfirmarBaja(false);
+        }}
+        onConfirm={() => cambiarEstado.mutate(0)}
+      />
 
       <div className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
         <Avatar name={fullName} size="xl" />

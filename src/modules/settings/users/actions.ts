@@ -38,12 +38,16 @@ export async function guardarUsuarioEmpresa(
     }
   });
 }
-export async function estadoUsuarioEmpresa(id: string, estado: 0 | 1) {
+export async function estadoUsuarioEmpresa(
+  id: string,
+  estado: 0 | 1,
+  destinoUsuarioId?: string,
+) {
   return runAction(async () => {
     try {
-      return await apiFetch<{ leadsAsignados?: number }>(
+      return await apiFetch<{ leadsMovidos: number }>(
         `/organizations/current/users/${encodeURIComponent(id)}/estado`,
-        { method: "PATCH", body: JSON.stringify({ estado }) },
+        { method: "PATCH", body: JSON.stringify({ estado, destinoUsuarioId }) },
       );
     } catch (e) {
       throw new Error(
@@ -83,6 +87,15 @@ export async function reasignarLeadsUsuario(
         e instanceof ApiError ? e.message : "No se pudieron reasignar los leads",
       );
     }
+  });
+}
+
+export async function liberarLeadsUsuario(id: string) {
+  return runAction(async () => {
+    return apiFetch<{ liberados: number }>(
+      `/organizations/current/users/${encodeURIComponent(id)}/liberar-leads`,
+      { method: "POST" },
+    );
   });
 }
 

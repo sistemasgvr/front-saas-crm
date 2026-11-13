@@ -48,6 +48,7 @@ import {
   estadoUsuarioEmpresa as estadoUsuarioEmpresaResult,
   passwordTemporalEmpresa as passwordTemporalEmpresaResult,
   reasignarLeadsUsuario as reasignarLeadsUsuarioResult,
+  liberarLeadsUsuario as liberarLeadsUsuarioResult,
 } from "./actions";
 import type { UsuarioEmpresa } from "./types";
 import { getRolesEmpresa as getRolesEmpresaResult } from "../roles/actions";
@@ -58,10 +59,12 @@ const guardarUsuarioEmpresa = unwrapServerAction(guardarUsuarioEmpresaResult);
 const estadoUsuarioEmpresa = unwrapServerAction(estadoUsuarioEmpresaResult);
 const passwordTemporalEmpresa = unwrapServerAction(passwordTemporalEmpresaResult);
 const reasignarLeadsUsuario = unwrapServerAction(reasignarLeadsUsuarioResult);
+const liberarLeadsUsuario = unwrapServerAction(liberarLeadsUsuarioResult);
 const getRolesEmpresa = unwrapServerAction(getRolesEmpresaResult);
 
 
 const key = ["organization-users"];
+const dejarSinAsignar = "sin_asignar";
 const campos: DynamicFilterFieldDef[] = [
   {
     key: "q",
@@ -105,7 +108,7 @@ export default function UsuariosEmpresaView({
   const [estado, setEstado] = useState<UsuarioEmpresa | null>(null);
   const [password, setPassword] = useState<UsuarioEmpresa | null>(null);
   const [reasignar, setReasignar] = useState<UsuarioEmpresa | null>(null);
-  const [destino, setDestino] = useState("");
+  const [destino, setDestino] = useState(dejarSinAsignar);
   const [filtros, setFiltros] = useState<DynamicFilterValues>({});
   const busqueda = useDeferredValue(filtros.q ?? "")
     .trim()
@@ -115,7 +118,7 @@ export default function UsuariosEmpresaView({
   const destinos = useQuery({
     queryKey: [...key, "destinos"],
     queryFn: getUsuariosEmpresaDestinos,
-    enabled: !!reasignar,
+    enabled: !!reasignar || estado?.estado === 1,
   });
   const rolesQuery = useQuery({
     queryKey: queryKeys.organizationRoles,
@@ -128,6 +131,7 @@ export default function UsuariosEmpresaView({
   const rolAsesorId =
     rolesQuery.data?.find((r) => r.codigo === "USUARIO")?.id ?? "";
   const invalidar = [key, queryKeys.me, queryKeys.organizationRoles];
+  const invalidarLeads = [queryKeys.leadsAll, queryKeys.whatsappChats];
   const guardar = useAppMutation({
     mutationFn: async ({
       id,
@@ -144,11 +148,15 @@ export default function UsuariosEmpresaView({
   });
   const cambiar = useAppMutation({
     mutationFn: async (u: UsuarioEmpresa) => {
-      await estadoUsuarioEmpresa(u.id, u.estado === 1 ? 0 : 1);
+      await estadoUsuarioEmpresa(
+        u.id,
+        u.estado === 1 ? 0 : 1,
+        u.estado === 1 && destino !== dejarSinAsignar ? destino : undefined,
+      );
       setEstado(null);
     },
     successMessage: "Estado actualizado",
-    invalidateKeys: invalidar,
+    invalidateKeys: [...invalidar, ...invalidarLeads],
   });
   const reset = useAppMutation({
     mutationFn: async (value: string) => {
@@ -162,13 +170,44 @@ export default function UsuariosEmpresaView({
   });
   const mover = useAppMutation({
     mutationFn: async () => {
-      if (!reasignar || !destino) return;
-      await reasignarLeadsUsuario(reasignar.id, destino);
+      if (!reasignar) return;
+      if (destino === dejarSinAsignar) await liberarLeadsUsuario(reasignar.id);
+      else await reasignarLeadsUsuario(reasignar.id, destino);
       setReasignar(null);
     },
-    successMessage: "Leads reasignados",
-    invalidateKeys: [key, ["leads"]],
+    successMessage: "Asignación de leads actualizada",
+    invalidateKeys: [key, ...invalidarLeads],
   });
+
+  function selectorDestino(id: string, origenId: string, disabled: boolean) {
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={id}>Destino de los leads</Label>
+        <SelectSearch
+          id={id}
+          value={destino}
+          disabled={disabled}
+          onChange={(value) => setDestino(value || dejarSinAsignar)}
+          placeholder="Selecciona un destino"
+          searchPlaceholder="Buscar usuario por nombre o email"
+          options={[
+            { value: dejarSinAsignar, label: "Dejar sin asignar" },
+            ...(destinos.data ?? [])
+              .filter((u) => u.id !== origenId)
+              .map((u) => ({
+                value: u.id,
+                label: `${u.nombre} ${u.apellido ?? ""} · ${u.email}`,
+              })),
+          ]}
+        />
+        {destinos.isError && (
+          <p role="alert" className="text-sm text-error-600">
+            No se pudo cargar la lista de asesores activos.
+          </p>
+        )}
+      </div>
+    );
+  }
 
   if (query.isLoading) return <PageLoader label="Cargando usuarios…" />;
   if (query.isError) return <QueryError error={query.error} />;
@@ -262,6 +301,7 @@ export default function UsuariosEmpresaView({
               }
               onClick={() => {
                 cambiar.reset();
+                setDestino(dejarSinAsignar);
                 setEstado(u);
               }}
             />
@@ -275,13 +315,13 @@ export default function UsuariosEmpresaView({
             />
           </>
         )}
-        {u.estado === 0 && u.leadsAsignados > 0 && (
+        {(u.estado === 0 || !u.cuentaActiva) && u.leadsAsignados > 0 && (
           <TableAction
             icon="mdi:account-switch-outline"
-            label={`Reasignar ${u.leadsAsignados} leads de ${u.nombre}`}
+            label={`Gestionar ${u.leadsAsignados} leads de ${u.nombre}`}
             onClick={() => {
               mover.reset();
-              setDestino("");
+              setDestino(dejarSinAsignar);
               setReasignar(u);
             }}
           />
@@ -519,23 +559,12 @@ export default function UsuariosEmpresaView({
         </form>
       </Modal>
       <ConfirmModal
-        open={!!estado}
-        title={
-          estado?.estado === 1 ? "Desactivar usuario" : "Reactivar usuario"
-        }
-        icon={
-          estado?.estado === 1
-            ? "mdi:account-off-outline"
-            : "mdi:account-check-outline"
-        }
-        description={
-          estado?.estado === 1
-            ? `${estado.nombre} perderá el acceso y se liberará el control de sus chats. Tiene ${estado.leadsAsignados} leads asignados, que conservarán su asignación hasta que los reasignes.`
-            : `Se reactivará el acceso de ${estado?.nombre ?? ""}. Esta acción consume una plaza del plan.`
-        }
+        open={estado?.estado === 0}
+        title="Reactivar usuario"
+        icon="mdi:account-check-outline"
+        description={`Se reactivará el acceso de ${estado?.nombre ?? ""}. Esta acción consume una plaza del plan.`}
         error={cambiar.isError ? cambiar.error.message : undefined}
-        confirmLabel={estado?.estado === 1 ? "Desactivar" : "Reactivar"}
-        variant={estado?.estado === 1 ? "danger" : "brand"}
+        confirmLabel="Reactivar"
         loading={cambiar.isPending}
         onClose={() => {
           if (!cambiar.isPending) setEstado(null);
@@ -544,6 +573,52 @@ export default function UsuariosEmpresaView({
           if (estado) cambiar.mutate(estado);
         }}
       />
+      <Modal
+        open={estado?.estado === 1}
+        onClose={() => {
+          if (!cambiar.isPending) setEstado(null);
+        }}
+        header={
+          <ModalHeading
+            title="Desactivar usuario"
+            icon="mdi:account-off-outline"
+            danger
+          />
+        }
+        footer={
+          <ModalFooter error={cambiar.isError ? cambiar.error.message : undefined}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={cambiar.isPending}
+              onClick={() => setEstado(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              variant="danger"
+              loading={cambiar.isPending}
+              onClick={() => {
+                if (estado) cambiar.mutate(estado);
+              }}
+            >
+              Desactivar
+            </Button>
+          </ModalFooter>
+        }
+      >
+        {estado && (
+          <div className="space-y-4 p-5">
+            <p className="text-sm text-gray-500">
+              {estado.nombre} perderá el acceso a la empresa y se liberará el
+              control de sus chats. Actualmente tiene {estado.leadsAsignados}{" "}
+              leads activos asignados.
+            </p>
+            {selectorDestino("desactivar-destino", estado.id, cambiar.isPending)}
+          </div>
+        )}
+      </Modal>
       <Modal
         open={!!password}
         onClose={() => {
@@ -609,7 +684,7 @@ export default function UsuariosEmpresaView({
         }}
         header={
           <ModalHeading
-            title="Reasignar leads"
+            title="Gestionar leads asignados"
             icon="mdi:account-switch-outline"
           />
         }
@@ -627,11 +702,10 @@ export default function UsuariosEmpresaView({
               type="submit"
               form="reasignar-form"
               size="sm"
-              disabled={!destino}
               loading={mover.isPending}
               startIcon={<Icon name="mdi:account-switch-outline" size={18} />}
             >
-              Confirmar reasignación
+              {destino === dejarSinAsignar ? "Liberar leads" : "Reasignar leads"}
             </Button>
           </ModalFooter>
         }
@@ -641,28 +715,15 @@ export default function UsuariosEmpresaView({
           className="space-y-4 p-5"
           onSubmit={(e) => {
             e.preventDefault();
-            if (destino) mover.mutate();
+            if (!mover.isPending) mover.mutate();
           }}
         >
           <p className="text-sm text-gray-500">
-            Se reasignarán los {reasignar?.leadsAsignados ?? 0} leads activos de{" "}
-            {reasignar?.nombre} al usuario seleccionado.
+            {reasignar?.nombre} tiene {reasignar?.leadsAsignados ?? 0} leads
+            activos asignados. Puedes liberarlos para que el equipo los tome
+            o reasignarlos a un asesor activo.
           </p>
-          <Label htmlFor="reasignar-destino">Usuario de destino</Label>
-          <SelectSearch
-            id="reasignar-destino"
-            value={destino}
-            disabled={mover.isPending}
-            onChange={setDestino}
-            placeholder="Selecciona un usuario activo"
-            searchPlaceholder="Buscar usuario por nombre o email"
-            options={(destinos.data ?? [])
-              .filter((u) => u.id !== reasignar?.id)
-              .map((u) => ({
-                value: u.id,
-                label: `${u.nombre} ${u.apellido ?? ""} · ${u.email}`,
-              }))}
-          />
+          {reasignar && selectorDestino("reasignar-destino", reasignar.id, mover.isPending)}
         </form>
       </Modal>
     </div>
