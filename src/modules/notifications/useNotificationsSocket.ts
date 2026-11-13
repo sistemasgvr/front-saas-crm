@@ -316,6 +316,7 @@ export function useNotificationsSocket(enabled: boolean) {
      * dormida): chats activos y notificaciones. */
     const ponerseAlDia = () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChats });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.leadsAll });
       void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsAll });
       void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
     };
@@ -385,6 +386,10 @@ export function useNotificationsSocket(enabled: boolean) {
       if (typeof data?.conversacionId !== 'string') return;
       void queryClient.invalidateQueries({ queryKey: queryKeys.whatsappChat(data.conversacionId) });
       void queryClient.invalidateQueries({ queryKey: ['whatsapp', 'chats', 'list'] });
+    });
+    socket.on("lead:asignacion", (data: { leadId?: string }) => {
+      if (typeof data?.leadId !== "string") return;
+      void queryClient.invalidateQueries({ queryKey: queryKeys.leadsAll });
     });
     socket.on("notificacion:nueva", (data: NotificacionEventoSocket) => {
       pintarNotificacionEnVivo(data, router, queryClient);

@@ -82,9 +82,7 @@ export default function CrearActividadAgendaModal({
   const [inmuebleId, setInmuebleId] = useState("");
   const [modalidad, setModalidad] = useState("PRESENCIAL");
   const [nota, setNota] = useState("");
-  const [asignadoUsuarioId, setAsignadoUsuarioId] = useState(
-    leadFijo?.asignadoUsuarioId || usuarioId,
-  );
+  const [asesorElegido, setAsesorElegido] = useState("");
 
   const esVisita = tipo === "VISITA";
   const leadBloqueado = Boolean(leadFijo?.id);
@@ -111,7 +109,7 @@ export default function CrearActividadAgendaModal({
     setInmuebleId(inmueblePrefill?.id ?? "");
     setModalidad("PRESENCIAL");
     setNota("");
-    setAsignadoUsuarioId(leadFijo?.asignadoUsuarioId || usuarioId);
+    setAsesorElegido("");
   }, [
     open,
     leadFijo?.id,
@@ -158,13 +156,13 @@ export default function CrearActividadAgendaModal({
     [asignablesQuery.data],
   );
 
-  /** Al elegir un lead, el asesor por defecto pasa a ser su dueño (si tiene). */
+  const leadElegido = leadsQuery.data?.data.find((lead) => lead.id === leadId);
+  const asignadoUsuarioId =
+    asesorElegido || (leadFijo ? leadFijo.asignadoUsuarioId : leadElegido?.asignado?.id) || usuarioId;
+
   function elegirLead(id: string) {
     setLeadId(id);
-    const lead = (leadsQuery.data?.data ?? []).find(
-      (l: LeadResumen) => l.id === id,
-    );
-    setAsignadoUsuarioId(lead?.asignado?.id || usuarioId);
+    setAsesorElegido("");
   }
 
   const puedeCrear =
@@ -187,7 +185,7 @@ export default function CrearActividadAgendaModal({
           }
         : {}),
       nota: nota.trim() || undefined,
-      ...(esAdmin && asignadoUsuarioId ? { asignadoUsuarioId } : {}),
+      ...(esAdmin && asesorElegido ? { asignadoUsuarioId: asesorElegido } : {}),
     });
   }
 
@@ -312,9 +310,12 @@ export default function CrearActividadAgendaModal({
             <Select
               options={opcionesAsignado}
               value={asignadoUsuarioId}
-              onChange={setAsignadoUsuarioId}
+              onChange={setAsesorElegido}
               placeholder="Asesor responsable"
             />
+            <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
+              El asesor de esta actividad se puede elegir por separado del responsable del lead.
+            </p>
           </div>
         ) : null}
         {esVisita ? (
