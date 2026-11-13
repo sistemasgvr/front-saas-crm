@@ -36,9 +36,42 @@ import { ETIQUETA_TIPO_LEAD } from "./pipeline";
 import { usePermisos } from "@/src/context/PermisosContext";
 
 
-function formatearFecha(iso: string | null) {
+const fechaLima = new Intl.DateTimeFormat("es-PE", {
+  timeZone: "America/Lima",
+  dateStyle: "short",
+});
+const horaLima = new Intl.DateTimeFormat("es-PE", {
+  timeZone: "America/Lima",
+  timeStyle: "short",
+  hourCycle: "h23",
+});
+
+function FechaLead({ iso, conIcono = false }: { iso: string | null; conIcono?: boolean }) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString("es-PE", { timeZone: "America/Lima", dateStyle: "short", timeStyle: "short" });
+  const fecha = new Date(iso);
+  if (Number.isNaN(fecha.getTime())) return "—";
+
+  return (
+    <time dateTime={iso} className="inline-flex items-start gap-1.5 tabular-nums">
+      {conIcono && (
+        <Icon name="mdi:calendar-clock-outline" size={16} className="mt-0.5 shrink-0 text-gray-400" />
+      )}
+      <span className="flex flex-col whitespace-nowrap">
+        <span className="text-gray-600 dark:text-gray-300">{fechaLima.format(fecha)}</span>
+        <span className="text-theme-xs text-gray-500 dark:text-gray-400">{horaLima.format(fecha)}</span>
+      </span>
+    </time>
+  );
+}
+
+function AsignadoLead({ asignado }: { asignado: NonNullable<LeadResumen["asignado"]> }) {
+  return (
+    <span className="flex w-full min-w-0 items-start gap-1.5">
+      <Icon name="mdi:account-check-outline" size={16} className="mt-0.5 shrink-0 text-gray-400" />
+      <span className="min-w-0 [overflow-wrap:anywhere]">{asignado.nombre}</span>
+      <AsignadoInactivoAviso asignado={asignado} />
+    </span>
+  );
 }
 
 function LeadMobileCard({
@@ -83,15 +116,12 @@ function LeadMobileCard({
         {
           label: "Asignado",
           value: lead.asignado ? (
-            <span className="inline-flex min-w-0 items-center gap-1">
-              {texto(lead.asignado.nombre)}
-              <AsignadoInactivoAviso asignado={lead.asignado} />
-            </span>
+            <AsignadoLead asignado={lead.asignado} />
           ) : (
             <span className="text-warning-500">Sin asignar</span>
           ),
         },
-        { label: "Fecha", value: texto(formatearFecha(lead.fechaLead)) },
+        { label: "Fecha", value: <FechaLead iso={lead.fechaLead} /> },
       ]}
       actions={
         <>
@@ -375,7 +405,7 @@ export default function LeadsView({ usuarioId }: { usuarioId: string }) {
             ) : null
           }
         >
-          <Table className="w-full table-fixed">
+          <Table className="w-full min-w-[64rem] table-fixed">
             <TableHeader className="border-b border-gray-100 dark:border-gray-800">
               <TableRow>
                 <TableCell isHeader className={`${thClass} w-[18%]`}>
@@ -384,19 +414,19 @@ export default function LeadsView({ usuarioId }: { usuarioId: string }) {
                 <TableCell isHeader className={`${thClass} w-[10%]`}>
                   Teléfono
                 </TableCell>
-                <TableCell isHeader className={`${thClass} w-[13%]`}>
+                <TableCell isHeader className={`${thClass} w-[11%]`}>
                   Campaña
                 </TableCell>
-                <TableCell isHeader className={`${thClass} w-[13%]`}>
+                <TableCell isHeader className={`${thClass} w-[11%]`}>
                   Anuncio
                 </TableCell>
                 <TableCell isHeader className={`${thClass} w-[11%]`}>
                   Estado
                 </TableCell>
-                <TableCell isHeader className={`${thClass} w-[12%]`}>
+                <TableCell isHeader className={`${thClass} w-[14%]`}>
                   Asignado
                 </TableCell>
-                <TableCell isHeader className={`${thClass} w-[9%]`}>
+                <TableCell isHeader className={`${thClass} w-[11%]`}>
                   Fecha
                 </TableCell>
                 <TableCell isHeader className={`${thClassEnd} w-[14%]`}>
@@ -442,10 +472,7 @@ export default function LeadsView({ usuarioId }: { usuarioId: string }) {
                     </TableCell>
                     <TableCell className={`${tdClass} min-w-0`}>
                       {lead.asignado ? (
-                        <span className="inline-flex items-center gap-1">
-              <CeldaConIcono icon="mdi:account-check-outline" value={lead.asignado.nombre} />
-              <AsignadoInactivoAviso asignado={lead.asignado} />
-            </span>
+                        <AsignadoLead asignado={lead.asignado} />
                       ) : (
                         <span className="inline-flex items-center gap-1.5 text-theme-sm text-warning-500">
                           <Icon name="mdi:account-question-outline" size={16} className="shrink-0" />
@@ -454,11 +481,7 @@ export default function LeadsView({ usuarioId }: { usuarioId: string }) {
                       )}
                     </TableCell>
                     <TableCell className={`${tdClass} min-w-0`}>
-                      <CeldaConIcono
-                        icon="mdi:calendar-clock-outline"
-                        value={formatearFecha(lead.fechaLead)}
-                        className="text-gray-600 dark:text-gray-300"
-                      />
+                      <FechaLead iso={lead.fechaLead} conIcono />
                     </TableCell>
                     <TableCell className="px-5 py-4">
                       <div className="flex items-center justify-end gap-1">
