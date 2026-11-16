@@ -12,12 +12,15 @@ import Button from "@/src/components/ui/button/Button";
 import AppLogo from "@/src/components/ui/AppLogo";
 import { toFormData } from "@/src/lib/form-data";
 import { unwrapAction } from "@/src/lib/action-result";
+import { errorMessage } from "@/src/lib/error-message";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { useAuthUiStore } from "@/src/stores/auth-ui.store";
+import { useHydrated } from "@/src/hooks/useHydrated";
 import { loginAction } from "./actions";
 import { loginSchema, type LoginValues } from "./schema";
 
 export default function LoginForm() {
+  const hydrated = useHydrated();
   const remember = useAuthUiStore((state) => state.remember);
   const forget = useAuthUiStore((state) => state.forget);
   const rememberedEmail = useAuthUiStore((state) => state.rememberedEmail);
@@ -42,6 +45,7 @@ export default function LoginForm() {
   }, [remembered, rememberedEmail, rememberedPassword, setValue]);
 
   const login = useAppMutation({
+    showErrorToast: false,
     mutationFn: async (values: LoginValues) => {
       const result = unwrapAction(await loginAction(
         toFormData({ email: values.email, password: values.password, rememberMe: values.rememberMe }),
@@ -72,8 +76,14 @@ export default function LoginForm() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit((values) => login.mutate(values))} noValidate>
-            <fieldset disabled={login.isPending} className="space-y-6">
+          <form method="post" onSubmit={handleSubmit((values) => login.mutate(values))} noValidate>
+            <noscript>Activa JavaScript para iniciar sesión.</noscript>
+            {login.isError ? (
+              <p role="alert" className="mb-4 text-theme-sm text-error-600 dark:text-error-400">
+                {errorMessage(login.error)}
+              </p>
+            ) : null}
+            <fieldset disabled={!hydrated || login.isPending} className="space-y-6">
               <div>
                 <Label htmlFor="email">
                   Email <span className="text-error-500">*</span>

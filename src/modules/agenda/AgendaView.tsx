@@ -259,6 +259,7 @@ export default function AgendaView({
   });
 
   const crearActividad = useAppMutation({
+    showErrorToast: false,
     mutationFn: async (input: CrearActividadAgendaInput) =>
       unwrapAction(await crearActividadAgendaAction(input)),
     successMessage: "Actividad agendada",
@@ -526,13 +527,10 @@ export default function AgendaView({
             setCrearAbierto(false);
             setSlotInicial(null);
           }}
-          onCrear={(input) => {
-            crearActividad.mutate(input, {
-              onSuccess: () => {
-                setCrearAbierto(false);
-                setSlotInicial(null);
-              },
-            });
+          onCrear={async (input) => {
+            await crearActividad.mutateAsync(input);
+            setCrearAbierto(false);
+            setSlotInicial(null);
           }}
         />
       ) : null}

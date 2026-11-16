@@ -26,7 +26,12 @@ export const inmuebleFormSchema = z.object({
   operacion,
   zona: z.string().trim().max(120).optional().or(z.literal("")),
   direccion: z.string().trim().max(300).optional().or(z.literal("")),
-  precio: z.string().trim().optional().or(z.literal("")),
+  precio: z.string().trim().refine((value) => {
+    if (!value) return true;
+    const amount = Number(value);
+    return Number.isFinite(amount) && amount >= 0 && amount < 1e12 &&
+      amount === Number(amount.toFixed(2));
+  }, "Usa un precio entre 0 y 999999999999,99, con hasta dos decimales.").optional(),
   moneda: z
     .string()
     .trim()

@@ -201,6 +201,7 @@ export interface AgendaItemRow {
 export type VisitaAgendaRow = AgendaItemRow;
 
 export interface CrearActividadAgendaInput {
+  solicitudId?: string;
   leadId: string;
   tipo: string;
   titulo?: string;

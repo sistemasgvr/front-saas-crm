@@ -2017,6 +2017,7 @@ export default function ChatDetailView({
   });
 
   const crearActividad = useAppMutation({
+    showErrorToast: false,
     mutationFn: async (input: CrearActividadAgendaInput) =>
       unwrapAction(await crearActividadAgendaAction(input)),
     successMessage: "Actividad agendada",
@@ -4097,10 +4098,9 @@ export default function ChatDetailView({
                   }
                 : null
             }
-            onCrear={(input) => {
-              crearActividad.mutate(input, {
-                onSuccess: () => setModalActividadAbierto(false),
-              });
+            onCrear={async (input) => {
+              await crearActividad.mutateAsync(input);
+              setModalActividadAbierto(false);
             }}
           />
         ) : null}

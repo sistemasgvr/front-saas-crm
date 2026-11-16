@@ -24,11 +24,12 @@ export async function tomarLeadAction(id: string): Promise<ActionResult> {
 export async function asignarLeadAction(
   id: string,
   usuarioId: string,
+  asesorEsperadoId: string | null,
 ): Promise<ActionResult> {
   try {
     await apiFetch(`/leads/${id}/assign`, {
       method: "POST",
-      body: JSON.stringify({ usuarioId }),
+      body: JSON.stringify({ usuarioId, asesorEsperadoId }),
     });
     return actionOk();
   } catch (error) {
@@ -36,9 +37,12 @@ export async function asignarLeadAction(
   }
 }
 
-export async function liberarLeadAction(id: string): Promise<ActionResult> {
+export async function liberarLeadAction(id: string, asesorEsperadoId: string): Promise<ActionResult> {
   try {
-    await apiFetch(`/leads/${id}/release`, { method: "POST" });
+    await apiFetch(`/leads/${id}/release`, {
+      method: "POST",
+      body: JSON.stringify({ asesorEsperadoId }),
+    });
     return actionOk();
   } catch (error) {
     return actionErr(error, "No se pudo liberar el lead");

@@ -30,8 +30,8 @@ function makeQueryClient() {
       },
     },
     mutationCache: new MutationCache({
-      onError: (error) => {
-        toast.error(mensajeToastError(error));
+      onError: (error, _variables, _onMutateResult, mutation) => {
+        if (mutation.meta?.showErrorToast !== false) toast.error(mensajeToastError(error));
       },
     }),
   });

@@ -8,6 +8,7 @@ import Select from "@/src/components/form/Select";
 import Input from "@/src/components/form/input/InputField";
 import TextArea from "@/src/components/form/input/TextArea";
 import { queryKeys } from "@/src/lib/query/keys";
+import { errorMessage } from "@/src/lib/error-message";
 import { datetimeLocalAISO, isoADatetimeLocalLima } from "@/src/lib/lima-datetime";
 import { getAsignables, getLeads } from "@/src/modules/leads/queries";
 import type {
@@ -68,7 +69,7 @@ export default function CrearActividadAgendaModal({
   inmueblePrefill?: { id: string; etiqueta: string } | null;
   loading?: boolean;
   onClose: () => void;
-  onCrear: (input: CrearActividadAgendaInput) => void;
+  onCrear: (input: CrearActividadAgendaInput) => Promise<void>;
 }) {
   const [tipo, setTipo] = useState("LLAMADA");
   const [titulo, setTitulo] = useState("");
@@ -83,6 +84,9 @@ export default function CrearActividadAgendaModal({
   const [modalidad, setModalidad] = useState("PRESENCIAL");
   const [nota, setNota] = useState("");
   const [asesorElegido, setAsesorElegido] = useState("");
+  const [errorGuardar, setErrorGuardar] = useState<string | null>(null);
+  const guardando = useRef(false);
+  const solicitud = useRef<{ datos: string; id: string } | null>(null);
 
   const esVisita = tipo === "VISITA";
   const leadBloqueado = Boolean(leadFijo?.id);
@@ -96,6 +100,8 @@ export default function CrearActividadAgendaModal({
     // Solo reset al abrir (evita pisar el formulario si cambian props mid-edit).
     if (estabaAbierto.current) return;
     estabaAbierto.current = true;
+    solicitud.current = null;
+    setErrorGuardar(null);
     setTipo("LLAMADA");
     setTitulo("");
     setQ("");
@@ -170,29 +176,46 @@ export default function CrearActividadAgendaModal({
     Boolean(programadaEn) &&
     (!esVisita || Boolean(referenciaInmueble.trim()));
 
-  function handleCrear() {
-    if (!puedeCrear) return;
-    onCrear({
-      leadId,
-      tipo,
-      titulo: titulo.trim() || undefined,
-      programadaEn: datetimeLocalAISO(programadaEn),
-      duracionMinutos: Number(duracionMinutos) || 60,
-      ...(esVisita
-        ? {
-            referenciaInmueble: referenciaInmueble.trim(),
-            modalidad,
-          }
-        : {}),
-      nota: nota.trim() || undefined,
-      ...(esAdmin && asesorElegido ? { asignadoUsuarioId: asesorElegido } : {}),
-    });
+  function cerrar() {
+    if (!guardando.current) onClose();
+  }
+
+  async function handleCrear() {
+    if (!puedeCrear || guardando.current) return;
+    guardando.current = true;
+    setErrorGuardar(null);
+    try {
+      const input: CrearActividadAgendaInput = {
+        leadId,
+        tipo,
+        titulo: titulo.trim() || undefined,
+        programadaEn: datetimeLocalAISO(programadaEn),
+        duracionMinutos: Number(duracionMinutos) || 60,
+        ...(esVisita
+          ? {
+              referenciaInmueble: referenciaInmueble.trim(),
+              modalidad,
+            }
+          : {}),
+        nota: nota.trim() || undefined,
+        ...(esAdmin && asesorElegido ? { asignadoUsuarioId: asesorElegido } : {}),
+      };
+      const datos = JSON.stringify(input);
+      if (solicitud.current?.datos !== datos) {
+        solicitud.current = { datos, id: crypto.randomUUID() };
+      }
+      await onCrear({ ...input, solicitudId: solicitud.current.id });
+    } catch (error) {
+      setErrorGuardar(errorMessage(error));
+    } finally {
+      guardando.current = false;
+    }
   }
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={cerrar}
       className="max-w-lg sm:max-w-2xl"
       header={
         <div className="p-5 pb-4 pr-14 sm:p-6 sm:pb-4 sm:pr-16">
@@ -207,7 +230,7 @@ export default function CrearActividadAgendaModal({
       }
       footer={
         <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:p-5">
-          <Button type="button" size="sm" variant="outline" className="w-full sm:w-auto" onClick={onClose}>
+          <Button type="button" size="sm" variant="outline" className="w-full sm:w-auto" disabled={loading} onClick={cerrar}>
             Cancelar
           </Button>
           <Button
@@ -224,7 +247,7 @@ export default function CrearActividadAgendaModal({
         </div>
       }
     >
-      <div className="grid grid-cols-1 gap-3 p-5 pt-4 sm:grid-cols-2 sm:p-6 sm:pt-4">
+      <fieldset disabled={loading} className="grid min-w-0 grid-cols-1 gap-3 p-5 pt-4 sm:grid-cols-2 sm:p-6 sm:pt-4">
         <div>
           <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
             Tipo <span className="text-error-500">*</span>
@@ -265,10 +288,11 @@ export default function CrearActividadAgendaModal({
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
+              <label htmlFor="agenda-lead" className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
                 Lead <span className="text-error-500">*</span>
               </label>
               <Select
+                id="agenda-lead"
                 options={opcionesLead}
                 value={leadId}
                 onChange={elegirLead}
@@ -278,10 +302,11 @@ export default function CrearActividadAgendaModal({
           </>
         )}
         <div>
-          <label className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
+          <label htmlFor="agenda-fecha" className="mb-1.5 block text-theme-xs font-medium text-gray-600 dark:text-gray-300">
             Fecha y hora <span className="text-error-500">*</span>
           </label>
           <Input
+            id="agenda-fecha"
             type="datetime-local"
             value={programadaEn}
             onChange={(e) => setProgramadaEn(e.target.value)}
@@ -345,7 +370,12 @@ export default function CrearActividadAgendaModal({
             onChange={(e) => setNota(e.target.value)}
           />
         </div>
-      </div>
+        {errorGuardar ? (
+          <p role="alert" className="text-theme-sm text-error-600 dark:text-error-400 sm:col-span-2">
+            {errorGuardar}
+          </p>
+        ) : null}
+      </fieldset>
     </Modal>
   );
 }

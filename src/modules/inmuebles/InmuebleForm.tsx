@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
@@ -9,7 +10,9 @@ import TextArea from "@/src/components/form/input/TextArea";
 import Select from "@/src/components/form/Select";
 import Button from "@/src/components/ui/button/Button";
 import { Icon } from "@/src/components/ui/Icon";
+import { useHydrated } from "@/src/hooks/useHydrated";
 import { toFormData } from "@/src/lib/form-data";
+import { errorMessage } from "@/src/lib/error-message";
 import { queryKeys } from "@/src/lib/query/keys";
 import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { createInmuebleAction as createInmuebleActionResult, updateInmuebleAction as updateInmuebleActionResult } from "./actions";
@@ -53,6 +56,8 @@ export default function InmuebleForm({
   mode: "create" | "edit";
   inmueble?: InmuebleRow;
 }) {
+  const saving = useRef(false);
+  const hydrated = useHydrated();
   const {
     register,
     handleSubmit,
@@ -64,6 +69,7 @@ export default function InmuebleForm({
   });
 
   const mutation = useAppMutation({
+    showErrorToast: false,
     mutationFn: (values: InmuebleFormValues) => {
       const fd = toFormData(values);
       return mode === "create"
@@ -80,13 +86,26 @@ export default function InmuebleForm({
           : "/inmuebles",
   });
 
+  async function save(values: InmuebleFormValues) {
+    if (saving.current) return;
+    saving.current = true;
+    try {
+      await mutation.mutateAsync(values);
+    } catch {
+      // La mutación conserva el error y react-hook-form conserva los campos.
+    } finally {
+      saving.current = false;
+    }
+  }
+
   return (
     <form data-tour="property-form"
-      onSubmit={handleSubmit((values) => mutation.mutate(values))}
+      method="post"
+      onSubmit={handleSubmit(save)}
       className="space-y-6"
       noValidate
     >
-      <fieldset disabled={mutation.isPending} className="space-y-6">
+      <fieldset disabled={!hydrated || mutation.isPending} className="space-y-6">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
@@ -202,6 +221,8 @@ export default function InmuebleForm({
               <TextArea
                 id="notas"
                 rows={3}
+                error={Boolean(errors.notas)}
+                hint={errors.notas?.message}
                 placeholder="Detalles internos, amenities, observaciones…"
                 {...register("notas")}
               />
@@ -209,17 +230,24 @@ export default function InmuebleForm({
           </div>
         </div>
 
+        {mutation.isError ? (
+          <p role="alert" className="text-theme-sm text-error-600 dark:text-error-400">
+            {errorMessage(mutation.error)}
+          </p>
+        ) : null}
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" size="sm" loading={mutation.isPending}>
             <Icon name={mode === "create" ? "mdi:plus" : "mdi:content-save-outline"} size={18} />
             {mode === "create" ? "Crear inmueble" : "Guardar cambios"}
           </Button>
-          <Link
-            href={inmueble ? `/inmuebles/${inmueble.id}` : "/inmuebles"}
-            className="text-theme-sm text-gray-500 underline-offset-2 hover:underline dark:text-gray-400"
-          >
-            Cancelar
-          </Link>
+          {mutation.isPending ? null : (
+            <Link
+              href={inmueble ? `/inmuebles/${inmueble.id}` : "/inmuebles"}
+              className="text-theme-sm text-gray-500 underline-offset-2 hover:underline dark:text-gray-400"
+            >
+              Cancelar
+            </Link>
+          )}
         </div>
       </fieldset>
     </form>

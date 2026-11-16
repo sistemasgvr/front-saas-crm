@@ -8,6 +8,7 @@ interface UseAppMutationOptions<TData, TVariables> {
   beforeMutation?: () => Promise<void>;
   mutationFn: (variables: TVariables) => Promise<TData>;
   successMessage?: string;
+  showErrorToast?: boolean;
   invalidateKeys?: QueryKey[];
   redirectTo?: string;
   refresh?: boolean;
@@ -28,7 +29,7 @@ export function useAppMutation<TData, TVariables = void>(options: UseAppMutation
       await options.beforeMutation?.();
       return options.mutationFn(variables);
     },
-    meta: { silent: options.silent ?? false },
+    meta: { silent: options.silent ?? false, showErrorToast: options.showErrorToast ?? true },
     onSuccess: async () => {
       if (options.successMessage) toast.success(options.successMessage);
 
