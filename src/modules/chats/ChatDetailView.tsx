@@ -149,14 +149,16 @@ const ICONO_ESTADO: Record<string, { icon: string; className?: string }> = {
 
 // Mismos límites reales de la Media API de WhatsApp que valida el backend —
 // se repiten acá para avisar al toque, sin esperar el viaje al servidor.
-const LIMITES_MEDIA: Record<string, { maxBytes: number; mimes: string[] }> = {
-  image: { maxBytes: 5 * 1024 * 1024, mimes: ["image/jpeg", "image/png"] },
-  video: { maxBytes: 16 * 1024 * 1024, mimes: ["video/mp4", "video/3gpp"] },
+const LIMITES_MEDIA: Record<string, { nombre: string; maxBytes: number; mimes: string[] }> = {
+  image: { nombre: "imagen", maxBytes: 5 * 1024 * 1024, mimes: ["image/jpeg", "image/png"] },
+  video: { nombre: "video", maxBytes: 16 * 1024 * 1024, mimes: ["video/mp4", "video/3gpp"] },
   audio: {
+    nombre: "audio",
     maxBytes: 16 * 1024 * 1024,
     mimes: ["audio/aac", "audio/mp4", "audio/mpeg", "audio/amr", "audio/ogg"],
   },
   document: {
+    nombre: "documento",
     maxBytes: 100 * 1024 * 1024,
     mimes: [
       "application/pdf",
@@ -169,20 +171,28 @@ const LIMITES_MEDIA: Record<string, { maxBytes: number; mimes: string[] }> = {
       "text/plain",
     ],
   },
-  sticker: { maxBytes: 500 * 1024, mimes: ["image/webp"] },
+  sticker: { nombre: "sticker animado", maxBytes: 500 * 1024, mimes: ["image/webp"] },
 };
 
-function validarArchivo(file: File): string | null {
-  const categoria = Object.entries(LIMITES_MEDIA).find(([, l]) =>
-    l.mimes.includes(file.type),
-  );
+async function validarArchivo(file: File): Promise<string | null> {
+  const categoria = Object.entries(LIMITES_MEDIA).find(([, l]) => l.mimes.includes(file.type));
   if (!categoria)
     return `WhatsApp no admite este tipo de archivo (${file.type || "desconocido"})`;
-  const [, limite] = categoria;
-  if (file.size > limite.maxBytes) {
-    return `El archivo pesa más de ${Math.round(limite.maxBytes / (1024 * 1024)) || 0.5}MB, el máximo que admite WhatsApp para este tipo`;
+  const [tipo, limite] = categoria;
+  let { nombre, maxBytes } = limite;
+  if (tipo === "sticker" && file.size > 100 * 1024) {
+    // En un WebP animado, la cabecera VP8X tiene activo el bit de animación.
+    const cabecera = new Uint8Array(await file.slice(0, 21).arrayBuffer());
+    const animado = new TextDecoder().decode(cabecera.subarray(8, 16)) === "WEBPVP8X"
+      && (cabecera[20] & 0x02) !== 0;
+    if (!animado) {
+      nombre = "sticker estático";
+      maxBytes = 100 * 1024;
+    }
   }
-  return null;
+  if (file.size <= maxBytes) return null;
+  const maximo = tipo === "sticker" ? `${maxBytes / 1024} KB` : `${maxBytes / (1024 * 1024)} MB`;
+  return `El archivo supera el límite de WhatsApp de ${maximo} por ${nombre}. Elige un archivo más liviano.`;
 }
 
 /** Meta no tiene type=gif: preferimos MP4 del raw de Klipy; si no, el imageUrl si es video. */
@@ -1486,6 +1496,8 @@ export default function ChatDetailView({
   >({});
   const [archivo, setArchivo] = useState<File | null>(null);
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null);
+  const [validandoArchivo, setValidandoArchivo] = useState(false);
+  const seleccionArchivoRef = useRef(0);
   const [respondiendoA, setRespondiendoA] = useState<Mensaje | null>(null);
   const [modoSeleccionReenvio, setModoSeleccionReenvio] = useState(false);
   const [idsReenvio, setIdsReenvio] = useState<string[]>([]);
@@ -1854,7 +1866,7 @@ export default function ChatDetailView({
       detenerTimerVoz();
       setGrabandoVoz(false);
       setSegundosVoz(0);
-      const error = validarArchivo(resultado.file);
+      const error = await validarArchivo(resultado.file);
       if (error) {
         setErrorArchivo(error);
         return;
@@ -1900,7 +1912,7 @@ export default function ChatDetailView({
         fuente.nombre,
         fuente.mime,
       );
-      const error = validarArchivo(file);
+      const error = await validarArchivo(file);
       if (error) {
         setErrorArchivo(error);
         return;
@@ -1927,7 +1939,7 @@ export default function ChatDetailView({
             `${sticker.id}.webp`,
             "image/webp",
           );
-      const error = validarArchivo(file);
+      const error = await validarArchivo(file);
       if (error) {
         setErrorArchivo(error);
         return;
@@ -2542,9 +2554,15 @@ export default function ChatDetailView({
   const nombre = etiquetaConversacion(chat);
   const subtitulo = subtituloConversacion(chat);
 
-  function elegirArchivo(file: File | undefined) {
+  async function elegirArchivo(file: File | undefined) {
     if (!file) return;
-    const error = validarArchivo(file);
+    const seleccion = ++seleccionArchivoRef.current;
+    setValidandoArchivo(true);
+    setArchivo(null);
+    setErrorArchivo(null);
+    const error = await validarArchivo(file).catch(() => "No se pudo leer el archivo. Vuelve a seleccionarlo.");
+    if (seleccion !== seleccionArchivoRef.current) return;
+    setValidandoArchivo(false);
     setErrorArchivo(error);
     setArchivo(error ? null : file);
   }
@@ -3018,7 +3036,7 @@ export default function ChatDetailView({
               <form
                 ref={formRef}
                 onSubmit={(event) => {
-                  if (envioBloqueadoPorControl) {
+                  if (envioBloqueadoPorControl || validandoArchivo) {
                     event.preventDefault();
                     return;
                   }
@@ -3137,9 +3155,9 @@ export default function ChatDetailView({
                     </button>
                   </div>
                 )}
-                {errorArchivo && (
-                  <p className="text-theme-xs text-error-500">{errorArchivo}</p>
-                )}
+                <div role="status" className="text-theme-xs text-error-500 empty:sr-only">
+                  {errorArchivo}
+                </div>
                 {grabandoVoz ? (
                   <div className="flex items-center gap-2">
                     <button
@@ -3186,7 +3204,11 @@ export default function ChatDetailView({
                       type="file"
                       className="hidden"
                       accept="image/jpeg,image/png,video/mp4,video/3gpp,audio/aac,audio/mp4,audio/mpeg,audio/amr,audio/ogg,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
-                      onChange={(e) => elegirArchivo(e.target.files?.[0])}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        void elegirArchivo(file);
+                      }}
                     />
                     <input
                       ref={inputStickerRef}
@@ -3197,7 +3219,7 @@ export default function ChatDetailView({
                         const file = e.target.files?.[0];
                         if (inputStickerRef.current)
                           inputStickerRef.current.value = "";
-                        elegirArchivo(file);
+                        void elegirArchivo(file);
                       }}
                     />
                     <div className="relative shrink-0 self-center">
@@ -3327,7 +3349,8 @@ export default function ChatDetailView({
                             !enviarArchivo.isPending) ||
                           enviar.isPending ||
                           enviarArchivo.isPending ||
-                          enviarMediaDirecto.isPending
+                          enviarMediaDirecto.isPending ||
+                          validandoArchivo
                         }
                         aria-label="Enviar mensaje"
                         whileTap={{ scale: 0.88 }}

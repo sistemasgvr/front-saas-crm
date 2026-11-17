@@ -12,6 +12,12 @@ const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   ...(esBuildDocker ? { output: "standalone" as const } : {}),
   outputFileTracingRoot: projectRoot,
+  experimental: {
+    serverActions: {
+      // Los documentos admiten hasta 100 MB. El multipart añade bytes al archivo.
+      bodySizeLimit: "101mb",
+    },
+  },
   turbopack: {
     root: projectRoot,
   },

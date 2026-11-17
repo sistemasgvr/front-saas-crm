@@ -58,6 +58,9 @@ export async function enviarMediaAction(conversacionId: string, formData: FormDa
         timeoutMs: 120_000,
       });
     } catch (error) {
+      if (error instanceof ApiError && error.status === 413) {
+        throw new Error("El archivo supera el tamaño permitido para esta carga. Elige un archivo más liviano.");
+      }
       fail(error, "No se pudo enviar el archivo");
     }
   });
