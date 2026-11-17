@@ -35,7 +35,6 @@ import { useAppMutation } from "@/src/lib/query/use-app-mutation";
 import { useTheme } from "@/src/context/ThemeContext";
 import {
   enviarMensajeAction as enviarMensajeActionResult,
-  enviarMediaAction as enviarMediaActionResult,
   enviarReaccionAction as enviarReaccionActionResult,
   enviarUbicacionAction as enviarUbicacionActionResult,
   enviarContactoAction as enviarContactoActionResult,
@@ -110,8 +109,8 @@ import type {
   UbicacionMensaje,
 } from "./types";
 import { unwrapServerAction } from "@/src/lib/action-result";
+import { enviarAdjunto } from "./enviar-adjunto";
 const enviarMensajeAction = unwrapServerAction(enviarMensajeActionResult);
-const enviarMediaAction = unwrapServerAction(enviarMediaActionResult);
 const enviarReaccionAction = unwrapServerAction(enviarReaccionActionResult);
 const enviarUbicacionAction = unwrapServerAction(enviarUbicacionActionResult);
 const enviarContactoAction = unwrapServerAction(enviarContactoActionResult);
@@ -1875,7 +1874,7 @@ export default function ChatDetailView({
       if (vars.respondeAMensajeId) {
         formData.append("respondeAMensajeId", vars.respondeAMensajeId);
       }
-      await enviarMediaAction(id, formData);
+      await enviarAdjunto(id, formData);
     },
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
     silent: true,
@@ -1892,7 +1891,7 @@ export default function ChatDetailView({
       if (respondiendoA)
         formData.append("respondeAMensajeId", respondiendoA.id);
       if (esVoz) formData.append("esVoz", "1");
-      await enviarMediaAction(id, formData);
+      await enviarAdjunto(id, formData);
     },
     invalidateKeys: [queryKeys.whatsappChat(id), queryKeys.whatsappChats],
     silent: true,

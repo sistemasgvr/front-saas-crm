@@ -10,6 +10,15 @@ const routeFile = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   "../app/api/organizations/logo/route.ts",
 );
+const originExports = {};
+vm.runInNewContext(
+  ts.transpileModule(
+    fs.readFileSync(new URL("../src/lib/same-origin.ts", import.meta.url), "utf8"),
+    { compilerOptions: { module: ts.ModuleKind.CommonJS } },
+  ).outputText,
+  { exports: originExports, URL },
+);
+
 function fixture({ token = "token-prueba", fail } = {}) {
   const calls = [];
   class ApiError extends Error {
@@ -42,6 +51,7 @@ function fixture({ token = "token-prueba", fail } = {}) {
         });
       },
       require: (name) => {
+        if (name.endsWith("/same-origin")) return originExports;
         if (name.endsWith("/session"))
           return { getAccessToken: async () => token };
         if (name.endsWith("/api-url"))

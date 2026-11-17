@@ -1,6 +1,7 @@
 import { apiFetch, ApiError } from "@/src/lib/api";
 import { getAccessToken } from "@/src/lib/session";
 import { getApiUrl } from "@/src/lib/api-url";
+import { sameOrigin } from "@/src/lib/same-origin";
 import type { OrganizacionActual } from "@/src/modules/settings/types";
 
 const MAX_MULTIPART = 2 * 1024 * 1024 + 64 * 1024;
@@ -14,27 +15,6 @@ const errorResponse = (error: unknown) =>
     },
     { status: error instanceof ApiError ? error.status || 502 : 500 },
   );
-function sameOrigin(request: Request) {
-  try {
-    const origin = request.headers.get("origin");
-    if (!origin) return false;
-    const incoming = new URL(origin);
-    const internal = new URL(request.url);
-    // En el proxy de producción la URL interna puede ser HTTP, aunque el
-    // navegador use HTTPS. Host identifica el destino real de la petición.
-    const host = request.headers.get("host") ?? internal.host;
-    const protocol =
-      request.headers.get("x-forwarded-proto")?.split(",")[0].trim() ??
-      internal.protocol.slice(0, -1);
-    return (
-      ["http", "https"].includes(protocol) &&
-      incoming.host === host &&
-      incoming.protocol === `${protocol}:`
-    );
-  } catch {
-    return false;
-  }
-}
 
 /** Proxy privado: el navegador no recibe credenciales ni URLs del bucket. */
 export async function GET(request: Request): Promise<Response> {

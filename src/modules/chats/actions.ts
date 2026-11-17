@@ -47,25 +47,6 @@ export async function enviarReaccionAction(conversacionId: string, mensajeId: st
   });
 }
 
-/** Sube y envía un archivo — timeout más alto que el default (documentos
- * grandes, hasta 100MB según Meta, pueden tardar en subir con conexiones lentas). */
-export async function enviarMediaAction(conversacionId: string, formData: FormData): Promise<ActionResult<void>> {
-  return runAction(async () => {
-    try {
-      await apiFetch(`/whatsapp/chats/${conversacionId}/media`, {
-        method: "POST",
-        body: formData,
-        timeoutMs: 120_000,
-      });
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 413) {
-        throw new Error("El archivo supera el tamaño permitido para esta carga. Elige un archivo más liviano.");
-      }
-      fail(error, "No se pudo enviar el archivo");
-    }
-  });
-}
-
 export async function enviarUbicacionAction(
   conversacionId: string,
   input: {
