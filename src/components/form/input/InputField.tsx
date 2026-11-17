@@ -11,6 +11,7 @@ interface InputProps {
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   className?: string;
+  compact?: boolean;
   min?: string | number;
   max?: string | number;
   step?: number;
@@ -35,6 +36,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     onChange,
     onBlur,
     className = "",
+    compact = false,
     min,
     max,
     step,
@@ -50,7 +52,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   ref,
 ) {
   const inputClasses = cn(
-    "h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800",
+    "w-full rounded-lg border appearance-none shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800",
+    compact ? "h-9 px-3 py-1.5 text-theme-sm" : "h-11 px-4 py-2.5 text-sm",
     disabled
       ? "text-gray-500 border-gray-300 cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
       : error

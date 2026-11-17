@@ -22,9 +22,6 @@ interface DynamicFiltersProps {
   onChange: (values: DynamicFilterValues) => void;
 }
 
-const COMPACT_CONTROL = "!h-9 px-3 py-1.5 text-theme-sm";
-const COMPACT_SELECT = "!h-9 px-3 py-1.5 pr-9 text-theme-sm";
-
 function nextValues(current: DynamicFilterValues, key: string, value: string): DynamicFilterValues {
   const next = { ...current, [key]: value };
   if (!value) delete next[key];
@@ -149,7 +146,7 @@ export default function DynamicFilters({ fields, values, onChange }: DynamicFilt
           options={field.options ?? []}
           placeholder={field.placeholder ?? "Seleccionar"}
           disabled={field.disabled}
-          className={COMPACT_SELECT}
+          compact
           onChange={(next) => setField(field.key, next)}
         />
       );
@@ -159,7 +156,7 @@ export default function DynamicFilters({ fields, values, onChange }: DynamicFilt
         <Input
           type="date"
           value={value}
-          className={COMPACT_CONTROL}
+          compact
           onChange={(event) => setField(field.key, event.target.value)}
         />
       );
@@ -180,7 +177,7 @@ export default function DynamicFilters({ fields, values, onChange }: DynamicFilt
         type="search"
         value={value}
         placeholder={field.placeholder ?? "Valor"}
-        className={COMPACT_CONTROL}
+        compact
         onChange={(event) => setField(field.key, event.target.value)}
       />
     );

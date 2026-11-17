@@ -3482,6 +3482,7 @@ export default function ChatDetailView({
                 </label>
                 <Select
                   id="chat-plantilla"
+                  compact
                   options={(templatesQuery.data ?? []).map((t) => ({
                     value: `${t.nombre}:${t.idioma}`,
                     label: `${t.nombre} (${t.idioma})`,
@@ -3513,6 +3514,7 @@ export default function ChatDetailView({
                           </label>
                           <Input
                             id={inputId}
+                            compact
                             value={valor}
                             required
                             disabled={enviar.isPending}
