@@ -65,6 +65,8 @@ import {
   tomarLeadAction,
 } from "@/src/modules/leads/actions";
 import type { CrearActividadAgendaInput } from "@/src/modules/leads/types";
+import { getVisitasLead } from "@/src/modules/leads/queries";
+import { getInmueble } from "@/src/modules/inmuebles/queries";
 import OrigenLeadBadge from "@/src/modules/leads/OrigenLeadBadge";
 import TextoWhatsApp from "./TextoWhatsApp";
 import { textoWhatsAppPlano } from "./texto-whatsapp-plano";
@@ -238,11 +240,9 @@ function estaDentroDeVentana(
   return !!ventanaExpiraEn && new Date(ventanaExpiraEn).getTime() > Date.now();
 }
 
-/** Poll solo con pestaña visible — el socket cubre mensajes en vivo. */
 /** Nombres de variable {{nombre_cliente}} (o {{1}}, {{2}} en plantillas
  * legacy creadas fuera del CRM) en orden de primera aparición, sin
- * duplicados — se muestran tal cual, así el usuario ve exactamente qué
- * variable está llenando. */
+ * duplicados. */
 function extraerVariables(texto: string | undefined): string[] {
   if (!texto) return [];
   const nombres: string[] = [];
@@ -251,6 +251,27 @@ function extraerVariables(texto: string | undefined): string[] {
     if (!nombres.includes(nombre)) nombres.push(nombre);
   }
   return nombres;
+}
+
+const ETIQUETAS_VARIABLES_PLANTILLA: Record<string, string> = {
+  nombre_cliente: "Nombre del cliente",
+  nombre_proyecto: "Proyecto o inmueble",
+  asesor: "Asesor asignado",
+  fecha_visita: "Fecha de visita",
+  hora_visita: "Hora de visita",
+  direccion: "Dirección",
+  numero_referencia: "Número de referencia",
+  monto: "Monto",
+  telefono_contacto: "Teléfono del contacto",
+};
+
+function etiquetaVariablePlantilla(variable: string): string {
+  if (Object.hasOwn(ETIQUETAS_VARIABLES_PLANTILLA, variable)) {
+    return ETIQUETAS_VARIABLES_PLANTILLA[variable];
+  }
+  if (/^\d+$/.test(variable)) return `Parámetro ${variable}`;
+  const texto = variable.replaceAll("_", " ");
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
 function formatearHora(iso: string) {
@@ -1490,7 +1511,10 @@ export default function ChatDetailView({
   useLayoutEffect(() => {
     textoRef.current = texto;
   }, [texto]);
-  const [plantillaSeleccionada, setPlantillaSeleccionada] = useState("");
+  const [seleccionPlantilla, setSeleccionPlantilla] = useState<{
+    clave: string;
+    seleccionadaEn: number;
+  } | null>(null);
   const [valoresVariables, setValoresVariables] = useState<
     Record<string, string>
   >({});
@@ -1746,11 +1770,67 @@ export default function ChatDetailView({
   });
 
   const plantilla = templatesQuery.data?.find(
-    (p: PlantillaWhatsApp) => p.nombre === plantillaSeleccionada,
+    (p) => `${p.nombre}:${p.idioma}` === seleccionPlantilla?.clave,
   );
   const variables = extraerVariables(plantilla?.cuerpoTexto);
+  const valorVariable = (nombre: string) =>
+    Object.hasOwn(valoresVariables, nombre) ? valoresVariables[nombre] : "";
   const parametrosCompletos = variables.every(
-    (nombre) => (valoresVariables[nombre] ?? "").trim().length > 0,
+    (nombre) => valorVariable(nombre).trim().length > 0,
+  );
+  const leadPlantilla = chatQuery.data?.lead;
+  const esPlantillaVisita =
+    variables.includes("fecha_visita") || variables.includes("hora_visita");
+  const visitasPlantilla = useQuery({
+    queryKey: [...queryKeys.leadVisitas(leadPlantilla?.id ?? ""), 1],
+    queryFn: () => getVisitasLead(leadPlantilla!.id, 1),
+    enabled: !dentroDeVentana && esPlantillaVisita && !!leadPlantilla,
+  });
+  const fechaConsultaVisitas = Math.max(
+    seleccionPlantilla?.seleccionadaEn ?? 0,
+    visitasPlantilla.dataUpdatedAt,
+  );
+  const visitaPlantilla = esPlantillaVisita
+    // El historial está ordenado de la fecha más lejana a la más cercana.
+    ? visitasPlantilla.data?.data
+        .filter((visita) =>
+          visita.estado === "PROGRAMADA" && Date.parse(visita.programadaEn) >= fechaConsultaVisitas,
+        )
+        .pop()
+    : undefined;
+  const inmuebleInteres = leadPlantilla?.inmuebleInteres;
+  const inmueblePlantillaId = visitaPlantilla
+    ? visitaPlantilla.modalidad === "PRESENCIAL"
+      ? visitaPlantilla.inmueble?.id ?? visitaPlantilla.inmuebleId
+      : null
+    : esPlantillaVisita ? null : inmuebleInteres?.id;
+  const inmueblePlantilla = useQuery({
+    queryKey: queryKeys.inmueble(inmueblePlantillaId ?? ""),
+    queryFn: () => getInmueble(inmueblePlantillaId!),
+    enabled:
+      !dentroDeVentana &&
+      inmueblesHabilitado &&
+      !!inmueblePlantillaId &&
+      variables.includes("direccion"),
+  });
+  const fechaVisita = visitaPlantilla ? new Date(visitaPlantilla.programadaEn) : null;
+  const sugerenciasPlantilla: Record<string, string | undefined | null> = {
+    nombre_cliente: leadPlantilla?.nombre?.trim() || chatQuery.data?.nombreContacto,
+    nombre_proyecto: visitaPlantilla
+      ? visitaPlantilla.inmueble?.titulo?.trim() || visitaPlantilla.referenciaInmueble
+      : inmuebleInteres?.titulo,
+    asesor: leadPlantilla?.asignado?.nombre,
+    telefono_contacto: chatQuery.data?.waId ? `+${chatQuery.data.waId}` : undefined,
+    fecha_visita: fechaVisita?.toLocaleDateString("es-PE", { timeZone: "America/Lima", dateStyle: "long" }),
+    hora_visita: fechaVisita?.toLocaleTimeString("es-PE", { timeZone: "America/Lima", timeStyle: "short" }),
+    direccion: inmueblePlantilla.data?.direccion,
+  };
+  const vistaPreviaPlantilla = plantilla?.cuerpoTexto?.replace(
+    /\{\{([^{}]+)\}\}/g,
+    (_, nombre: string) => {
+      const variable = nombre.trim();
+      return valorVariable(variable).trim() || `[${etiquetaVariablePlantilla(variable)}]`;
+    },
   );
 
   const enviar = useAppMutation({
@@ -3397,80 +3477,80 @@ export default function ChatDetailView({
                     className="shrink-0 text-warning-500"
                   />
                 </p>
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <Select
-                      options={(templatesQuery.data ?? []).map(
-                        (t: PlantillaWhatsApp) => ({
-                          value: t.nombre,
-                          label: `${t.nombre} (${t.idioma})`,
-                        }),
-                      )}
-                      placeholder={
-                        templatesQuery.isLoading
-                          ? "Cargando plantillas…"
-                          : "Elige una plantilla aprobada"
-                      }
-                      value={plantillaSeleccionada}
-                      onChange={(valor) => {
-                        setPlantillaSeleccionada(valor);
-                        setValoresVariables({});
-                      }}
-                    />
-                  </div>
-                  {variables.length === 0 && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      loading={enviar.isPending}
-                      disabled={!plantillaSeleccionada}
-                      onClick={() => {
-                        if (!plantilla) return;
-                        enviar.mutate(
-                          {
-                            plantillaNombre: plantilla.nombre,
-                            plantillaIdioma: plantilla.idioma,
-                            plantillaFormatoParametros:
-                              plantilla.formatoParametros,
-                          },
-                          {
-                            onSuccess: alEnviarConFeedback(() => {
-                              setPlantillaSeleccionada("");
-                              setValoresVariables({});
-                            }),
-                          },
-                        );
-                      }}
-                    >
-                      Enviar plantilla
-                    </Button>
-                  )}
-                </div>
-                {plantilla && (
-                  <p className="rounded-lg bg-gray-50 px-3 py-2 text-theme-xs text-gray-600 dark:bg-white/[0.03] dark:text-gray-300">
-                    {plantilla.cuerpoTexto}
-                  </p>
-                )}
+                <label htmlFor="chat-plantilla" className="sr-only">
+                  Plantilla de WhatsApp
+                </label>
+                <Select
+                  id="chat-plantilla"
+                  options={(templatesQuery.data ?? []).map((t) => ({
+                    value: `${t.nombre}:${t.idioma}`,
+                    label: `${t.nombre} (${t.idioma})`,
+                  }))}
+                  placeholder={
+                    templatesQuery.isLoading
+                      ? "Cargando plantillas…"
+                      : "Elige una plantilla aprobada"
+                  }
+                  value={seleccionPlantilla?.clave ?? ""}
+                  disabled={enviar.isPending}
+                  onChange={(valor) => {
+                    setSeleccionPlantilla(valor ? { clave: valor, seleccionadaEn: Date.now() } : null);
+                    setValoresVariables({});
+                  }}
+                />
                 {variables.length > 0 && (
-                  <div className="space-y-2">
-                    {variables.map((nombre) => (
-                      <Input
-                        key={nombre}
-                        placeholder={`Valor para {{${nombre}}}`}
-                        value={valoresVariables[nombre] ?? ""}
-                        onChange={(e) =>
-                          setValoresVariables((prev) => ({
-                            ...prev,
-                            [nombre]: e.target.value,
-                          }))
-                        }
-                      />
-                    ))}
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {variables.map((nombre, indice) => {
+                      const inputId = `chat-plantilla-variable-${indice}`;
+                      const valor = valorVariable(nombre);
+                      const sugerencia = Object.hasOwn(sugerenciasPlantilla, nombre)
+                        ? sugerenciasPlantilla[nombre]?.trim()
+                        : undefined;
+                      return (
+                        <div key={nombre} className="min-w-0 space-y-1">
+                          <label htmlFor={inputId} className="block text-theme-xs font-medium text-gray-700 dark:text-gray-300">
+                            {etiquetaVariablePlantilla(nombre)}
+                          </label>
+                          <Input
+                            id={inputId}
+                            value={valor}
+                            required
+                            disabled={enviar.isPending}
+                            onChange={(e) => {
+                              const valor = e.target.value;
+                              setValoresVariables((prev) => ({ ...prev, [nombre]: valor }));
+                            }}
+                          />
+                          {sugerencia && !valor.trim() && (
+                            <button
+                              type="button"
+                              disabled={enviar.isPending}
+                              className="block max-w-full break-words text-left text-theme-xs text-brand-700 underline underline-offset-2 dark:text-brand-300"
+                              onClick={() => setValoresVariables((prev) => ({ ...prev, [nombre]: sugerencia }))}
+                            >
+                              {nombre === "direccion"
+                                ? `Usar dirección del inmueble (${sugerencia})`
+                                : `Usar ${sugerencia}`}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {plantilla && (
+                  <>
+                    {vistaPreviaPlantilla && (
+                      <div className="rounded-lg bg-gray-50 px-3 py-2 text-theme-xs text-gray-700 dark:bg-white/[0.03] dark:text-gray-300">
+                        <p className="mb-1 font-semibold">Vista previa</p>
+                        <p className="whitespace-pre-wrap break-words">{vistaPreviaPlantilla}</p>
+                      </div>
+                    )}
                     <Button
                       type="button"
                       size="sm"
                       loading={enviar.isPending}
-                      disabled={!plantillaSeleccionada || !parametrosCompletos}
+                      disabled={!parametrosCompletos}
                       onClick={() => {
                         if (!plantilla) return;
                         enviar.mutate(
@@ -3479,14 +3559,13 @@ export default function ChatDetailView({
                             plantillaIdioma: plantilla.idioma,
                             plantillaFormatoParametros:
                               plantilla.formatoParametros,
-                            parametros: variables.map((nombre) => ({
-                              nombre,
-                              valor: valoresVariables[nombre] ?? "",
-                            })),
+                            parametros: variables.length
+                              ? variables.map((nombre) => ({ nombre, valor: valorVariable(nombre).trim() }))
+                              : undefined,
                           },
                           {
                             onSuccess: alEnviarConFeedback(() => {
-                              setPlantillaSeleccionada("");
+                              setSeleccionPlantilla(null);
                               setValoresVariables({});
                             }),
                           },
@@ -3495,7 +3574,7 @@ export default function ChatDetailView({
                     >
                       Enviar plantilla
                     </Button>
-                  </div>
+                  </>
                 )}
                 {templatesQuery.data?.length === 0 && (
                   <p className="text-theme-xs text-gray-500 dark:text-gray-400">
