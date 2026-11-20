@@ -1,6 +1,9 @@
 import { ApiError, apiFetch, type FetchOptions } from "@/src/lib/api";
 import { sameOrigin } from "@/src/lib/same-origin";
 
+// 180 s de compresión, más la carga a Meta y el guardado del historial.
+export const maxDuration = 300;
+
 // El archivo de hasta 4 MiB más los campos y el boundary quedan bajo el límite de Vercel.
 const MAX_MULTIPART = 4 * 1024 * 1024 + 64 * 1024;
 const MAX_METADATOS = 16 * 1024;
@@ -30,7 +33,7 @@ export async function POST(
         method: "POST",
         body,
         signal: request.signal,
-        timeoutMs: fase === "confirmar" ? 120_000 : 20_000,
+        timeoutMs: fase === "confirmar" ? 240_000 : 20_000,
       });
       return fase === "preparar" ? Response.json(data) : new Response(null, { status: 204 });
     } catch (error) {
@@ -65,7 +68,7 @@ export async function POST(
       headers: { "Content-Type": contentType },
       redirect: "error",
       signal: request.signal,
-      timeoutMs: 120_000,
+      timeoutMs: 240_000,
     };
     await apiFetch(endpoint, options);
     return new Response(null, { status: 204 });
@@ -78,6 +81,9 @@ export async function POST(
 }
 
 function respuestaError(error: unknown): Response {
+  if (error instanceof ApiError && error.status === 503) {
+    return errorCarga(503, error.message);
+  }
   if (error instanceof ApiError && error.status === 413) {
     return errorCarga(413, ARCHIVO_DEMASIADO_GRANDE);
   }

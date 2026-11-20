@@ -148,11 +148,11 @@ const ICONO_ESTADO: Record<string, { icon: string; className?: string }> = {
   eliminado: { icon: "mdi:trash-can-outline" },
 };
 
-// Mismos límites reales de la Media API de WhatsApp que valida el backend —
-// se repiten acá para avisar al toque, sin esperar el viaje al servidor.
+// Límites de carga del original: el backend comprime imágenes y videos antes
+// de validar los límites finales de Meta (5 y 16 MB, respectivamente).
 const LIMITES_MEDIA: Record<string, { nombre: string; maxBytes: number; mimes: string[] }> = {
-  image: { nombre: "imagen", maxBytes: 5 * 1024 * 1024, mimes: ["image/jpeg", "image/png"] },
-  video: { nombre: "video", maxBytes: 16 * 1024 * 1024, mimes: ["video/mp4", "video/3gpp"] },
+  image: { nombre: "imagen", maxBytes: 25 * 1024 * 1024, mimes: ["image/jpeg", "image/png"] },
+  video: { nombre: "video", maxBytes: 100 * 1024 * 1024, mimes: ["video/mp4", "video/3gpp", "video/quicktime", "video/webm", "video/x-msvideo"] },
   audio: {
     nombre: "audio",
     maxBytes: 16 * 1024 * 1024,
@@ -176,6 +176,7 @@ const LIMITES_MEDIA: Record<string, { nombre: string; maxBytes: number; mimes: s
 };
 
 async function validarArchivo(file: File): Promise<string | null> {
+  if (file.size === 0) return "Selecciona un archivo con contenido.";
   const categoria = Object.entries(LIMITES_MEDIA).find(([, l]) => l.mimes.includes(file.type));
   if (!categoria)
     return `WhatsApp no admite este tipo de archivo (${file.type || "desconocido"})`;
@@ -192,6 +193,9 @@ async function validarArchivo(file: File): Promise<string | null> {
     }
   }
   if (file.size <= maxBytes) return null;
+  if (tipo === "image" || tipo === "video") {
+    return `El archivo original supera los ${maxBytes / (1024 * 1024)} MB permitidos para comprimirlo.`;
+  }
   const maximo = tipo === "sticker" ? `${maxBytes / 1024} KB` : `${maxBytes / (1024 * 1024)} MB`;
   return `El archivo supera el límite de WhatsApp de ${maximo} por ${nombre}. Elige un archivo más liviano.`;
 }
@@ -3237,6 +3241,13 @@ export default function ChatDetailView({
                 <div role="status" className="text-theme-xs text-error-500 empty:sr-only">
                   {errorArchivo}
                 </div>
+                <div role="status" className="text-theme-xs text-gray-500 empty:sr-only">
+                  {(enviarArchivo.isPending || enviarMediaDirecto.isPending) && archivo
+                    ? "Procesando y enviando archivo. Las imágenes y videos se comprimen automáticamente…"
+                    : archivo && /^(image\/(jpeg|png)|video\/)/.test(archivo.type)
+                      ? "Se comprimirá automáticamente al enviar para reducir su peso."
+                      : null}
+                </div>
                 {grabandoVoz ? (
                   <div className="flex items-center gap-2">
                     <button
@@ -3282,7 +3293,7 @@ export default function ChatDetailView({
                       ref={inputArchivoRef}
                       type="file"
                       className="hidden"
-                      accept="image/jpeg,image/png,video/mp4,video/3gpp,audio/aac,audio/mp4,audio/mpeg,audio/amr,audio/ogg,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                      accept="image/jpeg,image/png,video/mp4,video/3gpp,video/quicktime,video/webm,video/x-msvideo,.mov,.webm,.avi,audio/aac,audio/mp4,audio/mpeg,audio/amr,audio/ogg,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         e.target.value = "";
